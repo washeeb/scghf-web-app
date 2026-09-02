@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Support\ContrastChecker;
+use App\Support\RetentionRunner;
 use App\Support\Settings;
+use App\Support\TaxDeductibility;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
@@ -19,6 +21,12 @@ class AppServiceProvider extends ServiceProvider
         // so a second instance would defeat the point.
         $this->app->singleton(Settings::class);
         $this->app->singleton(ContrastChecker::class);
+        $this->app->singleton(TaxDeductibility::class);
+
+        // The retention runner holds the registry of models subject to a
+        // retention class. Modules register into it as they land, so it needs
+        // no knowledge of models that do not exist yet.
+        $this->app->singleton(RetentionRunner::class);
     }
 
     public function boot(): void

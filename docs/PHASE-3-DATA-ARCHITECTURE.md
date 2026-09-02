@@ -439,12 +439,16 @@ FLUSH PRIVILEGES;
 
 > ⚠️ **Still needed from you:** the exact wording the Ghana Revenue Authority requires on a deductible receipt, and which of the four divisions' causes qualify. The schema is ready for either answer; the copy is not something to guess at.
 
+### Answered 2026-09-03
+
+**2. Beneficiary data retention — purpose-based, per Act 843.** Declined applications 24 months from decision; incomplete or withdrawn 12 months from last activity; approved case records 6 years from closure, then de-identified rather than deleted so the financial trail survives while the person does not; medical and other highly sensitive supporting documents 24 months from closure — deliberately far shorter than the case record they support, because a report proving eligibility has served its purpose once the case closes; tax and accounting records a 6-year statutory MINIMUM and never auto-deleted; anonymised statistics indefinitely. Legal, audit and investigation holds override every date. Implemented in `config/compliance.php` (policy, git-versioned) plus `legal_holds` and `retention_log` (operational facts).
+
+**4. Shop sells branded merchandise, stationery, drinkware, books and campaign goods only.** Medicines, regulated medical products, supplements, food and cosmetics require a separate FDA Ghana regulatory review and cannot be listed without one. **Shop sales and charitable donations are separate throughout** — separate accounting, receipts, payment records and reporting. A charitable acknowledgement is never issued for a purchase.
+
 ### Remaining
 
 | # | Question | Blocks |
 |---|---|---|
-| 2 | **Beneficiary data retention** — how long after support ends is a record kept? Act 843 wants a stated period, not "forever". | `beneficiaries` |
-| 4 | **Shop product types** — physical, digital, or symbolic gift cards? Symbolic gifts ("goat for a family") are donations wearing a product UI and need `products.is_symbolic` plus a link to a cause. | `products` |
 | 5 | **Multi-currency ever?** Schema supports it; if the answer is a firm no, some validation tightens. | several |
 
 None block starting module 1.
