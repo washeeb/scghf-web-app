@@ -1,32 +1,280 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserType;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Permission\Contracts\Permission;
+use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+/**
+ * Staff and donors both. See docs/PHASE-3-DATA-ARCHITECTURE.md §2.1.
+ *
+ * @property int $id
+ * @property string $ulid
+ * @property string $name
+ * @property string $email
+ * @property string|null $phone
+ * @property UserType $type
+ * @property bool $is_active
+ */
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory;
+
+    /*
+     * `hasPermissionTo` is aliased rather than overridden with `parent::` —
+     * it comes from spatie's HasPermissions trait (pulled in by HasRoles),
+     * not from a parent class, so `parent::` would resolve to Authenticatable
+     * and fail. See the override below.
+     */
+    use HasRoles {
+        HasRoles::hasPermissionTo as protected spatieHasPermissionTo;
+    }
+    use HasUlids;
+    use LogsActivity;
+    use Notifiable;
+    use SoftDeletes;
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'phone',
+        'phone_raw',
+        'type',
+        'job_title',
+        'bio',
+        'locale',
+        'timezone',
+        'is_active',
+        'accepts_email_marketing',
+        'accepts_sms_marketing',
+    ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Never serialised. `two_factor_*` are hidden as well as encrypted — an
+     * encrypted secret leaking into a JSON response is still a leak of the
+     * fact it exists, and of its length.
      */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+    ];
+
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
+            'suspended_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'marketing_consent_at' => 'datetime',
             'password' => 'hashed',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'type' => UserType::class,
+            'is_active' => 'boolean',
+            'accepts_email_marketing' => 'boolean',
+            'accepts_sms_marketing' => 'boolean',
         ];
+    }
+
+    /** The public identifier. `id` never appears in a URL — §1.1. */
+    public function getRouteKeyName(): string
+    {
+        return 'ulid';
+    }
+
+    /** @return array<int, string> */
+    public function uniqueIds(): array
+    {
+        return ['ulid'];
+    }
+
+    // ── Relationships ────────────────────────────────────────────────────────
+
+    /** @return HasMany<LoginHistory, $this> */
+    public function loginHistories(): HasMany
+    {
+        return $this->hasMany(LoginHistory::class)->latest();
+    }
+
+    // ── Accessors ────────────────────────────────────────────────────────────
+
+    /**
+     * Ghanaian numbers normalised to E.164 on write, with the raw input kept.
+     *
+     * `024 123 4567`, `+233241234567` and `233241234567` are the same number
+     * and must not produce three donor records. Blueprint risk DEL-9.
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: function (?string $value): array {
+                if ($value === null || trim($value) === '') {
+                    return ['phone' => null, 'phone_raw' => null];
+                }
+
+                $raw = trim($value);
+                $digits = preg_replace('/\D/', '', $raw) ?? '';
+
+                $normalised = match (true) {
+                    // 0244123456 → +233244123456
+                    str_starts_with($digits, '0') && strlen($digits) === 10 => '+233'.substr($digits, 1),
+                    // 233244123456 → +233244123456
+                    str_starts_with($digits, '233') && strlen($digits) === 12 => '+'.$digits,
+                    // 244123456 → +233244123456
+                    strlen($digits) === 9 => '+233'.$digits,
+                    // Anything else is kept as typed rather than mangled into a
+                    // wrong number — support can look at phone_raw.
+                    default => $digits !== '' ? '+'.$digits : null,
+                };
+
+                return ['phone' => $normalised, 'phone_raw' => $raw];
+            },
+        );
+    }
+
+    protected function initials(): Attribute
+    {
+        return Attribute::get(fn (): string => Str::of($this->name)
+            ->explode(' ')
+            ->filter()
+            ->take(2)
+            ->map(fn (string $part) => Str::upper(Str::substr($part, 0, 1)))
+            ->implode(''));
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+
+    public function isStaff(): bool
+    {
+        return $this->type === UserType::Staff;
+    }
+
+    public function isDonor(): bool
+    {
+        return $this->type === UserType::Donor;
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
+    }
+
+    /**
+     * A deactivated or suspended account holds no permissions, whatever roles
+     * remain attached to it.
+     *
+     * This lives on the model rather than only in a `Gate::before` because
+     * spatie/laravel-permission registers its OWN `Gate::before`, and package
+     * providers boot before application providers — so spatie's callback returns
+     * true for a held permission and short-circuits before any gate of ours can
+     * deny it. Overriding here closes that path and every other one: Gate,
+     * `@can`, Filament, and direct `hasPermissionTo()` calls all route through it.
+     *
+     * Gate::before in AuthServiceProvider still exists for the Super Admin
+     * wildcard, which is a different concern.
+     *
+     * @param  string|int|\BackedEnum|Permission  $permission
+     */
+    public function hasPermissionTo($permission, ?string $guardName = null): bool
+    {
+        if (! $this->is_active || $this->isSuspended()) {
+            return false;
+        }
+
+        return $this->spatieHasPermissionTo($permission, $guardName);
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
+    }
+
+    /**
+     * Whether this account still needs to set up 2FA before it may be used.
+     *
+     * Staff MUST have it (Blueprint §7.1). Returning true here is what the
+     * middleware acts on to force enrolment rather than merely suggesting it.
+     */
+    public function mustEnrolInTwoFactor(): bool
+    {
+        return $this->type->requiresTwoFactor() && ! $this->hasTwoFactorEnabled();
+    }
+
+    /**
+     * Filament calls this to decide who may open /admin.
+     *
+     * Three conditions, all required: the account is staff, it is active, and
+     * it is not suspended. Capability *inside* the panel is a separate
+     * permission question.
+     */
+    public function canAccessPanel(mixed $panel = null): bool
+    {
+        return $this->isStaff() && $this->is_active && ! $this->isSuspended();
+    }
+
+    // ── Scopes ───────────────────────────────────────────────────────────────
+
+    #[Scope]
+    protected function staff(Builder $query): void
+    {
+        $query->where('type', UserType::Staff);
+    }
+
+    #[Scope]
+    protected function donors(Builder $query): void
+    {
+        $query->where('type', UserType::Donor);
+    }
+
+    #[Scope]
+    protected function active(Builder $query): void
+    {
+        $query->where('is_active', true)->whereNull('suspended_at');
+    }
+
+    // ── Activity log ─────────────────────────────────────────────────────────
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            // Deliberately narrow. Logging every column would put password
+            // hashes and 2FA ciphertext into the activity log, which is a
+            // second copy of the most sensitive data in the system.
+            ->logOnly([
+                'name',
+                'email',
+                'phone',
+                'type',
+                'is_active',
+                'suspended_at',
+                'suspended_reason',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('user');
     }
 }
