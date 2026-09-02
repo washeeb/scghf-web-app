@@ -1,0 +1,59 @@
+---
+# ═══════════════════════════════════════════════════════════════════════════════
+#  FALLBACK ONLY — NOT the deployment method for this project.
+#
+#  We deploy with GitHub Actions over SSH (see .github/workflows/deploy.yml).
+#  This file exists so that if SSH is ever withdrawn on this account, there is a
+#  documented, working path rather than an emergency.
+#
+#  To use it you must first move this file to the REPOSITORY ROOT — cPanel only
+#  reads /.cpanel.yml — and then accept two significant costs:
+#
+#    1. `vendor/` and `public/build/` must be COMMITTED to the repository,
+#       because cPanel's deployment environment has no reliable Composer or Node.
+#       That is ~15,000 extra files: inode pressure, unreadable diffs, and a
+#       security-update process that depends on a human remembering.
+#
+#    2. GitHub cannot push to cPanel. Deployment becomes "SSH in and git pull",
+#       or a polling cron — which is not a pipeline.
+#
+#  Read docs/PHASE-2-RUNBOOK.md §9 before adopting this.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+deployment:
+  tasks:
+    # --- Where the cPanel-side clone lives, and where it deploys to ---
+    - export REPO=/home/presti98/repositories/scghf
+    - export APP=/home/presti98/scghf-cpanel
+    - export DOCROOT=/home/presti98/greaterhopefoundations.com
+    - export PHP=/opt/cpanel/ea-php84/root/usr/bin/php
+
+    # --- Application code, excluding anything that must survive ---
+    - /bin/mkdir -p $APP
+    - /bin/cp -R $REPO/app $REPO/bootstrap $REPO/config $REPO/database $REPO/lang $REPO/public $REPO/resources $REPO/routes $REPO/vendor $APP/
+    - /bin/cp $REPO/artisan $REPO/composer.json $REPO/composer.lock $APP/
+
+    # --- Shared state: .env and storage are NEVER copied over ---
+    - /bin/mkdir -p $APP/storage/app/public
+    - /bin/mkdir -p $APP/storage/framework/cache/data
+    - /bin/mkdir -p $APP/storage/framework/sessions
+    - /bin/mkdir -p $APP/storage/framework/views
+    - /bin/mkdir -p $APP/storage/logs
+    - /bin/mkdir -p $APP/bootstrap/cache
+    - /bin/chmod -R 755 $APP/storage $APP/bootstrap/cache
+
+    # --- Document root ---
+    # Preferred: docroot is a symlink to $APP/public, so nothing needs copying and
+    # index.php's relative paths are correct. Falls back to copying public/ and
+    # rewriting index.php only if the host refuses symlinks.
+    - /bin/ln -sfn $APP/public $DOCROOT || /bin/cp -R $APP/public/* $DOCROOT/
+
+    # --- Post-deploy ---
+    - cd $APP && $PHP artisan migrate --force
+    - cd $APP && $PHP artisan config:cache
+    - cd $APP && $PHP artisan route:cache
+    - cd $APP && $PHP artisan view:cache
+    - cd $APP && $PHP artisan event:cache
+    - cd $APP && $PHP artisan storage:link || true
+    - cd $APP && $PHP artisan queue:restart || true
+    - cd $APP && $PHP artisan up || true

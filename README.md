@@ -1,0 +1,119 @@
+# St. Cecilia's Greater Hope Foundations — Web Application
+
+Donation, fundraising and e-commerce platform for a Ghanaian foundation.
+Laravel 13 · Livewire 3 · Filament 5 · Tailwind · MySQL · Paystack (GHS) · InMotion shared cPanel hosting.
+
+> *"To turn remembrance into impact."*
+
+---
+
+## What this is
+
+A production web application for a registered Ghanaian non-profit, built around four divisions:
+
+| Division | Remit |
+|---|---|
+| **Life Spring Foundation** | Health |
+| **BrightPath Fund Initiative** | Education |
+| **Legacy of Love Initiative** | Orphans, Widows & Widowers |
+| **Every Soul Missions** | Evangelism |
+
+It accepts one-off and recurring donations in Ghanaian Cedis via Paystack (**Mobile Money first** — it is how Ghana pays), runs a fundraising shop, showcases projects and measured impact, and is fully editable by non-technical staff through a Filament CMS.
+
+---
+
+## Documentation map
+
+| Document | What it covers |
+|---|---|
+| **`CLAUDE.md`** | Standing project context. Decisions already made — read before changing anything. |
+| **`PHASE-1-BLUEPRINT.md`** | The project brief: brand tokens, sitemap, roles, user journeys, module list, risk register, environment plan. |
+| **`FOUNDATION-WEBAPP-MASTER-PROMPT.md`** | The phase sequence, Phase 0 → 18. |
+| **`docs/PHASE-2-RUNBOOK.md`** | ⭐ Setup and deployment, step by step, with expected output and failure modes. |
+| **`docs/DEPENDENCIES.md`** | Why each package is here, and what was deliberately rejected. |
+| **`CHANGELOG.md`** | What changed, when. |
+
+---
+
+## Local setup
+
+**Requires PHP 8.3+, Composer 2, Node 20+.** On Windows, `winget install --id BeyondCode.Herd -e` supplies PHP and Composer together. See `docs/PHASE-2-RUNBOOK.md` Step 0.
+
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm run dev
+```
+
+Then `php artisan serve`.
+
+Full first-time setup — including generating the Laravel skeleton — is **`docs/PHASE-2-RUNBOOK.md`**.
+
+---
+
+## The rules that are not negotiable
+
+These are in `CLAUDE.md` in full. The short version, because getting them wrong costs money or trust:
+
+**Money.** Every amount is an **integer of pesewas** (GHS × 100). Never a float. `GH₵ 50.00` is `5000`. Every Paystack call carries `"currency": "GHS"`.
+
+**Payment truth comes from the webhook, never the browser redirect.** Verify `hash_hmac('sha512', $rawBody, $secret)` against `x-paystack-signature` with `hash_equals()`. Store the raw event, respond 200 immediately, process on the queue, and make processing idempotent — a replayed event must never double-count a donation.
+
+**No hardcoded content in Blade.** No strings, phone numbers, emails, addresses, colours or images. Everything comes from the CMS layer. If you are about to hardcode real content, move it into settings instead.
+
+**Tests are required** for anything touching money, auth, or webhooks. Not optional.
+
+**Both themes, every component.** Light and dark, each checked for WCAG 2.2 AA contrast individually — not by inverting colours and hoping.
+
+**Shared hosting.** No Docker, no root, no Redis, no Supervisor, no persistent Node process. Flag anything that needs them before writing it.
+
+---
+
+## Branches and deployment
+
+| Branch | Deploys to | How |
+|---|---|---|
+| `main` | `greaterhopefoundations.com` | PR only, CI green, manual approval |
+| `develop` | `staging.greaterhopefoundations.com` | PR from `feature/*` |
+| `feature/*` | — | branched from `develop` |
+
+Push → GitHub Actions runs the quality gate, builds `vendor/` and the Vite assets **on the runner**, rsyncs to cPanel over SSH port 2222 into a timestamped release directory, runs migrations, warms caches, then flips the `current` symlink. The server never needs Composer or Node.
+
+Rollback is one symlink move: `deploy/scripts/rollback.sh`.
+
+---
+
+## Repository layout
+
+```
+app/  bootstrap/  config/  database/  public/  resources/  routes/  tests/   Laravel
+.github/workflows/       ci.yml (PR gate) · deploy.yml (build + ship)
+deploy/scripts/          bootstrap-server.sh · activate.sh · rollback.sh
+deploy/cpanel/           cron.txt · .cpanel.yml (documented fallback)
+docs/                    runbook, dependencies
+```
+
+---
+
+## Contributing
+
+Commit format: `type(scope): subject` — see `.gitmessage` (`git config commit.template .gitmessage`).
+Every PR uses `.github/PULL_REQUEST_TEMPLATE.md`; the checklists are the review standard.
+Run `vendor/bin/pint` before pushing.
+
+**Never commit a secret.** `.env` is ignored; `.env.example` documents every key. CI fails the build if a live key or a private key appears in tracked files.
+
+---
+
+## Status
+
+**Phase 2 — environment, repository, deployment pipeline.** See `CHANGELOG.md`.
+
+Placeholders are tracked in `PHASE-1-BLUEPRINT.md` §0. Paystack credentials and the SMS sender ID are deliberately placeholdered: the payments module is built and fully tested against a fake gateway, and SMS runs on the `log` driver, until the real accounts exist.
+
+---
+
+*Built in memory of Mrs Cecilia Anyatuik Adam.*

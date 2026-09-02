@@ -1,0 +1,31 @@
+# <type>(<scope>): <subject>            <-- 50 chars max, imperative, no full stop
+#
+# <body>                                <-- wrap at 72; explain WHY, not what
+#
+# <footer>                              <-- Refs #123 / Closes #123 / BREAKING CHANGE:
+#
+# ── type ────────────────────────────────────────────────────────────────────
+#   feat      a new capability visible to a user or admin
+#   fix       a bug fix
+#   perf      a performance improvement
+#   refactor  code change that neither fixes a bug nor adds a feature
+#   style     formatting only (Pint) — no logic change
+#   test      adding or correcting tests
+#   docs      documentation only
+#   build     dependencies, Vite, Composer, npm
+#   ci        GitHub Actions, deployment pipeline
+#   chore     housekeeping that fits nothing above
+#   revert    reverts a previous commit
+#
+# ── scope (optional but encouraged) ─────────────────────────────────────────
+#   donations shop cms admin auth theme seo payments sms email deploy infra
+#
+# ── examples ────────────────────────────────────────────────────────────────
+#   feat(donations): add cover-the-transaction-fee toggle
+#   fix(payments): verify webhook against raw body, not parsed input
+#   ci(deploy): pin known_hosts on port 2222
+#
+# ── rules ───────────────────────────────────────────────────────────────────
+#   * Never commit secrets. .env is ignored; .env.example documents every key.
+#   * Anything touching money, auth or webhooks ships with Pest tests.
+#   * BREAKING CHANGE: in the footer for anything requiring a manual server step.

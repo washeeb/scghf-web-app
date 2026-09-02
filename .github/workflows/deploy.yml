@@ -1,0 +1,260 @@
+# Build on the runner, ship the finished tree to cPanel over SSH (port 2222),
+# swap an atomic release symlink. The server never needs Composer or Node.
+#
+#   push to main    → production  (greaterhopefoundations.com)
+#   push to develop → staging     (staging.greaterhopefoundations.com)
+#
+# Secrets live in GitHub → Settings → Environments → production / staging.
+# See docs/DEPLOYMENT.md for the full secret list and the first-run bootstrap.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      skip_migrations:
+        description: 'Skip php artisan migrate (use only if migrations were run manually)'
+        type: boolean
+        default: false
+
+# Never cancel a deploy in flight — a half-finished rsync is worse than a queue.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Gate. Nothing reaches the server unless this passes.
+  # ───────────────────────────────────────────────────────────────────────────
+  test:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql, sodium, tokenizer, xml, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies (with dev — we need the test tooling)
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Check formatting
+        run: vendor/bin/pint --test
+
+      - name: Run tests
+        run: php artisan test --stop-on-failure
+
+      - name: Fail if a secret slipped into the repository
+        run: |
+          set -euo pipefail
+          echo "Scanning tracked files for live credentials…"
+          # Live Paystack keys, private keys, and a populated APP_KEY in a tracked file.
+          if git grep -nIE 'sk_live_[0-9a-zA-Z]{20,}|pk_live_[0-9a-zA-Z]{20,}|-----BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY-----' -- . ':!*.md' ':!.github/workflows/*'; then
+            echo "::error::A live key or private key is present in tracked files. Rotate it immediately and remove it from history."
+            exit 1
+          fi
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env is tracked by Git. It must never be committed."
+            exit 1
+          fi
+          echo "Clean."
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Build the exact tree that will sit on the server, then ship it.
+  #
+  # Build and deploy are one job on purpose. Splitting them would mean uploading
+  # and re-downloading an artefact containing ~10,000 vendor/ files, which costs
+  # several minutes per deploy and can lose file modes along the way. rsync only
+  # transfers what actually changed, so a redeploy is fast regardless.
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Build & deploy to ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      url: ${{ vars.APP_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql, sodium, tokenizer, xml, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install PHP dependencies (production)
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Verify the build produced assets
+        run: |
+          test -d public/build || { echo "::error::public/build is missing — the Vite build failed silently."; exit 1; }
+          test -f public/build/manifest.json || { echo "::error::Vite manifest.json is missing."; exit 1; }
+          echo "Build size: $(du -sh public/build | cut -f1)"
+
+      # Assemble the release in ./release/ rather than pruning in place, so
+      # deploy/scripts/*.sh stay available to this job afterwards.
+      - name: Assemble the release tree
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          rsync -a \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude 'tests' \
+            --exclude 'docs' \
+            --exclude 'release' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude '.editorconfig' \
+            --exclude '.gitattributes' \
+            --exclude '.gitignore' \
+            --exclude '.gitmessage' \
+            --exclude 'phpunit.xml' \
+            --exclude 'pint.json' \
+            --exclude '*.md' \
+            --exclude '*.png' \
+            --exclude '*.jpg' \
+            --exclude '*.docx' \
+            ./ release/
+          echo "Release tree: $(du -sh release | cut -f1), $(find release -type f | wc -l) files"
+
+      - name: Name this release
+        id: rel
+        run: echo "name=$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Verify the server is reachable
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "test -f '$DEPLOY_PATH/shared/.env' || { echo 'FATAL: shared/.env is missing. Run the first-run bootstrap in docs/DEPLOYMENT.md.'; exit 1; }"
+
+      - name: Upload the release
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          REL: ${{ steps.rel.outputs.name }}
+        run: |
+          set -euo pipefail
+          # Note the -e "ssh -p …" form: rsync will NOT accept a bare -p for the port.
+          rsync -rlptz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o BatchMode=yes" \
+            release/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/releases/$REL/"
+
+      - name: Activate the release
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PHP_BIN: ${{ secrets.PHP_BIN }}
+          REL: ${{ steps.rel.outputs.name }}
+          SKIP_MIGRATIONS: ${{ inputs.skip_migrations && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' REL='$REL' PHP_BIN='$PHP_BIN' SKIP_MIGRATIONS='$SKIP_MIGRATIONS' bash -s" \
+            < deploy/scripts/activate.sh
+
+      - name: Smoke test
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          set -euo pipefail
+          echo "Checking $APP_URL …"
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -L "$APP_URL/")
+          [ "$code" = "200" ] || { echo "::error::Homepage returned $code, expected 200"; exit 1; }
+
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$APP_URL/up")
+          [ "$code" = "200" ] || { echo "::error::Health check returned $code, expected 200"; exit 1; }
+
+          # These must NOT be reachable. A 200 here is a security incident.
+          for path in "/.env" "/storage/logs/laravel.log" "/vendor/autoload.php" "/.git/config" "/composer.json"; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$APP_URL$path")
+            case "$code" in
+              403|404) echo "  OK   $path → $code" ;;
+              *)       echo "::error::SECURITY: $path returned $code — it must be 403 or 404"; exit 1 ;;
+            esac
+          done
+          echo "Smoke test passed."
+
+      - name: Roll back if the smoke test failed
+        if: failure()
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PHP_BIN: ${{ secrets.PHP_BIN }}
+        run: |
+          set -euo pipefail
+          echo "::warning::Deploy failed after activation — rolling back to the previous release."
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' PHP_BIN='$PHP_BIN' bash -s" < deploy/scripts/rollback.sh
+
+      - name: Clean up the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

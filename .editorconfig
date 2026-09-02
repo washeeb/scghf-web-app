@@ -1,0 +1,29 @@
+# St. Cecilia's Greater Hope Foundations — editor defaults
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml,json,jsonc,js,ts,css,scss,blade.php}]
+indent_size = 2
+
+[*.blade.php]
+indent_size = 4
+
+[*.{sh,bash}]
+indent_size = 2
+end_of_line = lf
+
+[{Makefile,*.mk}]
+indent_style = tab
+
+[*.bat]
+end_of_line = crlf

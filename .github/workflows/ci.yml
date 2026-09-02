@@ -1,0 +1,111 @@
+# Runs on every pull request. Nothing merges into develop or main unless this
+# is green. Deploys re-run the same gate — see deploy.yml.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, analyse, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: scghf_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql, sodium, tokenizer, xml, zip
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+          echo "DB_HOST=127.0.0.1"        >> .env
+          echo "DB_PORT=3306"             >> .env
+          echo "DB_DATABASE=scghf_test"   >> .env
+          echo "DB_USERNAME=root"         >> .env
+          echo "DB_PASSWORD="             >> .env
+
+      - name: Check code style
+        run: vendor/bin/pint --test
+
+      - name: Run migrations against a real MySQL
+        run: php artisan migrate --force --no-interaction
+
+      - name: Run tests
+        run: php artisan test
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
+      # A 3G-first site cannot afford unbounded bundles. These numbers are the
+      # Phase 1 performance budget; raising them is a deliberate decision, not
+      # something that happens by accident.
+      - name: Enforce the asset budget
+        run: |
+          set -euo pipefail
+          JS_BYTES=$(find public/build -name '*.js'  -exec cat {} + 2>/dev/null | gzip -9 -c | wc -c || echo 0)
+          CSS_BYTES=$(find public/build -name '*.css' -exec cat {} + 2>/dev/null | gzip -9 -c | wc -c || echo 0)
+          JS_KB=$((JS_BYTES / 1024)); CSS_KB=$((CSS_BYTES / 1024))
+          echo "JS  (gzipped): ${JS_KB} KB  — budget 100 KB"
+          echo "CSS (gzipped): ${CSS_KB} KB — budget  50 KB"
+          FAILED=0
+          [ "$JS_KB"  -gt 100 ] && { echo "::error::JS bundle is ${JS_KB} KB gzipped, over the 100 KB budget."; FAILED=1; } || true
+          [ "$CSS_KB" -gt 50  ] && { echo "::error::CSS bundle is ${CSS_KB} KB gzipped, over the 50 KB budget."; FAILED=1; } || true
+          exit $FAILED
+
+      - name: Check for secrets
+        run: |
+          set -euo pipefail
+          if git grep -nIE 'sk_live_[0-9a-zA-Z]{20,}|pk_live_[0-9a-zA-Z]{20,}|-----BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY-----' -- . ':!*.md' ':!.github/workflows/*'; then
+            echo "::error::A live key or private key is present in tracked files."
+            exit 1
+          fi
+          echo "Clean."

@@ -1,0 +1,109 @@
+# ─── Secrets — NEVER commit ──────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.ppk
+id_rsa*
+id_ed25519*
+scghf_deploy*
+auth.json
+/storage/oauth-*.key
+
+# ─── Dependencies ────────────────────────────────────────────────────────────
+/vendor/
+/node_modules/
+.pnp
+.pnp.js
+
+# ─── Built assets (built in CI, never committed) ─────────────────────────────
+/public/build/
+/public/hot
+/public/storage
+/public/css/
+/public/js/
+/public/mix-manifest.json
+
+# ─── Laravel runtime ─────────────────────────────────────────────────────────
+/storage/*.key
+/storage/app/*
+!/storage/app/.gitignore
+!/storage/app/public/
+/storage/app/public/*
+!/storage/app/public/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/debugbar/
+/storage/clockwork/
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+
+# ─── Testing & analysis ──────────────────────────────────────────────────────
+/coverage/
+.phpunit.result.cache
+.phpunit.cache/
+.pest/
+/build/
+.phpstan.cache/
+phpstan.neon
+!phpstan.neon.dist
+
+# ─── Local dev tooling ───────────────────────────────────────────────────────
+/.idea/
+/.vscode/
+!/.vscode/extensions.json
+!/.vscode/settings.shared.json
+/.fleet/
+/.nova/
+/.zed/
+*.sublime-project
+*.sublime-workspace
+.php-cs-fixer.cache
+.phpactor.json
+/homestead.yaml
+Homestead.json
+Homestead.yaml
+/.vagrant
+/.herd/
+
+# ─── OS noise ────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*~
+*.swp
+*.swo
+
+# ─── Deployment artefacts ────────────────────────────────────────────────────
+/releases/
+/shared/
+*.tar.gz
+*.zip.deploy
+/deploy/**/*.local.*
+known_hosts.generated
+
+# ─── Backups & dumps — never in Git, they contain donor data ─────────────────
+*.sql
+*.sql.gz
+*.dump
+/backups/
+/storage/backups/
+
+# ─── Project working files (kept locally, not in the repo) ───────────────────
+/_scratch/
+/.laravel-tmp/

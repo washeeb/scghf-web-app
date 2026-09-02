@@ -1,0 +1,228 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  St. Cecilia's Greater Hope Foundations — public/.htaccess
+#
+#  This file OVERRIDES Laravel's default. It adds HTTPS enforcement, security
+#  headers, dotfile blocking, compression and caching on top of the standard
+#  front-controller rewrite.
+#
+#  Apache on InMotion shared hosting. Every directive is wrapped in <IfModule>
+#  so a missing module degrades rather than 500s.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # ── Force HTTPS ──────────────────────────────────────────────────────────
+    # Enable AFTER AutoSSL has issued a certificate for this domain. Turning it
+    # on before the certificate exists locks you out of your own site.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # ── Canonical host: strip www ────────────────────────────────────────────
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
+    # ── Handle Authorization header (Apache strips it by default) ────────────
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # ── Redirect trailing slashes if not a folder ────────────────────────────
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # ── Front controller ─────────────────────────────────────────────────────
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Block everything that is not meant to be served
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Dotfiles: .env, .git, .htpasswd, .user.ini … but NOT .well-known, which
+# AutoSSL and Let's Encrypt need for domain validation.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule "(^|/)\.(?!well-known/)" - [F,L]
+</IfModule>
+
+# Belt and braces for hosts where the rewrite above is bypassed.
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Files that must never be downloadable, even if one is misplaced into public/.
+<FilesMatch "(?i)^(composer\.(json|lock)|package(-lock)?\.json|artisan|phpunit\.xml.*|pint\.json|\.env.*|.*\.(ya?ml|md|sh|sql|log|bak|old|orig|save|swp|dist|ini|lock|tar|gz|zip))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# No directory listings, anywhere.
+Options -Indexes
+
+# Do not advertise the PHP version.
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header always unset Server
+</IfModule>
+<IfModule mod_php.c>
+    php_flag expose_php Off
+</IfModule>
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Security headers
+# ═══════════════════════════════════════════════════════════════════════════════
+<IfModule mod_headers.c>
+    # Stop MIME sniffing.
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Clickjacking. SAMEORIGIN rather than DENY so the admin can preview pages.
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Do not leak the full URL (which may contain a donation reference) to
+    # third-party sites the donor clicks through to.
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Nothing on this site needs a camera, microphone, or the user's location.
+    Header always set Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(self), usb=()"
+
+    # Cross-origin isolation — safe defaults for a content site.
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Resource-Policy "same-origin"
+
+    # ── HSTS ─────────────────────────────────────────────────────────────────
+    # ⚠️  Commented out deliberately. Enable ONLY once HTTPS is confirmed working
+    #     on the apex AND every subdomain, because browsers cache this for a year
+    #     and there is no way to retract it early. Start without 'preload'.
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # ── Content Security Policy ──────────────────────────────────────────────
+    # Report-Only first. Watch the reports for a week, then switch the header
+    # name to Content-Security-Policy. Paystack's hosted checkout is a full-page
+    # redirect, so it needs no frame-src; the inline popup would.
+    Header always set Content-Security-Policy-Report-Only "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://checkout.paystack.com; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.paystack.co; connect-src 'self' https://api.paystack.co; frame-src 'self' https://checkout.paystack.com https://www.youtube-nocookie.com; upgrade-insecure-requests"
+
+    # ── Search engine indexing ───────────────────────────────────────────────
+    # Handled automatically: deploy/scripts/activate.sh appends an
+    # X-Robots-Tag: noindex header to this file, and writes a disallow-all
+    # robots.txt, whenever APP_ENV is not 'production'. Do not set it here —
+    # that would apply it to production too.
+</IfModule>
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Compression — matters more than anything else on a Ghanaian 3G connection
+# ═══════════════════════════════════════════════════════════════════════════════
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css
+    AddOutputFilterByType DEFLATE application/xml application/xhtml+xml application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript text/javascript
+    AddOutputFilterByType DEFLATE application/json application/ld+json
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE font/ttf font/otf font/woff application/vnd.ms-fontobject
+
+    # Never double-compress already-compressed formats.
+    SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|avif|ico|zip|gz|bz2|rar|woff2?)$ no-gzip dont-vary
+</IfModule>
+
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml
+    AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json application/ld+json
+    AddOutputFilterByType BROTLI_COMPRESS image/svg+xml
+</IfModule>
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Caching
+# ═══════════════════════════════════════════════════════════════════════════════
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault                              "access plus 1 month"
+
+    # Vite fingerprints filenames, so built assets are safe to cache forever.
+    ExpiresByType text/css                      "access plus 1 year"
+    ExpiresByType application/javascript        "access plus 1 year"
+    ExpiresByType text/javascript               "access plus 1 year"
+
+    ExpiresByType image/jpeg                    "access plus 6 months"
+    ExpiresByType image/png                     "access plus 6 months"
+    ExpiresByType image/webp                    "access plus 6 months"
+    ExpiresByType image/avif                    "access plus 6 months"
+    ExpiresByType image/svg+xml                 "access plus 6 months"
+    ExpiresByType image/x-icon                  "access plus 1 year"
+
+    ExpiresByType font/woff2                    "access plus 1 year"
+    ExpiresByType font/woff                     "access plus 1 year"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+    # HTML is dynamic — the CMS changes it.
+    ExpiresByType text/html                     "access plus 0 seconds"
+    ExpiresByType application/json              "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Fingerprinted build output: immutable.
+    <FilesMatch "\.(css|js|woff2?|ttf|otf|eot|svg|jpe?g|png|gif|webp|avif|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # Never cache HTML or the service worker.
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
+    <FilesMatch "(service-worker|sw)\.js$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/font-woff2 .woff2
+    AddType image/avif             .avif
+    AddType image/webp             .webp
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Misc
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# UTF-8 everywhere.
+AddDefaultCharset UTF-8
+
+# Limit request body size to stop trivially large uploads reaching PHP.
+# 32 MB — keep this in step with upload_max_filesize in MultiPHP INI Editor.
+<IfModule mod_reqtimeout.c>
+    RequestReadTimeout header=20-40,MinRate=500 body=20,MinRate=500
+</IfModule>
+LimitRequestBody 33554432
+
+# Block a handful of noisy, always-hostile probe paths outright, so they never
+# reach PHP and never fill the log. This site is not WordPress.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(wp-admin|wp-login\.php|wp-content|wp-includes|xmlrpc\.php) - [F,L]
+    RewriteRule ^(\.git|\.svn|\.hg)(/|$) - [F,L]
+    RewriteRule ^(vendor|node_modules|storage|bootstrap)(/|$) - [F,L]
+</IfModule>

@@ -1,0 +1,54 @@
+# Security updates matter more than usual here: this application handles donor
+# personal data and payment references. Weekly, grouped to keep review cheap.
+version: 2
+
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Africa/Accra
+    open-pull-requests-limit: 5
+    target-branch: develop
+    commit-message:
+      prefix: 'build(composer)'
+    groups:
+      laravel:
+        patterns: ['laravel/*', 'illuminate/*']
+      filament:
+        patterns: ['filament/*']
+      spatie:
+        patterns: ['spatie/*']
+      dev-tooling:
+        dependency-type: development
+    ignore:
+      # Major framework upgrades are a planned piece of work, never a Dependabot PR.
+      - dependency-name: 'laravel/framework'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'filament/filament'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Africa/Accra
+    open-pull-requests-limit: 5
+    target-branch: develop
+    commit-message:
+      prefix: 'build(npm)'
+    groups:
+      frontend:
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    target-branch: develop
+    commit-message:
+      prefix: 'ci'

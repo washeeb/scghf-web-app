@@ -1,0 +1,59 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  cPanel → Advanced → Cron Jobs
+#  Account: presti98   Home: /home/presti98
+#
+#  Add each entry with "Common Settings: Once Per Minute (* * * * *)".
+#  Leave the email field BLANK or cron will mail you every minute forever.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ── 1. Laravel scheduler — PRODUCTION ────────────────────────────────────────
+# The single entry point for every recurring task. Laravel decides internally
+# what is actually due, so this is the only scheduler line you ever need.
+* * * * * /opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf/current/artisan schedule:run >> /dev/null 2>&1
+
+
+# ── 2. Queue worker — PRODUCTION ─────────────────────────────────────────────
+# Why not a daemon: shared hosting has no Supervisor and CloudLinux kills
+# long-lived processes. So we start a short-lived worker every minute instead.
+#
+#   flock -n            only one worker at a time; if last minute's run is still
+#                       going, this one exits immediately rather than stacking up
+#                       into an entry-process breach (limit is 80 on this account)
+#   --stop-when-empty   exit as soon as the queue drains, freeing the process
+#   --max-time=55       never overlap the next minute's cron tick
+#   --tries=3           three attempts, then it lands in failed_jobs for review
+#   --memory=96         exit before PHP's memory_limit is reached
+#
+* * * * * /usr/bin/flock -n /home/presti98/scghf/shared/queue.lock /opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf/current/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --memory=96 >> /dev/null 2>&1
+
+
+# ── 3. Laravel scheduler — STAGING ───────────────────────────────────────────
+# Every 5 minutes is enough on staging, and it halves the cron load.
+*/5 * * * * /opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf-staging/current/artisan schedule:run >> /dev/null 2>&1
+
+
+# ── 4. Queue worker — STAGING ────────────────────────────────────────────────
+*/5 * * * * /usr/bin/flock -n /home/presti98/scghf-staging/shared/queue.lock /opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf-staging/current/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --memory=96 >> /dev/null 2>&1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  NOTES
+#
+#  * Use the FULL PHP path. Bare `php` in cron resolves to the server default,
+#    which is not necessarily the version your domain is set to.
+#
+#  * If InMotion restricts this plan to a minimum interval (e.g. */5 or */15),
+#    change the two production lines to match and set the scheduler's task
+#    frequencies accordingly. Verify with the 5-minute test in docs/PHASE-2-RUNBOOK.md.
+#
+#  * `>> /dev/null 2>&1` discards output. Laravel logs everything worth keeping to
+#    storage/logs. Without this you get a mail per minute, per job.
+#
+#  * These paths point at `current/`, the release symlink — so they keep working
+#    across every deploy without ever being edited.
+#
+#  * If flock is unavailable (`which flock` returns nothing), replace it with:
+#      * * * * * /opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf/current/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --memory=96 >> /dev/null 2>&1
+#    and accept the small risk of overlap, or use `--max-time=25` to halve it.
+# ═══════════════════════════════════════════════════════════════════════════════
