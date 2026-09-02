@@ -251,6 +251,21 @@ class RoleAndPermissionSeeder extends Seeder
                 Permission::findOrCreate($name, 'web');
             }
 
+            /*
+             * Flush again between creating and assigning.
+             *
+             * spatie resolves permission names through a cached collection, and
+             * normally busts that cache from the Permission model's save events.
+             * DatabaseSeeder uses WithoutModelEvents, so those never fire and the
+             * registrar keeps the empty snapshot it loaded a moment ago —
+             * syncPermissions then throws PermissionDoesNotExist for a permission
+             * that was just written.
+             *
+             * Flushing explicitly is the right fix regardless: cache correctness
+             * should not depend on model events being enabled.
+             */
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
             foreach (self::ROLES as $roleName => $patterns) {
                 $role = Role::findOrCreate($roleName, 'web');
 

@@ -425,11 +425,25 @@ FLUSH PRIVILEGES;
 
 ## 7. Open questions
 
+### ✅ Answered 2026-09-02
+
+**1. Financial year starts 1 January.** Receipt numbers restart at 1 each calendar year: `SCGHF-R-2026-000148`. Sequence allocation happens inside the transaction that creates the receipt, so there are no gaps — an auditor expects to be able to account for every number.
+
+**3. Donations are BOTH tax-deductible and non-deductible**, depending on what they fund. This is more than a wording change and it propagates:
+
+- **Deductibility is a property of the destination, not the foundation.** `causes.is_tax_deductible` carries the rule; `donation_items.is_tax_deductible` **snapshots it at the time of the gift**. If the status of a cause changes later, receipts already issued must not silently change meaning — the snapshot is what makes an old receipt still true.
+- **A single donation can be mixed.** Split or designated giving means one GH₵ 500 gift may be GH₵ 300 deductible and GH₵ 200 not. That is precisely why `donation_items` exists for every donation rather than only for split ones (§2.4) — the deductible subtotal is a sum over items, not a flag on the parent.
+- **`donations` therefore carries `deductible_amount_minor`**, denormalised from its items inside the same transaction, so receipts and year-end statements do not have to recompute it and cannot disagree with what was printed.
+- **Receipts show a breakdown**, not a single total: deductible subtotal, non-deductible subtotal, gross. `donation_receipts` gains `deductible_amount_minor` and a `tax_statement` text snapshot, because the prescribed wording can change between years and an old receipt must keep the wording it was issued with.
+- **`{{TIN}}` becomes required** on any receipt claiming deductibility, which promotes it from a §0.1 placeholder to a launch blocker for the donation flow.
+
+> ⚠️ **Still needed from you:** the exact wording the Ghana Revenue Authority requires on a deductible receipt, and which of the four divisions' causes qualify. The schema is ready for either answer; the copy is not something to guess at.
+
+### Remaining
+
 | # | Question | Blocks |
 |---|---|---|
-| 1 | **Receipt numbering** — restart at 1 each financial year, or run continuously? And when does the foundation's financial year start? | `donation_receipts` |
 | 2 | **Beneficiary data retention** — how long after support ends is a record kept? Act 843 wants a stated period, not "forever". | `beneficiaries` |
-| 3 | **Are donation receipts tax documents?** If donations are deductible, receipts need a TIN and prescribed wording, which changes the table. | `donation_receipts` |
 | 4 | **Shop product types** — physical, digital, or symbolic gift cards? Symbolic gifts ("goat for a family") are donations wearing a product UI and need `products.is_symbolic` plus a link to a cause. | `products` |
 | 5 | **Multi-currency ever?** Schema supports it; if the answer is a firm no, some validation tightens. | several |
 

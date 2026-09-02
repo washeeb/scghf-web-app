@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\UserType;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -187,7 +188,7 @@ it('restores permissions when the account is reactivated', function () {
 
     expect($user->can('pages.update'))->toBeFalse();
 
-    $user->update(['is_active' => true, 'suspended_at' => null]);
+    $user->reinstate();
 
     expect($user->fresh()->can('pages.update'))->toBeTrue();
 });
@@ -205,4 +206,20 @@ it('honours every negated permission in the matrix', function () {
         ->and($admin->can('payments.replay_webhook'))->toBeTrue()
         // Reading the live secret key moves money outside the audit trail.
         ->and($admin->can('payments.view_keys'))->toBeFalse();
+});
+
+it('will not let suspension be set by mass assignment', function () {
+    $user = User::factory()->staff()->create();
+
+    // Cutting off access is a decision, not a form field. A request payload
+    // must never be able to suspend — or un-suspend — an account.
+    expect(fn () => $user->update(['suspended_at' => now()]))
+        ->toThrow(MassAssignmentException::class);
+
+    $user->suspend('Policy breach');
+    expect($user->fresh()->isSuspended())->toBeTrue()
+        ->and($user->fresh()->can('pages.update'))->toBeFalse();
+
+    $user->reinstate();
+    expect($user->fresh()->isSuspended())->toBeFalse();
 });

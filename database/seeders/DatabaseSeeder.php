@@ -1,25 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeders that must run on EVERY deploy, in dependency order.
+ *
+ * All three are idempotent and none overwrite content the foundation has
+ * supplied, which is what makes it safe to run this as part of the release
+ * step: a permission added in a new module reaches production automatically
+ * rather than waiting for someone to remember.
+ */
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            RoleAndPermissionSeeder::class,
+            SettingsSeeder::class,
+            ThemeSettingsSeeder::class,
         ]);
     }
 }

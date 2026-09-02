@@ -184,6 +184,31 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Suspend this account.
+     *
+     * `suspended_at` is deliberately NOT in `$fillable`. Cutting off someone's
+     * access is a decision, not a form field, and it must not be reachable by
+     * mass assignment from a request payload. The same goes for reinstatement.
+     */
+    public function suspend(string $reason): void
+    {
+        $this->forceFill([
+            'suspended_at' => now(),
+            'suspended_reason' => $reason,
+            'is_active' => false,
+        ])->save();
+    }
+
+    public function reinstate(): void
+    {
+        $this->forceFill([
+            'suspended_at' => null,
+            'suspended_reason' => null,
+            'is_active' => true,
+        ])->save();
+    }
+
+    /**
      * A deactivated or suspended account holds no permissions, whatever roles
      * remain attached to it.
      *

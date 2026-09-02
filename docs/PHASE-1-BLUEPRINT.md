@@ -687,7 +687,7 @@ Computed with the WCAG relative-luminance formula. Thresholds: **4.5:1** normal 
 | `#0059C9` on `#E8F2FE` badge | **5.67:1** | 4.5 | ✅ |
 | `#0B4D3F` on `#ECFAF6` badge | **9.11:1** | 4.5 | ✅ |
 | `#7A8683` border-interactive vs `#FFFFFF` | **3.77:1** | 3.0 | ✅ |
-| `#0B7D66` focus ring vs `#FFFFFF` | **4.45:1** | 3.0 | ✅ |
+| `#0B7D66` focus ring vs `#FFFFFF` | **5.07:1** | 3.0 | ✅ |
 | `#FC6302` brand orange on `#FFFFFF` — **LARGE text only** | **3.03:1** | 3.0 | ✅ ⚠️ never for body text |
 
 ### Light theme — deep-green sections (footer, stat band, CTA band on `#0B4D3F`)
