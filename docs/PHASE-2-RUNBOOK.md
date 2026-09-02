@@ -12,7 +12,28 @@
 | SSH | enabled, **port 2222** |
 | Strategy | GitHub Actions → build on runner → rsync → atomic symlink flip |
 
-> **Work top to bottom.** Steps 1–3 are on your machine, 4–6 on GitHub, 7–9 in cPanel, 10 is the first deploy. Do not skip ahead — step 9 depends on step 7.
+> ## ⚠️ Hosting decision — 2026-09-02
+>
+> **New hosting will be procured, running PHP 8.4. The `presti98` account is no longer the deployment target.**
+>
+> That splits this runbook in two:
+>
+> | Steps | Status | Why |
+> |---|---|---|
+> | **0–6** — local toolchain, Laravel skeleton, packages, Git, GitHub repo, deploy key | ✅ **Do now.** Host-independent. | Nothing here depends on which server we end up on. |
+> | **7–11** — cPanel config, server bootstrap, cron, SSL, first deploy | ⏸ **Deferred** until the new host exists. | Doing these on `presti98` would be thrown away, and it would put donor-facing infrastructure on an account we are leaving. |
+>
+> **What survives the host change unchanged:** the whole pipeline design — build on the runner, rsync over SSH, atomic release symlink, rollback script. That was the point of the portability rules in `PHASE-1-BLUEPRINT.md` §11.6.1, and they are now being cashed in rather than theorised about.
+>
+> **What changes:** values, not architecture. `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`, the docroot path, and the cron syntax if the new host is not cPanel. All are GitHub secrets or one-line edits.
+>
+> **What this resolves:** risks **SH-18** (shared cPanel account with an unrelated business), **OPS-9** (infrastructure in the wrong entity's name), **OPS-11** (donor data on a third party's account) and **OPS-12** (the move never happening). All four were accepted-with-mitigation; a clean host in the foundation's name closes them properly.
+>
+> **Tell me when you have picked the host** — specifically whether it is cPanel or a VPS, and whether it runs MySQL or MariaDB. Those two answers are all I need to re-point steps 7–11.
+
+---
+
+> **Work top to bottom.** Steps 0–3 are on your machine, 4–6 on GitHub. Steps 7–11 wait for the new host.
 
 ---
 
@@ -214,6 +235,49 @@ php artisan about
 
 ---
 
+## Step 2.5 — Local database
+
+The app currently runs on **SQLite** so it would boot without a database server. That is fine for Phase 2, and **not** fine for Phase 3.
+
+**Why it has to change before Phase 3.** Phase 3 designs the full schema — integer-pesewa `BIGINT UNSIGNED` money columns, composite indexes, `utf8mb4` collations, foreign keys with specific `onDelete` behaviour, and the row-size and index-count discipline `CLAUDE.md` calls for. SQLite silently tolerates several things MySQL rejects: it ignores index key-length limits, does not enforce `ENUM`, is lax about `ALTER TABLE`, and only enforces foreign keys when explicitly switched on. Designing a donation ledger against a database that forgives what production will not is how you discover a schema problem after go-live instead of during Phase 3.
+
+Install MySQL 8.4 LTS — it matches `CLAUDE.md` and is the most likely production engine:
+
+```powershell
+winget install --id Oracle.MySQL -e
+```
+
+The installer asks for a **root password**. Save it in your password manager; you will need it again.
+
+Then create the development database:
+
+```powershell
+mysql -u root -p -e "CREATE DATABASE scghf_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE scghf_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+Switch the local `.env` off SQLite:
+
+```powershell
+(Get-Content .env) -replace '^DB_CONNECTION=sqlite.*', 'DB_CONNECTION=mysql' `
+  -replace '^# DB_DATABASE=.*', 'DB_DATABASE=scghf_dev' | Set-Content .env
+Add-Content .env "`nDB_HOST=127.0.0.1`nDB_PORT=3306`nDB_USERNAME=root`nDB_PASSWORD=<your root password>"
+```
+
+Verify:
+
+```powershell
+php artisan migrate:fresh
+php artisan db:show
+```
+
+**Expected:** `db:show` reports MySQL 8.4.x, database `scghf_dev`, and the migration tables.
+
+> ⚠️ `migrate:fresh` **drops every table.** It is safe here because this is a local database with no real data. It must never be run against staging or production — `CLAUDE.md` and the Phase 3 migration-safety policy both prohibit it.
+
+**If you would rather not install MySQL yet:** SQLite will carry you through the rest of Phase 2. But do this before Phase 3 starts, and tell me if you skip it, because it changes how much I can trust a green local test run.
+
+---
+
 ## Step 3 — First commit
 
 The repository was initialised when Phase 2 started. Set the commit template and make the first commit.
@@ -300,6 +364,10 @@ ssh-keygen -t ed25519 -C "github-actions-deploy-scghf" -f "$env:USERPROFILE\.ssh
 
 **Expected:** two files — `scghf_deploy` (private) and `scghf_deploy.pub` (public).
 
+> ✅ **Done 2026-09-02.** Ed25519 keypair generated at `~\.ssh\scghf_deploy`. The keypair is host-independent, so it carries over to whatever hosting is chosen. **The rest of this step — importing and authorising the public key — waits for the new host.**
+>
+> ⚠️ The private key has no passphrase, which is what CI needs. It is therefore a credential in its own right: it lives only at `~\.ssh\scghf_deploy` and in the GitHub `SSH_PRIVATE_KEY` secret, and it goes nowhere else. If it is ever exposed, delete the public key from the host's authorised list and generate a new pair — that is the whole remediation, which is exactly why it is a dedicated key.
+
 Get the public key:
 
 ```powershell
@@ -335,17 +403,24 @@ Generate the host fingerprint first:
 ssh-keyscan -p 2222 23.235.219.254
 ```
 
-**Secrets** (per environment):
+**Set now — host-independent:**
 
-| Secret | production | staging |
-|---|---|---|
-| `SSH_HOST` | `23.235.219.254` | same |
-| `SSH_PORT` | `2222` | same |
-| `SSH_USER` | `presti98` | same |
-| `SSH_PRIVATE_KEY` | full contents of `scghf_deploy`, including the BEGIN/END lines | same |
-| `SSH_KNOWN_HOSTS` | the `ssh-keyscan` output above | same |
-| `DEPLOY_PATH` | `/home/presti98/scghf` | `/home/presti98/scghf-staging` |
-| `PHP_BIN` | `/opt/cpanel/ea-php84/root/usr/bin/php` | same |
+| Secret | Value |
+|---|---|
+| `SSH_PRIVATE_KEY` | full contents of `~\.ssh\scghf_deploy`, **including** the `-----BEGIN`/`-----END` lines |
+
+**Wait for the new host — every value below is host-specific:**
+
+| Secret | What it will be |
+|---|---|
+| `SSH_HOST` | the new server's IP or hostname |
+| `SSH_PORT` | `22` on most hosts; the old cPanel account used `2222`. **Do not assume — check.** |
+| `SSH_USER` | the new account username |
+| `SSH_KNOWN_HOSTS` | `ssh-keyscan -p <port> <host>`. **Must be regenerated for the new host** — a stale fingerprint fails the deploy at "Configure SSH", which is confusing if you have forgotten it was pinned. |
+| `DEPLOY_PATH` | `/home/<user>/scghf` on cPanel, or something like `/var/www/scghf` on a VPS |
+| `PHP_BIN` | `/opt/cpanel/ea-php84/root/usr/bin/php` on cPanel, or plain `php` on a VPS |
+
+> Create both **Environments** now even though most secrets are still empty. The workflow references them by name, and the environment is where the production approval gate lives.
 
 **Variables** (Environments → Variables, not Secrets):
 

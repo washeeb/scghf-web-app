@@ -77,8 +77,49 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
   and Composer **2.10.2** confirmed, all 16 required extensions present.
 - Composer has no winget package; the winget PHP packages ship with every extension commented
   out. Runbook Step 0 rewritten with both routes and a tested `php.ini` extension-enabling script.
-- **Local PHP 8.4 vs server PHP 8.3:** `config.platform.php` pinned to `8.3.0` so Composer
-  resolves the lockfile for the server, not the workstation. Both CI workflows already pin 8.3.
+- **`config.platform.php` pinned** so Composer resolves the lockfile for the server, not the
+  workstation — see the stack decisions below for the final value.
+
+#### Application installed
+- Laravel **13.30.1** skeleton generated and merged over the Phase 2 overlay with
+  `robocopy /XC /XN /XO` (copy-if-absent), preserving every Phase 2 file byte-for-byte
+- Filament **5.7.8** · Livewire **4.4.3** · Pest **5.1.3** · PHPUnit **13.3.1** ·
+  spatie: permission 8.3.0, medialibrary 11.23.6, activitylog 4.12.3, backup 10.3.2,
+  honeypot 4.7.2, sluggable 4.0.3, sitemap 8.2.0
+- `php artisan test` green (2/2) · `pint --test` green · migrations run
+
+#### Stack decisions — both forced by dependency resolution, not preference
+- **PHP 8.3 → 8.4** (approved). On 8.3, Pest is not installable at all:
+  `pest-plugin-laravel` v5 needs PHP ^8.4; Pest 4 conflicts with the PHPUnit 12.5 that
+  Laravel 13 ships; Pest 5 needs PHPUnit 13, which needs PHP ≥ 8.4.1. Separately,
+  `spatie/laravel-sitemap` has no version compatible with both PHP 8.3 and Guzzle 8.
+  Platform pinned to `8.4.1`; `require.php` set to `^8.4`; both CI workflows and all
+  cron/deploy paths moved to `ea-php84`. `CLAUDE.md` amended.
+- **Livewire 3 → 4.** Filament v5 requires Livewire 4, so the two locked entries in
+  `CLAUDE.md` could not both hold. Phase 4 onward must use Livewire 4 idioms.
+- **Pint config relaxed** to the plain Laravel preset. The `concat_space` and
+  `trailing_comma_in_multiline` overrides conflicted with Laravel's own generated code,
+  which would have made every `artisan make:` output fail CI until hand-fixed.
+
+#### Hosting — direction changed, 2026-09-02
+- **New hosting will be procured, running PHP 8.4. The project will not launch on `presti98`.**
+- Closes risks **SH-18, OPS-9, OPS-11 and OPS-12** outright rather than accepting them.
+  Blueprint §4.4.1 and decision #29 marked superseded; the §11.6.1 portability rules are
+  retained as standing engineering rules.
+- Runbook split: **steps 0–6 are host-independent and proceed now**; steps 7–11 (cPanel
+  config, server bootstrap, cron, SSL, first deploy) are **deferred** until the host exists.
+- The pipeline architecture is unchanged — build on runner, rsync over SSH, atomic release
+  symlink, rollback script. Only values change: `SSH_HOST`, `SSH_PORT`, `SSH_USER`,
+  `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`, the docroot path, and cron syntax if not cPanel.
+- The `ea-php84` patch-version and extension checks are moot for now; they carry over to
+  whatever host is chosen.
+
+#### Local database
+- Local development stays on SQLite for the remainder of Phase 2, and **moves to MySQL 8.4
+  before Phase 3** — runbook step 2.5 added. SQLite tolerates index key-length limits,
+  `ENUM`, lax `ALTER TABLE` and unenforced foreign keys in ways MySQL does not, which is
+  precisely what Phase 3's schema work needs to surface.
+- CI's MySQL service bumped **8.0 → 8.4** (8.0 reached EOL in April 2026).
 
 ---
 

@@ -1239,7 +1239,7 @@ Scoring: **L** = likelihood, **I** = impact, each Low / Med / High.
 | SH-15 | **No staging environment** → changes tested in production | Med | High | Staging subdomain, own DB, own `.env`, Paystack **test** keys, `X-Robots-Tag: noindex` + Directory Privacy password |
 | SH-16 | **Filament admin is heavy** for shared-hosting CPU | Med | Med | Production asset build, `filament:optimize`, `config:cache`, `route:cache`, `view:cache`, `icons:cache`; no unbounded dashboard widgets |
 | SH-17 | **PostgreSQL is visible in cPanel and gets used by mistake** | Low | Med | Documented: **MySQL/MariaDB only**; `.env.example` pins `DB_CONNECTION=mysql` |
-| SH-18 | **The foundation shares a cPanel account with an unrelated business** (`prestigerocktravels.com` is the primary domain; ours is an addon) | Certain | **High** | **ACCEPTED for now — client decision, §12c #29.** Launching here, moving to separate hosting later. Mitigation is portability rather than avoidance: §11.6.1's five rules keep the eventual move to ~half a day. Interim controls: never touch `public_html`; treat the cPanel password as jointly held; pick a migration trigger and hold to it. |
+| SH-18 | ~~The foundation shares a cPanel account with an unrelated business~~ | — | — | ✅ **CLOSED 2026-09-02.** New hosting is being procured in the foundation's name; the project never launches on `presti98`. |
 | SH-19 | **PHP version silently changes** because our domain is set to "Inherited" rather than pinned | Med | **High** | Pin `ea-php83` explicitly on `greaterhopefoundations.com` in MultiPHP Manager (§4.4.2). A deploy smoke test asserts the running PHP version. |
 | SH-20 | **Wrong domain selected in MultiPHP Manager** takes a live site to PHP 5.6 | Low | **Critical** | The dropdown defaults to `PHP 5.6 (ea-php56)`. Always tick the domain checkbox first, verify the selection count, then Apply. Change PHP only on staging first. |
 
@@ -1297,7 +1297,7 @@ Scoring: **L** = likelihood, **I** = impact, each Low / Med / High.
 | OPS-8 | **The site is slow on a 3G Android phone in Ghana** → donors leave | **High** | **High** | A performance budget enforced in CI (LCP < 2.5 s on simulated 3G, JS < 100 KB gzipped, hero < 60 KB); AVIF/WebP; no third-party embeds above the fold; self-hosted fonts; a Lighthouse CI gate |
 | OPS-9 | **Domain, hosting or Paystack account is in the wrong entity's name** | **High** | High | Now concrete, not hypothetical: the hosting account's primary domain is a **for-profit travel business** (§4.4.1). **Confirm before launch** that `greaterhopefoundations.com`, the hosting account, and the Paystack merchant account are all held by the foundation — not by an individual and not by a sister company — with recovery access held by more than one trustee |
 | OPS-11 | **Donor personal data sits on infrastructure controlled by an unrelated commercial entity** | **High** | High | **ACCEPTED for now (§12c #29).** Since we are not moving yet, the mitigation becomes documentation rather than avoidance: name the data controller, record the hosting arrangement and the access list in the data-processing record, and state it plainly in the privacy policy. Revisit at the migration trigger in §11.6.1. |
-| OPS-12 | **The "move later" never happens** — interim hosting quietly becomes permanent | **High** | High | The classic failure mode of an accepted risk. Countermeasures: a named migration trigger agreed now (§11.6.1), the portability rules enforced in code review, and a standing item in the post-launch review. A risk you decided to accept is fine; one you forgot you accepted is not. |
+| OPS-12 | ~~The "move later" never happens~~ | — | — | ✅ **CLOSED 2026-09-02.** There is no interim period to drift through — the decision is to procure new hosting before launch, not to migrate off an existing live site. |
 | OPS-10 | **Single point of failure — one person holds every credential** | **High** | High | A documented credential inventory in a shared password manager, with at least two trustees holding recovery access |
 
 ---
@@ -1525,7 +1525,17 @@ Three decisions have been made: **stay on the shared account for now**, **Paysta
 
 ### 11.6.1 Hosting: build here, keep the exit cheap
 
-**Decision: launch on `presti98` alongside `prestigerocktravels.com`; move to a dedicated account later.** Risks SH-18, OPS-9 and OPS-11 are therefore **accepted, not mitigated**, for the interim.
+> ## ✅ SUPERSEDED — 2026-09-02
+>
+> **New hosting will be procured, running PHP 8.4. The project will not launch on `presti98`.**
+>
+> The section below described launching on the shared account and moving later, with SH-18 / OPS-9 / OPS-11 accepted for the interim. That is no longer the plan, and all four hosting risks (including OPS-12, "the move never happens") are **closed rather than accepted**.
+>
+> **The five portability rules below still stand.** They were written to make an eventual move cheap; they now make the *initial* wiring cheap, and they keep a second move cheap if this host ever disappoints. Read them as standing engineering rules, not as mitigation for a risk we no longer carry.
+>
+> **What I need when you have chosen a host:** whether it is **cPanel or a VPS**, and whether it runs **MySQL or MariaDB**. Everything else in the pipeline is already host-agnostic.
+
+~~**Decision: launch on `presti98` alongside `prestigerocktravels.com`; move to a dedicated account later.** Risks SH-18, OPS-9 and OPS-11 are therefore accepted, not mitigated, for the interim.~~
 
 Accepting a risk knowingly is fine. Accepting it *and* letting the codebase grow roots into the host is not. Five rules keep the later move to about half a day:
 
@@ -1673,7 +1683,7 @@ The same command runs in CI against staging, and **production refuses to boot wi
 | 4 | **Confirm the exact registered legal name**, registration number, and registering authority. → `{{LEGAL_NAME}}`, `{{REGISTRATION_NUMBER}}`, `{{REGISTERING_AUTHORITY}}` |
 | 5 | **Full contact block:** address, region/district, phone(s), WhatsApp, and the email address for each department. → §0.2 |
 | 6 | **Confirm the brand direction:** green `#0B4D3F` + orange `#FC6302` as the brand, with blue `#0068EC` demoted to the Every Soul Missions accent — and confirm the icon-only logo gets re-coloured to match (§2.2). |
-| 29 | ~~§4.4.1 — the shared hosting account~~ ✅ **DECIDED: host on `presti98` for now, separate hosting later.** Risks SH-18 / OPS-9 / OPS-11 are formally **accepted** for the interim; §11.6.1 records the portability rules that keep the eventual move cheap. **One thing still needed from you: name the migration trigger** (first live donation / 100 donor records / first due-diligence request / a fixed date) so it does not drift — see risk OPS-12. |
+| 29 | ~~§4.4.1 — the shared hosting account~~ ✅ **SUPERSEDED 2026-09-02: new hosting will be procured, running PHP 8.4.** The foundation will not launch on `presti98`. This closes **SH-18, OPS-9, OPS-11 and OPS-12** outright rather than accepting them — no migration trigger is needed, because there is no interim period to drift through. The portability rules in §11.6.1 still apply and are now what make the new host cheap to wire up. **Needed from you when you choose: cPanel or VPS, and MySQL or MariaDB.** Those two answers re-point the deployment pipeline; nothing else changes. |
 | 30 | **Is `greaterhopefoundations.com` registered to the foundation**, or to you personally / to the travel business? Hosting can move easily; a domain in the wrong name cannot. Separate question from #29, and worth settling now. |
 
 **Needed early — they change the architecture**
