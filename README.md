@@ -1,7 +1,7 @@
 # St. Cecilia's Greater Hope Foundations — Web Application
 
 Donation, fundraising and e-commerce platform for a Ghanaian foundation.
-Laravel 13 · Livewire 3 · Filament 5 · Tailwind · MySQL · Paystack (GHS) · InMotion shared cPanel hosting.
+Laravel 13 · Livewire 4 · Filament 5 · Tailwind · MySQL · Paystack (GHS) · shared cPanel hosting.
 
 > *"To turn remembrance into impact."*
 
@@ -27,9 +27,10 @@ It accepts one-off and recurring donations in Ghanaian Cedis via Paystack (**Mob
 | Document | What it covers |
 |---|---|
 | **`CLAUDE.md`** | Standing project context. Decisions already made — read before changing anything. |
-| **`PHASE-1-BLUEPRINT.md`** | The project brief: brand tokens, sitemap, roles, user journeys, module list, risk register, environment plan. |
+| **`docs/PHASE-1-BLUEPRINT.md`** | The project brief: brand tokens, sitemap, roles, user journeys, module list, risk register, environment plan. |
 | **`FOUNDATION-WEBAPP-MASTER-PROMPT.md`** | The phase sequence, Phase 0 → 18. |
 | **`docs/PHASE-2-RUNBOOK.md`** | ⭐ Setup and deployment, step by step, with expected output and failure modes. |
+| **`docs/PHASE-3-DATA-ARCHITECTURE.md`** | The schema: ~150 tables by module, conventions, and the binding migration-safety policy. |
 | **`docs/DEPENDENCIES.md`** | Why each package is here, and what was deliberately rejected. |
 | **`CHANGELOG.md`** | What changed, when. |
 
@@ -37,7 +38,7 @@ It accepts one-off and recurring donations in Ghanaian Cedis via Paystack (**Mob
 
 ## Local setup
 
-**Requires PHP 8.3+, Composer 2, Node 20+.** On Windows, `winget install --id BeyondCode.Herd -e` supplies PHP and Composer together. See `docs/PHASE-2-RUNBOOK.md` Step 0.
+**Requires PHP 8.4+, Composer 2, Node 20+.** On Windows, `winget install --id BeyondCode.Herd -e` supplies PHP and Composer together. See `docs/PHASE-2-RUNBOOK.md` Step 0 — and Step 2.5 for the local MySQL, which Phase 3 onward needs.
 
 ```bash
 composer install
@@ -110,9 +111,12 @@ Run `vendor/bin/pint` before pushing.
 
 ## Status
 
-**Phase 2 — environment, repository, deployment pipeline.** See `CHANGELOG.md`.
+**Phase 2 complete** — environment, repository, deployment pipeline.
+**Phase 3 in progress** — data architecture designed; Module 1 (core identity, roles, capability matrix) landed. See `CHANGELOG.md`.
 
-Placeholders are tracked in `PHASE-1-BLUEPRINT.md` §0. Paystack credentials and the SMS sender ID are deliberately placeholdered: the payments module is built and fully tested against a fake gateway, and SMS runs on the `log` driver, until the real accounts exist.
+**Hosting is not yet chosen.** New hosting running PHP 8.4 will be procured; the project does not launch on the shared account it was scaffolded against. The pipeline is host-agnostic by design, so only values change — `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`. Runbook steps 7–11 are deferred until then.
+
+Placeholders are tracked in `docs/PHASE-1-BLUEPRINT.md` §0. Paystack credentials and the SMS sender ID are deliberately placeholdered: the payments module is built and fully tested against a fake gateway, and SMS runs on the `log` driver, until the real accounts exist.
 
 ---
 

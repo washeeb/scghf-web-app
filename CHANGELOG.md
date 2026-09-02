@@ -8,6 +8,61 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Database architecture — 2026-09-02
+
+#### Added
+
+**Money foundation**
+- `App\ValueObjects\Money` — integer minor units plus a currency, immutable. No float
+  anywhere inside it and no public way to get one out: `percentage()` uses bcmath,
+  everything else is integer arithmetic, `toMajorString()` returns a string
+- `allocate()` / `allocateEvenly()` distribute the rounding remainder one pesewa at a
+  time, so split or designated giving reconciles to the total exactly
+- `App\Casts\MoneyCast` — refuses anything that is not a `Money` or an integer of
+  minor units, so a stray `50.00` cannot be written as if it were 50 pesewas
+- 53 tests including the cases that justify the class: `0.1 + 0.2` summing to exactly
+  30 pesewas, and 1,000 additions of GH₵ 0.07 landing on exactly GH₵ 70.00
+
+**Data architecture** — `docs/PHASE-3-DATA-ARCHITECTURE.md`
+- ~150 tables across eight modules, with cardinalities, in dependency order
+- Conventions: `BIGINT` internal key + ULID public identifier + human reference;
+  `BIGINT UNSIGNED` pesewas; `VARCHAR` + PHP enum rather than MySQL `ENUM`; indexed
+  string columns sized against the utf8mb4 3072-byte index limit
+- Financial tables are append-only — corrections are new rows, never edits
+- One payment path for donations *and* shop orders via a polymorphic payable
+- Binding migration-safety policy: expand-only within a deploy, because migrations
+  run before the release symlink flips and `rollback.sh` does not undo schema
+
+**Module 1 — Core identity & authorisation**
+- `users` carries staff and donors; `login_histories` records failed attempts too
+- Ghanaian phone numbers normalised to E.164 on write, raw input retained
+- `UserType` / `LoginOutcome` enums, `User` and `LoginHistory` models, factories
+- `RoleAndPermissionSeeder` — 101 permissions across 10 roles, encoding the
+  Blueprint §7.1 capability matrix as data. Idempotent, so it runs on every deploy
+- 72 tests, 135 assertions, verified against real MySQL 8.4
+
+#### Fixed
+- **A deactivated user kept every permission their role granted.** The suspension
+  guard was a `Gate::before`, but spatie/laravel-permission registers its own and
+  package providers boot before app providers — so spatie returned true for a held
+  permission and short-circuited ours. The guard now lives on the model as a
+  `hasPermissionTo()` override, which every path routes through. The
+  suspended-super-admin test had been passing for the wrong reason.
+- **The Admin role was granted `payments.view_keys`**, contradicting the comment
+  beside it: `fundraising.*` sweeps up the whole group. Added a `!permission`
+  negation applied after wildcard expansion, with a test asserting each holds.
+- Dropped a redundant standalone index on `users.type` — leftmost column of both
+  composites, so it cost write time for no read benefit.
+
+#### Local environment
+- MySQL 8.4.9 initialised and bound to `127.0.0.1` only. The winget package installs
+  binaries but never runs Oracle's configurator, so there was no data directory and
+  no service; `scripts/dev-mysql.ps1` starts it without administrator rights
+- `phpunit.xml` points the suite at MySQL rather than SQLite, so schema constraints
+  SQLite does not enforce are caught locally
+- `tests/Pest.php` added — `pest:install` had never been run, so Feature tests were
+  not bound to Laravel's `TestCase`
+
 ### Phase 2 — Environment, repository & deployment pipeline — 2026-09-02
 
 #### Added
