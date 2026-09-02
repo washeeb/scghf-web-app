@@ -337,16 +337,39 @@ git push -u origin develop
 
 **Expected:** both branches appear on GitHub. Actions will run and **the deploy will fail at "Verify the server is reachable"** — correct, because the server is not bootstrapped yet. Steps 7–9 fix that.
 
-### Branch protection
+### ⚠️ Branch protection — blocked on the current plan
 
-GitHub → Settings → Branches → Add rule, for **`main`**:
+**Attempted 2026-09-02 and refused.** On **GitHub Free with a private repository**, all three mechanisms return 403/422:
 
-- ✅ Require a pull request before merging
-- ✅ Require status checks to pass → select **`Lint, analyse, test`**
-- ✅ Require branches to be up to date before merging
-- ✅ Do not allow bypassing the above settings
+| Attempted | Result |
+|---|---|
+| Classic branch protection (`/branches/main/protection`) | `403 — Upgrade to GitHub Pro or make this repository public` |
+| Rulesets (`/rulesets`) | `403 — same` |
+| Environment required reviewers | `422 — billing plan does not support the required reviewers protection rule` |
 
-Repeat for `develop` with only the status check requirement.
+Environments themselves **do** work, so per-environment secret scoping is fine.
+
+**Making the repo public is not an option** — it holds the foundation's configuration and will hold seeded content and the donor data model.
+
+**What still protects you without it.** This matters more than it first looks, because the strongest guard is not branch protection at all:
+
+- `deploy.yml` declares `needs: test`. **A failing quality gate makes the deploy job unreachable** — Pint, the full test suite, and the secret scan must all pass before anything is built or shipped. That holds regardless of branch protection, and it is the guard that actually stands between a bad commit and a donor.
+- `ci.yml` runs on every pull request, so the signal is there even if merging is not mechanically blocked.
+- Branch protection would add: no direct pushes to `main`, no force-push, no branch deletion, and a mandatory PR. Those are real, and their absence is a discipline problem rather than a safety one.
+
+**Recommendation: GitHub Pro, ~US$4/month.** For a project that will process donations, mechanically preventing a force-push to `main` and an unreviewed merge is worth the cost of about one small donation a month. It also unlocks the production approval gate the workflow is already written to use.
+
+**Until then, by convention rather than enforcement:**
+
+- Never push to `main` directly — always `develop` → PR → merge
+- Never `git push --force` to either branch
+- Do not merge a PR whose checks are red
+
+Once you upgrade, apply protection and the approval gate:
+
+```bash
+gh api -X PUT repos/washeeb/scghf-web-app/branches/main/protection --input .github/branch-protection.json
+```
 
 **Branch strategy**
 
