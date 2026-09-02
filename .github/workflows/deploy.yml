@@ -205,6 +205,7 @@ jobs:
             release/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/releases/$REL/"
 
       - name: Activate the release
+        id: activate
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -241,8 +242,13 @@ jobs:
           done
           echo "Smoke test passed."
 
+      # Only roll back if we actually flipped the symlink. A bare `if: failure()`
+      # also fires for failures BEFORE deployment — a bad build, an unreachable
+      # server — where there is nothing to roll back to and no SSH key on disk
+      # yet. That turns one clear error into two confusing ones, and on a live
+      # host it would attempt a rollback the deploy never earned.
       - name: Roll back if the smoke test failed
-        if: failure()
+        if: failure() && steps.activate.outcome == 'success'
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}

@@ -203,9 +203,14 @@ composer require --dev pestphp/pest pestphp/pest-plugin-laravel laravel/pint --n
 
 ```powershell
 npm install
-npm install -D tailwindcss @tailwindcss/vite autoprefixer
-npm install alpinejs
 ```
+
+That is all that is needed. **Do not add Tailwind or Alpine separately:**
+
+- Laravel 13 already ships `tailwindcss` ^4 and `@tailwindcss/vite` ^4. Tailwind 4 is CSS-first — there is no `tailwind.config.js` and no `autoprefixer` to add.
+- **Livewire 4 bundles Alpine.** Installing `alpinejs` as well gives you two Alpine instances on the page, which breaks `x-data` in ways that are genuinely hard to diagnose.
+
+**`package-lock.json` must be committed.** Both workflows use `npm ci`, and `actions/setup-node` with `cache: npm` fails outright without a lockfile — which is exactly how the first CI run failed.
 
 **Expected:** each completes without a dependency conflict.
 
