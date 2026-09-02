@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PageStatus;
+use App\Models\Concerns\HasSeo;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -28,6 +29,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Page extends Model
 {
     use HasFactory;
+    use HasSeo;
     use HasUlids;
     use LogsActivity;
     use SoftDeletes;

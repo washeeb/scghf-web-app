@@ -49,6 +49,7 @@ class DatabaseSeeder extends Seeder
                 BlockTypeSeeder::class,
                 PageSeeder::class,
                 MenuSeeder::class,
+                CmsReferenceSeeder::class,
             ]);
         } finally {
             activity()->enableLogging();
