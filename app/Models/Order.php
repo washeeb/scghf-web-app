@@ -260,6 +260,33 @@ class Order extends Model implements Payable
     }
 
     /**
+     * The customer opened the payment page and never came back.
+     *
+     * **The stock goes back on the shelf.** This is the case that matters most
+     * for a small shop: without it, twelve mugs and eleven abandoned checkouts
+     * reads as sold out, and the goods sit reserved for people who left.
+     */
+    public function onPaymentAbandoned(PaymentTransaction $transaction): void
+    {
+        if ($this->status->isPaid()) {
+            return;
+        }
+
+        $from = $this->status;
+
+        $this->releaseStock();
+
+        $this->forceFill([
+            'status' => OrderStatus::Cancelled,
+            'cancelled_at' => now(),
+            'cancel_reason' => 'Checkout abandoned.',
+            'paystack_reference' => $transaction->gateway_reference,
+        ])->save();
+
+        $this->recordStatusChange($from, null, 'Checkout abandoned; stock released.');
+    }
+
+    /**
      * The gateway settled something unexpected.
      *
      * Held, and the stock stays held with it. Releasing would let somebody else

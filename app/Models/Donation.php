@@ -279,6 +279,24 @@ class Donation extends Model implements Payable
     }
 
     /**
+     * The donor opened the payment page and never came back.
+     *
+     * Distinct from a decline, and the distinction is worth keeping: it decides
+     * whether following the gift up is likely to be welcome or annoying.
+     */
+    public function onPaymentAbandoned(PaymentTransaction $transaction): void
+    {
+        if ($this->status === DonationStatus::Completed) {
+            return;
+        }
+
+        $this->forceFill([
+            'status' => DonationStatus::Abandoned,
+            'paystack_reference' => $transaction->gateway_reference,
+        ])->save();
+    }
+
+    /**
      * The gateway settled something we did not expect.
      *
      * Held, not completed and not failed. The money may well have been taken,

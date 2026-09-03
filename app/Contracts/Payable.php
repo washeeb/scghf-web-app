@@ -37,8 +37,19 @@ interface Payable
      */
     public function onPaymentSettled(PaymentTransaction $transaction): void;
 
-    /** The gateway declined, or the donor never completed. */
+    /** The gateway actively declined. */
     public function onPaymentFailed(PaymentTransaction $transaction): void;
+
+    /**
+     * The payer opened the payment page and never came back.
+     *
+     * Separate from failure, and not merely a naming preference. The gateway
+     * declined nothing, so "failed" would misdescribe it — and more
+     * practically, an abandoned SHOP order is holding stock that has to go back
+     * on the shelf. Without this, a foundation with twelve mugs and eleven
+     * abandoned checkouts shows as sold out.
+     */
+    public function onPaymentAbandoned(PaymentTransaction $transaction): void;
 
     /**
      * The gateway settled an amount or currency we did not expect.

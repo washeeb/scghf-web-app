@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Payments;
 
-use App\Enums\DonationStatus;
+use App\Contracts\Payable;
 use App\Enums\PaymentStatus;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
@@ -157,10 +157,17 @@ final class ReconciliationService
 
             $transaction->refresh()->markAbandoned();
 
-            $donation = $transaction->payable;
+            /*
+             * Tell the payable, rather than special-casing donations here. An
+             * abandoned SHOP order is holding stock that has to go back on the
+             * shelf, and the payment layer has no business knowing that — it
+             * knows the payment was abandoned, and the order knows what that
+             * means for its inventory.
+             */
+            $payable = $transaction->payable;
 
-            if ($donation instanceof Donation && $donation->status === DonationStatus::Pending) {
-                $donation->forceFill(['status' => DonationStatus::Abandoned])->save();
+            if ($payable instanceof Payable) {
+                $payable->onPaymentAbandoned($transaction);
             }
         }
     }

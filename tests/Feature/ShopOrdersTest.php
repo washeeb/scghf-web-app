@@ -17,6 +17,7 @@ use App\Models\ShippingRate;
 use App\Models\ShippingZone;
 use App\Models\User;
 use App\Payments\PaymentManager;
+use App\Payments\ReconciliationService;
 use App\Shop\CheckoutService;
 use App\Shop\InvoiceIssuer;
 use App\Support\Acknowledgement;
@@ -518,6 +519,31 @@ it('keeps the stock held when a payment mismatches', function () {
     expect($order->fresh()->status)->toBe(OrderStatus::NeedsReview)
         ->and($variant->fresh()->stock_held)->toBe(2)
         ->and($variant->fresh()->stock_on_hand)->toBe(3);
+});
+
+it('puts stock back on the shelf when a checkout is abandoned', function () {
+    /*
+     * The case that matters most for a small shop. Without it, twelve mugs and
+     * eleven abandoned checkouts reads as sold out, and the goods sit reserved
+     * for people who left.
+     */
+    $cart = basketWith(quantity: 2, stock: 3);
+    $variant = $cart->items->first()->variant;
+
+    ['order' => $order, 'transaction' => $transaction] = $this->checkout->start($cart, checkoutDetails());
+
+    // The fake gateway leaves a -PENDING reference unresolved: the customer
+    // opened the page and the gateway never heard from them again.
+    $transaction->forceFill([
+        'gateway_reference' => $transaction->gateway_reference.'-PENDING',
+        'created_at' => now()->subHours(3),
+    ])->save();
+
+    app(ReconciliationService::class)->run();
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Cancelled)
+        ->and($variant->fresh()->stock_held)->toBe(0)
+        ->and($variant->fresh()->sellableQuantity())->toBe(3);
 });
 
 it('lists stale unpaid orders still holding stock', function () {
