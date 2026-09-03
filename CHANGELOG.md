@@ -8,6 +8,116 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Module 7, Communications — 2026-09-03
+
+#### Added
+
+**The suppression list, as a gate rather than a report**
+- `suppressions` — one row per address per channel, and every send checks it.
+  Blueprint risk DEL-4: without it, bounces accumulate until the sending domain
+  stops being delivered, and the first casualty is the donation receipt
+- **Suppression has a scope.** `all` stops everything including receipts;
+  `marketing` stops appeals only. An unsubscribe is `marketing` — somebody who
+  no longer wants appeals has not asked to stop receiving the record of a gift
+  they just made
+- Suppression only ever **strengthens** automatically. Coming off the list needs
+  a named person and a recorded reason; an address suppressed under an Act 843
+  objection cannot be released at all
+- Addresses are **normalised** before storage — lowercased email, E.164 phone.
+  `Ama@Example.com` and `ama@example.com` are one mailbox, and five spellings of
+  a number are five chances to text somebody who asked not to be
+- Deliberately **excluded from the retention sweep**. Forgetting that somebody
+  objected is how they start receiving mail again after asking not to
+
+**Templates, editable but not everywhere**
+- `email_templates` and `sms_templates`, keyed, CMS-editable, with declared
+  variables. The seeder refreshes structure on every deploy and **never**
+  overwrites wording the foundation has changed
+- The GRA acknowledgement paragraphs stay in `config/compliance.php` and reach
+  the template as one `{{acknowledgement}}` variable — nobody can reword a
+  statement made under s.97 of Act 896 by editing an email in a browser
+- Rendering **refuses** on a missing required variable. "Dear ," cannot be
+  recalled; a failed job can be fixed in five minutes
+- Placeholders are not Blade. A database column rendered as Blade is arbitrary
+  PHP execution one compromised admin account away from being somebody else's
+- A **locked** template can be reworded but not deactivated or deleted. The
+  failure guarded is quiet: somebody tidies the list, receipts stop, nothing
+  reports an error
+- Subject lines are stripped of newlines — a donor-supplied name containing one
+  turns whatever follows into a header of its own
+
+**SMS, costed before a provider exists**
+- `SmsSegmenter` measures encoding, septets and segments properly: GSM-7
+  extension characters cost two, emoji cost two UCS-2 units, and a multipart
+  message loses seven bits per segment to the concatenation header
+- **The cedi sign is not in GSM-7.** `CLAUDE.md` mandates "GH₵ 1,234.56" for
+  display, so the correct format for the website roughly triples the cost of
+  every SMS sent from a template containing it. `SmsTemplate` refuses to save a
+  template that blows its segment budget, and names the character responsible
+- `PhoneNumber` normalises every way a Ghanaian number gets typed to E.164, and
+  **refuses** a nine-digit pre-2010 number rather than guessing — the migration
+  inserted a digit, and a guessed number sends a receipt to a stranger
+- `SMS_DRIVER=log` writes a complete, segmented, network-attributed, costed row
+  and sends nothing, so a month of running the site estimates what SMS will cost
+- `sent` is never read as `delivered`. An unregistered sender ID is accepted by
+  the provider and dropped by the network with no error anywhere
+
+**Logs, the outbox and the throttle**
+- `email_logs`, `sms_logs`, `notification_logs` — every attempt recorded
+  **including the refusals**. A suppressed receipt produces a row explaining
+  itself so Finance can post it or hand it over
+- `scheduled_messages` is the outbox: visible, cancellable, priority-ordered and
+  **expirable**. A backlog on this host is measured in days, and a queue that
+  delivers "the event is tomorrow" three days late is worse than one that
+  delivers nothing and says why. Receipts never expire
+- Claimed under `lockForUpdate` with a TTL, because cron starts a worker every
+  minute and the previous one may still be running
+- `idempotency_key` is unique — a replayed webhook collides instead of producing
+  a second receipt
+- **The throttle is a `COUNT`, not a counter.** It counts rows in `email_logs`
+  with `sent_at` inside the window: atomic without a lock, self-correcting after
+  a killed worker, and incapable of drifting from what was actually sent
+- `scghf:send-messages`, scheduled every minute, drains what the host's hourly
+  cap allows and stops. Exits non-zero when the oldest message has waited six
+  hours — the number that actually matters here, not the queue length
+
+**Newsletters** *(deferred out of Module 6; they needed templates and suppressions)*
+- `newsletters`, `newsletter_campaigns`, `campaign_recipients`, plus three
+  seeded lists so `subscribers.topics` means something concrete
+- **Consent is re-checked per message, not per campaign.** At two hundred an
+  hour a campaign takes most of a day; somebody who unsubscribes in hour three
+  has unsubscribed
+- Two gates before a campaign can go: a **test send** must have happened, and an
+  **approval** recorded by somebody holding `newsletter.send`. Editing the
+  content afterwards withdraws both
+- A campaign can be **paused** mid-flight — only meaningful because 1,600
+  messages are still waiting
+- Every campaign email carries an RFC 8058 one-click unsubscribe, and a
+  marketing message with no working unsubscribe link is **refused** rather than
+  sent without one
+- Skips are recorded with a reason rather than deleted, so "why did I not get
+  the newsletter?" has an answer
+
+**Retention and privacy**
+- New class `communication_log` — 24 months from send, then deleted. Delivery
+  evidence has a shorter life than the financial record it relates to, which
+  lives under `financial_record` independently
+- Open and click tracking are **off**. Recording that a named person read a
+  message is Act 843 processing needing its own lawful basis; the columns exist
+  so enabling it is a config change, not a migration
+
+#### Changed
+
+- `bootstrap/providers.php` registers `CommunicationServiceProvider`, which
+  refuses to boot production with an over-length SMS sender ID
+
+#### Notes
+
+- 895 tests, 1867 assertions. `config/communications.php` carries the policy;
+  three open questions are recorded in `docs/PHASE-3-DATA-ARCHITECTURE.md`
+- Only the `log` SMS driver is implemented. A stub that silently succeeded would
+  be worse than none, because `log` at least tells the truth about what it did
+
 ### Phase 3 — Module 6, Engagement — 2026-09-03
 
 #### Added

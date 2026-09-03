@@ -276,13 +276,40 @@ prayer_requests
 
 `volunteer_applications` carries the safeguarding declaration and CV reference. CVs are stored **outside the web root** and served through a signed, authorised route — never a public URL.
 
-### 2.7 Communications
+### 2.7 Communications — built 2026-09-03
 
-`email_templates`, `sms_templates`, `email_logs`, `sms_logs`, `notification_logs`, `scheduled_messages`, `suppressions`.
+`email_templates`, `sms_templates`, `suppressions`, `email_logs`, `sms_logs`, `notification_logs`, `scheduled_messages`, `newsletters`, `newsletter_campaigns`, `campaign_recipients`.
+
+Ten tables rather than seven: the three newsletter tables were deferred out of Module 6 because a campaign needs templates to render from and a suppression list to check against.
+
+```
+email_templates 1—* email_logs · sms_templates 1—* sms_logs
+suppressions (one row per address per channel)
+scheduled_messages (the outbox)
+newsletters 1—* newsletter_campaigns 1—* campaign_recipients —1 email_logs
+```
 
 **`suppressions` is not optional.** Hard bounces and complaints land here and every send checks it. Without it the list rots and the sending domain's reputation goes with it — Blueprint risk DEL-4.
 
-`sms_logs` records segment count and estimated cost per message, so the `SMS_DRIVER=log` mode is genuinely informative before a provider exists.
+**Suppression has a scope, and it is the whole design.** `all` stops everything including receipts; `marketing` stops appeals only. An unsubscribe is `marketing` — somebody who no longer wants appeals has not asked to stop receiving the record of a gift they just made. A bounce is `all`. Getting this backwards fails in opposite directions: one blocklists the domain, the other quietly withholds somebody's only evidence of a donation.
+
+Suppression only ever *strengthens* automatically. Coming off the list needs a named person and a recorded reason, and an address suppressed under an Act 843 objection cannot be released at all — honouring the objection is what the row is for. The list is deliberately **excluded from the retention sweep**: forgetting that somebody objected is how they start receiving mail again after asking not to.
+
+**A refusal is an outcome, not an absence.** Every attempt is logged including the ones that never left — suppressed, disabled, expired, failed. A receipt blocked by the list produces a row explaining itself, so Finance can post it or hand it over. Silent non-delivery of a receipt is the failure this module exists to make impossible.
+
+**One door out.** Nothing sends any other way; campaign mail included, which renders through the seeded `newsletter.campaign` template. A second path would be a path with no suppression check on it, and bulk is where that matters most.
+
+`sms_logs` records segment count, encoding, network and estimated cost per message, so the `SMS_DRIVER=log` mode is genuinely informative before a provider exists — a month of running the site produces a real estimate of what SMS will cost.
+
+**The throttle is a `COUNT`, not a counter.** cPanel caps outbound mail per hour and the queue runs from cron in fifty-five-second bursts, so every minute is a fresh process and workers are routinely killed mid-batch. The rate limiter counts rows in `email_logs` with `sent_at` inside the window: atomic without a lock, self-correcting after a crash, and incapable of disagreeing with what was actually sent. Hence the index on `(sent_at)`.
+
+**Consent is re-checked per message, not per campaign.** At two hundred messages an hour a campaign to two thousand people takes most of a day, so hours pass between building the list and sending the last of it. `campaign_recipients` is a build list and a claim queue; the permission is re-read at the moment each message goes.
+
+**`scheduled_messages` carries an expiry.** A backlog here is measured in days, and a queue that eventually catches up and delivers "the event is tomorrow" three days late is worse than one that delivers nothing and records why. Receipts have no expiry.
+
+Two gates before a campaign can go, both defaults in `config/communications.php`: a **test send** must have happened, and an **approval** must be recorded by somebody holding `newsletter.send`. Editing the content afterwards withdraws both — what was approved is no longer what would go.
+
+**Open/click tracking is off.** Recording that a named person read a message, when, is Act 843 processing needing its own lawful basis and its own line in the privacy notice. The columns exist so enabling it is a config change, not a migration.
 
 ### 2.8 System
 
@@ -494,5 +521,8 @@ Every column on a de-identifiable model maps to a classified element, and a test
 | 9 | **Who reviews a regulated product?** A flagged product needs a review recorded against a reference (FDA correspondence, a licence number, or a board minute). Which role holds that authority is a governance decision. | listing anything the keyword screen flags |
 | 10 | **Which safeguarding checks does Ghanaian law actually require, and who may sign them off?** The software enforces a check set the moment one is defined, and refuses to approve a volunteer without it. What is currently configured — declaration, Ghana Police Service clearance, two references taken up, interview — is a defensible default, not advice. Confirm with the Department of Social Welfare. | recruiting volunteers for any role with vulnerable-person contact |
 | 11 | **How long should a safeguarding record be kept?** Set to 6 years after a volunteer leaves. Some jurisdictions keep them far longer, precisely so an allegation made years later can be investigated against what was known at the time. A trustees' decision with advice. | the retention sweep, once volunteers exist |
+| 12 | **Does a spam complaint stop receipts as well as appeals?** Currently yes — `complaint` maps to scope `all`, because continuing to mail somebody who reported us to their provider is what gets a domain blocklisted, and a blocklisted domain stops delivering everything. The cost is that their next receipt is not delivered. It is still logged and still raises a task, so Finance can post it or hand it over. The alternative — complaint suppresses marketing only — keeps receipts flowing at some reputational risk. **This is the one entry in the suppression policy that is a judgement call rather than a technical fact.** | how a complaint is handled; one line in `config/communications.php` |
+| 13 | **Which SMS provider, and is the sender ID registered?** `SMS_DRIVER=log` costs and records every message and sends none, so nothing is blocked today. But an unregistered alphanumeric sender ID is accepted by the provider and **dropped by the Ghanaian networks silently**, with no error anywhere — so registration has to be confirmed before the first real send, not after. Registration takes time; worth starting before it is needed. Also confirm the provider returns **delivery reports**: without them there is no way to detect a silently blocked sender. | any real SMS |
+| 14 | **Open and click tracking: on or off?** Off, deliberately. Turning it on records that a named person read a message, when, and roughly from where — Act 843 processing needing its own lawful basis and its own line in the privacy notice. The columns exist so it is a config change rather than a migration. A trustees' decision, not a default to inherit. | campaign open-rate reporting |
 
-None block starting module 1.
+None block starting module 1. **13 blocks the first real SMS send** and should be started early because registration is not instant.
