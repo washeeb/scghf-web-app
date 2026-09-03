@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
+use App\Models\Volunteer;
+use App\Models\VolunteerApplication;
 use App\Shop\RegulatoryScreener;
 use App\Support\Anonymiser;
 use App\Support\ContrastChecker;
@@ -109,5 +111,17 @@ class AppServiceProvider extends ServiceProvider
 
         $runner->register('beneficiary_sensitive_document', BeneficiaryDocument::class);
         $runner->register('beneficiary_case_record', BeneficiaryDocument::class);
+
+        // Volunteers. An application's class depends on its outcome, the same
+        // way a beneficiary's does.
+        foreach ([
+            'volunteer_application_declined',
+            'volunteer_application_withdrawn',
+            'volunteer_record',
+        ] as $class) {
+            $runner->register($class, VolunteerApplication::class);
+        }
+
+        $runner->register('volunteer_record', Volunteer::class);
     }
 }

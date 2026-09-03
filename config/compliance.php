@@ -103,6 +103,84 @@ return [
                 'sensitive' => true,
             ],
 
+            /*
+            |------------------------------------------------------------------
+            | Volunteers
+            |------------------------------------------------------------------
+            |
+            | ⚠ THE PERIODS BELOW ARE DEFAULTS, NOT ADVICE.
+            |
+            | Safeguarding records in particular are kept far longer in some
+            | jurisdictions — precisely so an allegation made years later can be
+            | investigated against what was known at the time. Six years after
+            | a volunteer leaves is a defensible starting point for Ghana and is
+            | what is set here, but it is a decision for the trustees with
+            | advice, and it is flagged as an open question in
+            | docs/PHASE-3-DATA-ARCHITECTURE.md rather than presented as settled.
+            */
+            'volunteer_application_declined' => [
+                'label' => 'Declined volunteer application',
+                'months' => 12,
+                'anchor' => 'decided_at',
+                'action' => 'delete',
+                'purpose' => 'Defence of a complaint about the decision, and detection of a '
+                    .'declined applicant reapplying under a different name.',
+            ],
+
+            'volunteer_application_withdrawn' => [
+                'label' => 'Incomplete or withdrawn volunteer application',
+                'months' => 6,
+                'anchor' => 'last_activity_at',
+                'action' => 'delete',
+                'purpose' => 'Allowing an applicant to resume. No decision was made, so there '
+                    .'is nothing to defend.',
+            ],
+
+            'volunteer_record' => [
+                'label' => 'Volunteer record, including safeguarding checks',
+                'months' => 72,   // 6 years after they leave
+                'anchor' => 'ended_on',
+                'action' => 'de_identify',
+                'sensitive' => true,
+                'purpose' => 'Safeguarding accountability. A concern raised after a volunteer '
+                    .'has left must be answerable against what the foundation knew and checked '
+                    .'at the time — which is impossible if the record has gone.',
+            ],
+
+            /*
+            |------------------------------------------------------------------
+            | Prayer requests
+            |------------------------------------------------------------------
+            |
+            | Deliberately SHORT. A prayer request routinely carries the most
+            | sensitive information anybody volunteers to this foundation — an
+            | illness, a bereavement, a marriage in trouble — offered in
+            | confidence and with no expectation that it is filed indefinitely.
+            |
+            | Twelve months is long enough to pray, to follow up, and to report
+            | in aggregate. It is not long enough to become an archive of a
+            | congregation's private difficulties.
+            */
+            'prayer_request' => [
+                'label' => 'Prayer request',
+                'months' => 12,
+                'anchor' => 'created_at',
+                'action' => 'delete',
+                'sensitive' => true,
+                'purpose' => 'Praying for the request and following it up pastorally. Offered in '
+                    .'confidence, so kept only as long as that purpose lasts.',
+            ],
+
+            'event_registration' => [
+                'label' => 'Event registration',
+                'months' => 24,
+                'anchor' => 'event_ended_at',
+                'action' => 'delete',
+                'purpose' => 'Attendance records for reporting and for contacting attendees about '
+                    .'the same event series. Not a permanent mailing list — that needs its own '
+                    .'consent.',
+            ],
+
             'financial_record' => [
                 'label' => 'Tax and accounting records',
                 'months' => 72,   // 6 years, statutory minimum
@@ -312,6 +390,94 @@ return [
          * beneficiary at all. Not a hash, not an encrypted id, nothing.
          */
         'allow_reversible_pseudonyms_post_retention' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Safeguarding
+    |--------------------------------------------------------------------------
+    |
+    | The foundation works with orphans, vulnerable children, widows and the
+    | elderly. Two of its four divisions exist to do so. That makes safeguarding
+    | a structural concern of this application rather than a policy document
+    | filed somewhere.
+    |
+    | The rule below is the one that matters: a volunteer role involving
+    | unsupervised contact with children or other vulnerable people cannot be
+    | approved until every required check is recorded. Not "should not" —
+    | `VolunteerApplication::approve()` refuses.
+    |
+    | ⚠ WHAT THIS DOES NOT DO. It does not tell the foundation which checks
+    | Ghanaian law requires, or who is competent to sign them off. Those are
+    | questions for the trustees with advice from the Department of Social
+    | Welfare. What it does is make the answer enforceable once it is known, and
+    | refuse to proceed without one in the meantime.
+    |
+    */
+    'safeguarding' => [
+
+        /*
+         * Checks required before a role with vulnerable-person contact may be
+         * approved. Each is recorded against the application with a reference
+         * and a date, so "was this checked?" has an evidenced answer.
+         */
+        'required_checks' => [
+            'declaration' => [
+                'label' => 'Signed safeguarding declaration',
+                'description' => 'The applicant has read the safeguarding policy, disclosed any '
+                    .'relevant convictions, and signed to that effect.',
+            ],
+            'police_clearance' => [
+                'label' => 'Ghana Police Service criminal record check',
+                'description' => 'A police clearance certificate obtained for this applicant. '
+                    .'The reference recorded is the certificate number.',
+            ],
+            'reference_one' => [
+                'label' => 'First reference, taken up',
+                'description' => 'A reference actually contacted and spoken to — not merely a '
+                    .'name and number supplied by the applicant.',
+            ],
+            'reference_two' => [
+                'label' => 'Second reference, taken up',
+                'description' => 'A second, independent reference. Two because one referee can '
+                    .'be a friend; two who do not know each other rarely both are.',
+            ],
+            'interview' => [
+                'label' => 'Face-to-face interview',
+                'description' => 'Conducted by someone other than the person who recruited them.',
+            ],
+        ],
+
+        /*
+         * Checks required for a role with NO vulnerable-person contact — a
+         * one-off event steward, a driver, someone folding leaflets.
+         *
+         * Deliberately lighter. Requiring a police check to hand out flyers
+         * would mean the foundation either never recruits anybody or starts
+         * treating the requirement as a formality, and a formality is not a
+         * safeguard.
+         */
+        'basic_checks' => [
+            'declaration',
+        ],
+
+        /*
+         * How long a police clearance is treated as current.
+         *
+         * A certificate is a statement about a point in time, not a permanent
+         * property of a person. Two years is the default; the model re-flags a
+         * volunteer whose clearance has gone stale rather than assuming a check
+         * done once holds for ever.
+         */
+        'clearance_valid_months' => 24,
+
+        /*
+         * A concern about a volunteer suspends them IMMEDIATELY, before any
+         * investigation. Not a punishment and not a finding — a precaution,
+         * and the order of events that any safeguarding policy worth having
+         * insists on.
+         */
+        'suspend_on_concern' => true,
     ],
 
     /*
