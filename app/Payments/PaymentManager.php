@@ -105,6 +105,44 @@ final class PaymentManager
     }
 
     /**
+     * Charge an instrument the donor has already authorised.
+     *
+     * The recurring path. The donor is not present, so there is nowhere to send
+     * them and nothing to redirect to — the charge settles or fails inside this
+     * call, and `applyResult()` runs the same amount and currency checks a
+     * webhook would. A recurring gift gets no weaker verification than a
+     * one-off simply because nobody is watching.
+     *
+     * @param  Model&Payable  $payable
+     * @param  array<string, mixed>  $options
+     */
+    public function chargeStored(Model $payable, string $authorizationCode, array $options = []): PaymentTransaction
+    {
+        $amount = $payable->chargeableAmount();
+
+        $this->assertChargeable($amount);
+
+        $transaction = PaymentTransaction::create([
+            'payable_type' => $payable->getMorphClass(),
+            'payable_id' => $payable->getKey(),
+            'gateway' => $this->gateway->name(),
+            'gateway_reference' => $options['reference'] ?? self::generateReference(),
+            'amount' => $amount,
+            'currency' => $amount->currency,
+            'status' => PaymentStatus::Pending,
+            'customer_email' => $payable->payerEmail(),
+            'initialised_at' => now(),
+            'request_payload' => $this->scrubber->scrub($options['metadata'] ?? []),
+        ]);
+
+        $result = $this->gateway->chargeAuthorization($transaction, $authorizationCode);
+
+        $this->applyResult($transaction, $result);
+
+        return $transaction->refresh();
+    }
+
+    /**
      * Ask the gateway what happened and act on the answer.
      *
      * Used by the callback page, by the webhook handler and by reconciliation.

@@ -39,7 +39,7 @@ class Donation extends Model implements Payable
     use LogsActivity;
 
     protected $fillable = [
-        'reference', 'donor_id', 'user_id', 'cause_id', 'division_id',
+        'reference', 'donor_id', 'user_id', 'cause_id', 'division_id', 'subscription_id',
         'amount', 'fee', 'fee_covered_by_donor', 'net', 'currency', 'status',
         'channel', 'momo_network', 'is_anonymous',
         'tribute_type', 'tribute_name', 'tribute_message', 'tribute_notify_email',
@@ -171,6 +171,18 @@ class Donation extends Model implements Payable
     public function items(): HasMany
     {
         return $this->hasMany(DonationItem::class);
+    }
+
+    /**
+     * The standing commitment this gift came from, if any.
+     *
+     * Null for a one-off. Set both on the first gift that established a
+     * subscription and on every cycle it produces, so a donor's recurring
+     * history is one query.
+     */
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class);
     }
 
     /** @return MorphOne<PaymentTransaction, $this> */

@@ -47,6 +47,39 @@ final class FakeGateway implements PaymentGateway
         );
     }
 
+    /**
+     * Charge a stored authorization, deterministically.
+     *
+     * An authorization code containing `DECLINE` fails, so a test can exercise
+     * the failure and suspension path without a mocking framework.
+     */
+    public function chargeAuthorization(PaymentTransaction $transaction, string $authorizationCode): GatewayResult
+    {
+        if (str_contains($authorizationCode, 'DECLINE')) {
+            return GatewayResult::failed(
+                status: 'failed',
+                message: 'Card declined by the fake gateway.',
+                gatewayReference: $transaction->gateway_reference,
+                raw: ['fake' => true],
+            );
+        }
+
+        return GatewayResult::succeeded(
+            gatewayReference: $transaction->gateway_reference,
+            amount: $transaction->amount,
+            fee: FeeCalculator::fromConfig()->on($transaction->amount),
+            channel: 'card',
+            paidAt: now(),
+            raw: ['fake' => true, 'recurring' => true],
+            authorization: [
+                'authorization_code' => $authorizationCode,
+                'last4' => '4321',
+                'card_type' => 'visa',
+                'channel' => 'card',
+            ],
+        );
+    }
+
     public function verify(string $gatewayReference): GatewayResult
     {
         $transaction = PaymentTransaction::where('gateway_reference', $gatewayReference)->first();

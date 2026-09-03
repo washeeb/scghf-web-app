@@ -85,6 +85,36 @@ final class PaystackService implements PaymentGateway
         );
     }
 
+    public function chargeAuthorization(PaymentTransaction $transaction, string $authorizationCode): GatewayResult
+    {
+        $response = $this->client()->post('/transaction/charge_authorization', [
+            'authorization_code' => $authorizationCode,
+            'email' => $transaction->customer_email,
+            'amount' => $transaction->amount->toMinor(),
+            'currency' => $transaction->currency,
+            'reference' => $transaction->gateway_reference,
+        ]);
+
+        $body = $this->scrubber->scrub((array) $response->json());
+
+        if (! $response->successful() || ($body['status'] ?? false) !== true) {
+            return GatewayResult::failed(
+                status: 'failed',
+                message: (string) ($body['message'] ?? 'Paystack declined the stored authorization.'),
+                gatewayReference: $transaction->gateway_reference,
+                raw: $body,
+            );
+        }
+
+        // Same shape as verify(), so the same parser reads it — two parsers
+        // would eventually disagree about what a payment means.
+        return $this->resultFromTransactionData(
+            $body['data'] ?? [],
+            $transaction->gateway_reference,
+            $body,
+        );
+    }
+
     public function verify(string $gatewayReference): GatewayResult
     {
         $response = $this->client()->get('/transaction/verify/'.urlencode($gatewayReference));

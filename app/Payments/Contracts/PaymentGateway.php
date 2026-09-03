@@ -35,6 +35,18 @@ interface PaymentGateway
     public function initialise(PaymentTransaction $transaction, array $options = []): GatewayResult;
 
     /**
+     * Charge an instrument the donor has already authorised.
+     *
+     * How a recurring gift is taken without the donor being present. The
+     * authorization code is a gateway token, not card data — it is meaningless
+     * outside this merchant account.
+     *
+     * Unlike `initialise()` this settles immediately or fails immediately:
+     * there is nowhere to send the donor, because the donor is not there.
+     */
+    public function chargeAuthorization(PaymentTransaction $transaction, string $authorizationCode): GatewayResult;
+
+    /**
      * Ask the gateway what actually happened.
      *
      * Called from the webhook handler and from reconciliation. Never trusted
