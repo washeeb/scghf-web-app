@@ -8,6 +8,65 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Module 6, Engagement — 2026-09-03
+
+#### Added
+
+**Safeguarding, as a gate rather than a policy**
+- `VolunteerApplication::approve()` **refuses** while any required check is
+  outstanding, and names which ones. The failure guarded is not malice — it is
+  approving a keen volunteer "and doing the police check next week"
+- `involves_vulnerable_contact` defaults to **true**; an application with no
+  opportunity is treated the same. A default of false would mean every role
+  somebody forgot to configure quietly skipped its checks
+- Roles with no contact get a lighter set — requiring a police check to hand out
+  leaflets turns the requirement into a formality, and a formality is not a
+  safeguard
+- `safeguarding_checks` is one **row** per check with a reference, a date and a
+  named verifier. A pass without either is refused; a waiver needs a stated
+  reason *and* an authoriser
+- **Clearances go stale.** A police certificate carries an expiry and
+  `isCurrentlyCleared()` is computed from the dates, not read from a cached flag
+- A concern **suspends immediately** — before investigation, without implying a
+  finding. It insists the concern is written down, and insists on a written
+  outcome before reinstating
+
+**Volunteers**
+- Hours in **minutes**, capped at a day, future-dated entries refused
+- Only **verified** hours count towards the figure a funder is shown, and nobody
+  can verify their own
+
+**Events**
+- Capacity counts **people, not bookings** — three guests take four places
+- Over capacity **waitlists** rather than refusing; registration runs under a row
+  lock so two people cannot both take the last two places
+- `photography_consent` is **nullable with no default**: "never asked" and "said
+  no" are different answers, and only the wrong one can be inferred from silence
+- Three separate consents — photography, event contact, newsletter. A
+  registration is not a mailing list
+- Ticketing is feature-flagged off and the model refuses to mark an event
+  ticketed while it is
+
+**Prayer requests**
+- **Confidential by default.** `is_confidential` true, `consent_to_publish`
+  false, and publication needs both cleared. Enforced on every save, so
+  `forceFill` cannot walk past it
+- Anonymous by default even *with* consent — being happy for a situation to be
+  prayed about publicly is not being happy to be named in it
+- An anonymous request has its contact details stripped on creation
+
+**Retention**
+- New classes: declined volunteer application (12 months), withdrawn (6),
+  volunteer record including safeguarding (72, sensitive), event registration
+  (24 from the event ending), prayer request (12 from submission, sensitive)
+- Accessibility and dietary needs classified as **health data**; a prayer
+  request's text likewise
+
+⚠ **The volunteer retention periods are defaults, not advice** — recorded as an
+open question rather than presented as settled.
+
+817 tests, 1722 assertions.
+
 ### Phase 3 — Module 5, Shop — 2026-09-03
 
 #### Added
