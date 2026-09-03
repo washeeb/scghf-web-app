@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToDivision;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -20,10 +21,11 @@ use Illuminate\Support\Facades\DB;
  */
 class Announcement extends Model
 {
+    use BelongsToDivision;
     use HasUlids;
 
     protected $fillable = [
-        'placement', 'title', 'body', 'cta_label', 'cta_url', 'image_id',
+        'division_id', 'placement', 'title', 'body', 'cta_label', 'cta_url', 'image_id',
         'style', 'is_dismissible', 'dismiss_days', 'show_on_paths',
         'starts_at', 'ends_at', 'sort_order', 'is_active',
     ];

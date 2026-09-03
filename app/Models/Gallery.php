@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToDivision;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -16,11 +17,12 @@ use RuntimeException;
 
 class Gallery extends Model
 {
+    use BelongsToDivision;
     use HasUlids;
     use SoftDeletes;
 
     protected $fillable = [
-        'title', 'slug', 'description', 'cover_id', 'taken_on', 'location',
+        'division_id', 'title', 'slug', 'description', 'cover_id', 'taken_on', 'location',
         'has_consent', 'sort_order', 'is_published',
     ];
 

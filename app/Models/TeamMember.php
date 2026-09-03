@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToDivision;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -15,12 +16,13 @@ use Illuminate\Support\Str;
 
 class TeamMember extends Model
 {
+    use BelongsToDivision;
     use HasFactory;
     use HasUlids;
     use SoftDeletes;
 
     protected $fillable = [
-        'team_department_id', 'user_id', 'name', 'slug', 'role_title', 'bio',
+        'division_id', 'team_department_id', 'user_id', 'name', 'slug', 'role_title', 'bio',
         'photo_id', 'public_email', 'linkedin_url', 'member_type', 'is_trustee',
         'joined_on', 'left_on', 'sort_order', 'is_published',
     ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToDivision;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -18,11 +19,12 @@ use Illuminate\Support\Str;
  */
 class Document extends Model
 {
+    use BelongsToDivision;
     use HasUlids;
     use SoftDeletes;
 
     protected $fillable = [
-        'title', 'slug', 'description', 'media_id', 'document_type',
+        'division_id', 'title', 'slug', 'description', 'media_id', 'document_type',
         'year', 'requires_auth', 'sort_order', 'is_published',
     ];
 

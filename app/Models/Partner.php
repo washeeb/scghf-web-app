@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToDivision;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,11 +15,12 @@ use Illuminate\Support\Str;
 
 class Partner extends Model
 {
+    use BelongsToDivision;
     use HasFactory;
     use SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'description', 'website_url', 'logo_id',
+        'division_id', 'name', 'slug', 'description', 'website_url', 'logo_id',
         'partner_type', 'partnership_started_on', 'partnership_ended_on',
         'sort_order', 'is_published', 'is_featured',
     ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToDivision;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -18,12 +19,13 @@ use RuntimeException;
  */
 class Testimonial extends Model
 {
+    use BelongsToDivision;
     use HasFactory;
     use HasUlids;
     use SoftDeletes;
 
     protected $fillable = [
-        'author_name', 'author_role', 'author_location', 'quote', 'author_type',
+        'division_id', 'author_name', 'author_role', 'author_location', 'quote', 'author_type',
         'photo_id', 'has_consent', 'consent_date', 'sort_order', 'is_published', 'is_featured',
     ];
 

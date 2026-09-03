@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PageStatus;
+use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +25,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Post extends Model
 {
+    use BelongsToDivision;
     use HasFactory;
     use HasSeo;
     use HasUlids;
@@ -31,7 +33,7 @@ class Post extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'blog_category_id', 'author_id', 'title', 'slug', 'excerpt', 'body',
+        'division_id', 'blog_category_id', 'author_id', 'title', 'slug', 'excerpt', 'body',
         'featured_image_id', 'status', 'published_at', 'is_featured', 'allow_comments',
     ];
 

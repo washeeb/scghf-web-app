@@ -47,6 +47,10 @@ class DatabaseSeeder extends Seeder
                 SettingsSeeder::class,
                 ThemeSettingsSeeder::class,
                 BlockTypeSeeder::class,
+                // Before pages and menus: both link to divisions, and a menu
+                // item pointing at a division that does not exist yet is a
+                // broken link seeded on purpose.
+                DivisionSeeder::class,
                 PageSeeder::class,
                 MenuSeeder::class,
                 CmsReferenceSeeder::class,
