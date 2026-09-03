@@ -55,6 +55,10 @@ class DatabaseSeeder extends Seeder
                 // funds both need them. Before anything that could take a
                 // donation.
                 CauseSeeder::class,
+                // The shop taxonomy comes from the compliance policy, so the
+                // two cannot drift: nothing appears in the shop that is not in
+                // the agreed list.
+                ShopCategorySeeder::class,
                 PageSeeder::class,
                 MenuSeeder::class,
                 CmsReferenceSeeder::class,

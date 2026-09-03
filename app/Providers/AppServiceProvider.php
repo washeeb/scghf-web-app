@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
+use App\Shop\RegulatoryScreener;
 use App\Support\Anonymiser;
 use App\Support\ContrastChecker;
 use App\Support\DisclosureControl;
@@ -32,6 +33,10 @@ class AppServiceProvider extends ServiceProvider
         // the policy arrays has one place to live.
         $this->app->singleton(Anonymiser::class);
         $this->app->singleton(DisclosureControl::class);
+
+        // Screens shop products against the FDA-regulated keyword list. Called
+        // on every product save, so it is worth not rebuilding each time.
+        $this->app->singleton(RegulatoryScreener::class);
 
         // The retention runner holds the registry of models subject to a
         // retention class. Modules register into it as they land, so it needs
