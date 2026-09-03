@@ -36,7 +36,7 @@ class TaxDeductibility
      * The site-wide gate. A false here suppresses every deductibility claim on
      * the site, whatever individual causes are flagged as.
      */
-    public function isEnabled(): bool
+    public function isEnabled(?\DateTimeInterface $on = null): bool
     {
         if (! config('compliance.tax.require_gra_approval', true)) {
             // Only for a jurisdiction that does not require approval. Left
@@ -44,7 +44,7 @@ class TaxDeductibility
             return true;
         }
 
-        return $this->currentApproval() !== null;
+        return $this->approvalOn($on) !== null;
     }
 
     /**
@@ -80,6 +80,32 @@ class TaxDeductibility
     }
 
     /**
+     * The s.97 approval that was valid on a given date.
+     *
+     * Passing no date means "right now", which is the live-messaging case and
+     * takes the cached path. Passing a date is the DOCUMENT case: an
+     * acknowledgement for a donation made two years ago must cite the approval
+     * that was valid then, because that is what was true when the gift was
+     * received. Reprinting a receipt after an approval has since lapsed must not
+     * silently rewrite history — and equally, a donation received while the
+     * Foundation had no approval never acquires one retroactively.
+     */
+    public function approvalOn(?\DateTimeInterface $on = null): ?TaxApproval
+    {
+        if ($on === null) {
+            return $this->currentApproval();
+        }
+
+        $approval = TaxApproval::query()
+            ->validOn($on)
+            ->where('approval_type', TaxApproval::TYPE_SECTION_97)
+            ->orderByDesc('issued_on')
+            ->first();
+
+        return $approval?->isCurrentlyValid($on) ? $approval : null;
+    }
+
+    /**
      * Whether a specific donation destination qualifies.
      *
      * Two conditions, BOTH required:
@@ -91,9 +117,9 @@ class TaxDeductibility
      * organisation approved; it does not make every activity it runs a
      * worthwhile cause.
      */
-    public function qualifies(?object $cause = null): bool
+    public function qualifies(?object $cause = null, ?\DateTimeInterface $on = null): bool
     {
-        if (! $this->isEnabled()) {
+        if (! $this->isEnabled($on)) {
             return false;
         }
 
@@ -105,7 +131,7 @@ class TaxDeductibility
         if (isset($cause->tax_approval_id) && $cause->tax_approval_id !== null) {
             $specific = TaxApproval::find($cause->tax_approval_id);
 
-            if ($specific?->isCurrentlyValid()) {
+            if ($specific?->isCurrentlyValid($on)) {
                 return true;
             }
         }
@@ -118,13 +144,13 @@ class TaxDeductibility
      *
      * @return array{citation: string, disclaimer: string}|null
      */
-    public function receiptStatement(?object $cause = null): ?array
+    public function receiptStatement(?object $cause = null, ?\DateTimeInterface $on = null): ?array
     {
-        if (! $this->qualifies($cause)) {
+        if (! $this->qualifies($cause, $on)) {
             return null;
         }
 
-        $approval = $this->currentApproval();
+        $approval = $this->approvalOn($on);
 
         if ($approval === null) {
             return null;

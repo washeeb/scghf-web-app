@@ -8,7 +8,8 @@ use App\Models\Order;
 | Compliance policy
 |--------------------------------------------------------------------------
 |
-| Retention periods, tax-deductibility rules and the approved shop taxonomy.
+| Retention periods, de-identification rules, tax-deductibility wording and the
+| approved shop taxonomy.
 |
 | These live in CONFIG, not in an admin-editable table, on purpose. They are
 | legal policy: they change rarely, every change should be reviewed like code,
@@ -21,9 +22,11 @@ use App\Models\Order;
 |
 | References:
 |   Act 843  — Ghana Data Protection Act, 2012, s.24 (retention no longer than
-|              necessary for the purpose)
+|              necessary; destruction must prevent reconstruction in an
+|              intelligible form; statistical/historical retention permitted
+|              with adequate protection)
 |   Act 896  — Income Tax Act, 2015, s.97 (approved charitable organisation)
-|              and s.100 (worthwhile cause)
+|              and s.100 (contribution or donation to a worthwhile cause)
 |
 */
 
@@ -43,6 +46,13 @@ return [
     |
     |   delete        secure hard delete of the record and its files
     |   de_identify   personal identifiers destroyed, the statistical shell kept
+    |   retain        never swept; deletion requires a documented decision
+    |
+    | IMPORTANT — closure is not the trigger.
+    | Marking a case closed STARTS the retention clock; it does not license
+    | destruction. The record stays lawfully identifiable for the whole retention
+    | period and is only de-identified once that period expires
+    | (anchor + months + grace). A legal or audit hold overrides that date.
     |
     */
     'retention' => [
@@ -143,6 +153,169 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Privacy — what survives de-identification, and in what form
+    |--------------------------------------------------------------------------
+    |
+    | Act 843 defines personal data broadly enough to cover a person who is
+    | identifiable from the retained data itself OR from that data combined with
+    | other information the Foundation holds, or is likely to hold. Stripping the
+    | name is therefore not sufficient: a row reading
+    |
+    |     Legacy of Love / Widower Support / GHS 4,735 / 13 March 2026 / Tamale
+    |
+    | can single out one person with no name anywhere in it.
+    |
+    | So the boundary below has three dispositions, not two:
+    |
+    |   destroy      overwritten irreversibly, then nulled
+    |   generalise   kept, but coarsened (bands and periods, never exact values)
+    |   keep         kept as-is; safe at population scale
+    |
+    | Every column on a de-identifiable model must map to one of these elements.
+    | A column mapping to nothing fails a test — which is the point: the
+    | dangerous case is not a wrong decision, it is a column added in two years
+    | that nobody classified at all.
+    |
+    */
+    'privacy' => [
+
+        /*
+         * Direct and indirect identifiers, and what happens to each once the
+         * retention period expires.
+         */
+        'elements' => [
+
+            // --- Destroy: direct identifiers and identifying free text -------
+            'name' => ['label' => 'Name and aliases', 'disposition' => 'destroy'],
+            'phone' => ['label' => 'Phone number', 'disposition' => 'destroy'],
+            'email' => ['label' => 'Email address', 'disposition' => 'destroy'],
+            'national_id' => ['label' => 'Ghana Card, passport or other ID number', 'disposition' => 'destroy'],
+            'id_document' => ['label' => 'Scanned identity document', 'disposition' => 'destroy'],
+            'date_of_birth' => ['label' => 'Full date of birth', 'disposition' => 'destroy'],
+            'address' => ['label' => 'Residential or postal address', 'disposition' => 'destroy'],
+            'geolocation' => ['label' => 'GPS or precise location', 'disposition' => 'destroy'],
+            'community' => ['label' => 'Village or community', 'disposition' => 'destroy'],
+            'likeness' => ['label' => 'Photograph, video or voice recording', 'disposition' => 'destroy'],
+            'signature' => ['label' => 'Signature', 'disposition' => 'destroy'],
+            'bank_details' => ['label' => 'Bank or mobile money account details', 'disposition' => 'destroy'],
+            'next_of_kin' => ['label' => 'Emergency contact or next of kin', 'disposition' => 'destroy'],
+            'household' => ['label' => 'Names and details of household members', 'disposition' => 'destroy'],
+            'medical' => ['label' => 'Medical reports and diagnoses', 'disposition' => 'destroy'],
+            'religion' => ['label' => 'Religious information', 'disposition' => 'destroy'],
+            'school_employer' => ['label' => 'School or employer where identifying', 'disposition' => 'destroy'],
+            'narrative' => ['label' => 'Free-text application narrative', 'disposition' => 'destroy'],
+            'case_notes' => ['label' => 'Case-worker notes', 'disposition' => 'destroy'],
+            'supporting_document' => ['label' => 'Uploaded supporting document', 'disposition' => 'destroy'],
+            'device' => ['label' => 'IP address or device identifier', 'disposition' => 'destroy'],
+
+            // Destroyed because it links back to the original case. A reference
+            // kept "for traceability" is exactly the linkage that makes
+            // everything else pseudonymous rather than anonymous.
+            'case_reference' => ['label' => 'Case reference number', 'disposition' => 'destroy'],
+
+            // Never carried into the analytics dataset. It resolves to a
+            // transaction, which resolves to a person.
+            'payment_reference' => ['label' => 'Payment or Paystack reference', 'disposition' => 'destroy'],
+
+            // --- Generalise: useful, but identifying at full precision -------
+            'assistance_amount' => [
+                'label' => 'Assistance amount',
+                'disposition' => 'generalise',
+                'method' => 'amount_band',
+            ],
+            'assistance_date' => [
+                'label' => 'Assistance date',
+                'disposition' => 'generalise',
+                'method' => 'period',
+            ],
+            'age' => [
+                'label' => 'Age',
+                'disposition' => 'generalise',
+                'method' => 'age_band',
+            ],
+
+            // Kept, but subject to the minimum-group rule below: a programme
+            // with three beneficiaries in it identifies all three.
+            'programme' => [
+                'label' => 'Programme or category',
+                'disposition' => 'generalise',
+                'method' => 'passthrough',
+            ],
+
+            // --- Keep: safe at population scale ------------------------------
+            'division' => ['label' => 'Division', 'disposition' => 'keep'],
+            'region' => ['label' => 'Region', 'disposition' => 'keep'],
+            'district' => ['label' => 'District', 'disposition' => 'keep'],
+            'outcome' => ['label' => 'Broad coded outcome', 'disposition' => 'keep'],
+            'gender' => ['label' => 'Gender', 'disposition' => 'keep'],
+            'indicator' => ['label' => 'Statistical or impact indicator', 'disposition' => 'keep'],
+        ],
+
+        /*
+         * Age bands. Aligned to how the Foundation actually reports — early
+         * childhood, primary, JHS, SHS and young adult, then decades.
+         */
+        'age_bands' => [
+            [0, 5], [6, 12], [13, 17], [18, 24],
+            [25, 34], [35, 44], [45, 54], [55, 64], [65, null],
+        ],
+
+        /*
+         * Assistance amount bands, in integer pesewas (GHS x 100), matching the
+         * money rule used everywhere else in this application.
+         */
+        'amount_bands' => [
+            [0, 9999],              // up to GHS 100
+            [10000, 49999],         // GHS 100 - 500
+            [50000, 99999],         // GHS 500 - 1,000
+            [100000, 249999],       // GHS 1,000 - 2,500
+            [250000, 499999],       // GHS 2,500 - 5,000
+            [500000, 999999],       // GHS 5,000 - 10,000
+            [1000000, null],        // above GHS 10,000
+        ],
+
+        /*
+         * Date precision in the analytics dataset. An exact day plus a division
+         * plus a district is frequently unique; a month is not.
+         *
+         * One of: month, quarter, year.
+         */
+        'date_granularity' => 'month',
+
+        /*
+         * The finest geography that may appear in analytics. Region and district
+         * are populous enough; a village or community is not.
+         */
+        'geography_max_level' => 'district',
+
+        /*
+         * Minimum group size for any published or exported statistical
+         * breakdown. A cell covering fewer than this many beneficiaries is
+         * suppressed rather than shown.
+         *
+         * Not a figure mandated by Act 843 — it is a disclosure control that
+         * reduces singling-out risk, and it matters here because the Foundation
+         * works with small populations in sensitive categories (health, orphan
+         * status, widow and widower support).
+         */
+        'minimum_group_size' => 5,
+
+        /*
+         * Hashing a Ghana Card number, phone number or case reference does NOT
+         * make a record anonymous while the Foundation still holds any practical
+         * means of reversing it — a lookup table, a key, or the source record
+         * itself. That is pseudonymisation, and pseudonymised data is still
+         * personal data under Act 843.
+         *
+         * The design consequence, enforced in the analytics dataset: once the
+         * retention period expires there is NO reversible linkage back to the
+         * beneficiary at all. Not a hash, not an encrypted id, nothing.
+         */
+        'allow_reversible_pseudonyms_post_retention' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tax deductibility — Act 896 ss.97 and 100
     |--------------------------------------------------------------------------
     |
@@ -151,6 +324,13 @@ return [
     | refuse. Deductibility messaging is therefore gated on a current written
     | GRA approval, held in `tax_approvals`, and is disabled automatically the
     | day that approval expires.
+    |
+    | The GRA does not prescribe mandatory receipt wording. What s.100 requires
+    | is a written acknowledgement from a verifiable beneficiary, which the donor
+    | submits with their own claim; for the charitable-organisation route the
+    | recipient must hold an unexpired written approval issued by the
+    | Commissioner-General under s.97. The wording below states those two facts
+    | separately and does not conflate them.
     |
     */
     'tax' => [
@@ -164,10 +344,86 @@ return [
         'expiry_warning_days' => [90, 60, 30, 14, 7, 1],
 
         /*
-         * Mandatory wording. A receipt may state that a donation was made to an
-         * approved organisation; it may NOT state or imply that the donor's
-         * deduction is guaranteed. Whether a deduction is allowed is the GRA's
-         * determination, on the donor's own return.
+         * The document is an ACKNOWLEDGEMENT, not a "tax-deductible receipt".
+         * The Foundation acknowledges a contribution; the deduction is the
+         * donor's separate claim, decided by the GRA. Naming the document
+         * accurately is the first place that distinction is either kept or lost.
+         */
+        'acknowledgement' => [
+
+            'title' => 'ACKNOWLEDGEMENT OF CONTRIBUTION/DONATION TO A WORTHWHILE CAUSE',
+
+            /*
+             * Paragraph 1 — the Foundation's s.97 status.
+             *
+             * Rendered ONLY while a valid s.97 approval is held. Until the
+             * Notice of Approval is actually in hand there is nothing true to
+             * say here, so nothing is said.
+             */
+            'approval_paragraph' => ':organisation is a charitable organisation approved by the '
+                .'Commissioner-General of the Ghana Revenue Authority under section 97 of the '
+                .'Income Tax Act, 2015 (Act 896), pursuant to Notice of Approval :reference, '
+                .'valid from :issued_on to :expires_on.',
+
+            // The Commissioner-General issues an approval for a specified
+            // period, but an approval carrying no stated expiry must still be
+            // citable without inventing one.
+            'approval_paragraph_open' => ':organisation is a charitable organisation approved by the '
+                .'Commissioner-General of the Ghana Revenue Authority under section 97 of the '
+                .'Income Tax Act, 2015 (Act 896), pursuant to Notice of Approval :reference, '
+                .'issued on :issued_on.',
+
+            /*
+             * Paragraph 2 — the acknowledgement itself. "The Foundation" is a
+             * back-reference to paragraph 1 and is deliberately not repeated in
+             * full.
+             */
+            'receipt_paragraph' => 'The Foundation hereby acknowledges receipt from :donor of a '
+                .'contribution/donation in the amount of :amount (:amount_in_words) on :date, '
+                .'made towards :cause.',
+
+            /*
+             * Paragraph 3 — mandatory, never omitted.
+             *
+             * States the purpose (s.100 evidence) and, in the same breath, that
+             * eligibility and allowance are the GRA's determination. A receipt
+             * may confirm the gift; it may not promise the deduction.
+             */
+            'disclaimer' => 'This acknowledgement is issued as evidence of a contribution/donation '
+                .'to a worthwhile cause for purposes of section 100 of the Income Tax Act, 2015 '
+                .'(Act 896). Eligibility for and allowance of any deduction remains subject to the '
+                .'applicable requirements and determination of the Ghana Revenue Authority.',
+
+            /*
+             * Everything the document must carry. The GRA's own claim form asks
+             * the donor for the worthwhile cause, the beneficiary, the
+             * beneficiary's TIN and the amount in GHS, and requires this
+             * acknowledgement to accompany the application — so the document has
+             * to supply all of it.
+             *
+             * Enforced when an acknowledgement is generated: a missing field is
+             * a refusal to issue, not a blank line on a legal document.
+             */
+            'required_fields' => [
+                'receipt_number' => 'Unique acknowledgement number',
+                'issued_on' => 'Date of issue',
+                'donor_name' => 'Donor name',
+                'organisation_name' => 'Beneficiary organisation (legal name)',
+                'organisation_tin' => 'Foundation TIN',
+                'amount' => 'Amount in GHS',
+                'amount_in_words' => 'Amount in words',
+                'donated_on' => 'Date of the contribution',
+                'cause' => 'Worthwhile cause (division, project or campaign)',
+                'payment_reference' => 'Payment reference',
+                'approval_reference' => 'GRA section 97 approval reference',
+                'approval_validity' => 'Approval validity dates',
+                'authentication' => 'Authorised signature or seal',
+            ],
+        ],
+
+        /*
+         * Kept for anything needing the bare disclaimer without the full
+         * document — a donation form footnote, a cause page.
          */
         'deduction_disclaimer' => 'This acknowledgement confirms the donation described above. '
             .'It does not guarantee that any deduction will be allowed. Any claim for a '

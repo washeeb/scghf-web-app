@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Support\Anonymiser;
 use App\Support\ContrastChecker;
+use App\Support\DisclosureControl;
 use App\Support\RetentionRunner;
 use App\Support\Settings;
 use App\Support\TaxDeductibility;
@@ -23,6 +25,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ContrastChecker::class);
         $this->app->singleton(TaxDeductibility::class);
 
+        // Privacy: the de-identification boundary and the disclosure control on
+        // published statistics. Stateless, but singletons so a future cache of
+        // the policy arrays has one place to live.
+        $this->app->singleton(Anonymiser::class);
+        $this->app->singleton(DisclosureControl::class);
+
         // The retention runner holds the registry of models subject to a
         // retention class. Modules register into it as they land, so it needs
         // no knowledge of models that do not exist yet.
@@ -31,6 +39,21 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        /*
+         * Fixture tables for the test suite.
+         *
+         * Registered as a migration path rather than created inside a test,
+         * because DDL inside a test commits the transaction RefreshDatabase
+         * wraps it in, which makes Laravel re-run `migrate:fresh` before every
+         * subsequent test. Loading them here means `migrate:fresh` builds them
+         * with everything else, once.
+         *
+         * Only in the testing environment, so deployment never sees them.
+         */
+        if ($this->app->environment('testing')) {
+            $this->loadMigrationsFrom(base_path('tests/database/migrations'));
+        }
+
         /*
          * Fail loudly in development, quietly in production.
          *

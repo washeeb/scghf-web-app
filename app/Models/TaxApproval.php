@@ -146,7 +146,7 @@ class TaxApproval extends Model
         ])->save();
     }
 
-    /** How this approval is cited on a receipt. */
+    /** How this approval is cited in a short reference, e.g. a page footnote. */
     public function citation(): string
     {
         $section = $this->approval_type === self::TYPE_SECTION_100 ? '100' : '97';
@@ -159,15 +159,61 @@ class TaxApproval extends Model
         );
     }
 
+    /**
+     * The opening paragraph of an acknowledgement, stating the Foundation's
+     * approved status and the Notice of Approval it rests on.
+     *
+     * Two templates rather than one: the Commissioner-General issues an
+     * approval for a specified period, but an approval with no stated expiry
+     * must still be citable without the sentence inventing an end date for it.
+     */
+    public function approvalParagraph(string $organisation): string
+    {
+        $key = $this->expires_on !== null
+            ? 'compliance.tax.acknowledgement.approval_paragraph'
+            : 'compliance.tax.acknowledgement.approval_paragraph_open';
+
+        return strtr((string) config($key), [
+            ':organisation' => $organisation,
+            ':reference' => $this->reference,
+            ':issued_on' => $this->issued_on->format('j F Y'),
+            ':expires_on' => $this->expires_on?->format('j F Y') ?? '',
+        ]);
+    }
+
+    /** Validity dates, for the acknowledgement's field table. */
+    public function validityStatement(): string
+    {
+        return $this->expires_on === null
+            ? 'Issued '.$this->issued_on->format('j F Y').'; no stated expiry'
+            : $this->issued_on->format('j F Y').' to '.$this->expires_on->format('j F Y');
+    }
+
+    /**
+     * Approvals valid on a given date.
+     *
+     * Date-parameterised rather than fixed to "now" because an acknowledgement
+     * for a donation made two years ago must cite the approval that was valid
+     * THEN. The facts at the time were true, and reprinting that receipt after
+     * the approval has since lapsed must not silently rewrite them.
+     */
+    #[Scope]
+    protected function validOn(Builder $query, \DateTimeInterface $on): void
+    {
+        $on = Carbon::instance($on);
+
+        $query->whereNotIn('status', [self::STATUS_REVOKED, self::STATUS_SUPERSEDED, self::STATUS_DRAFT])
+            ->whereDate('issued_on', '<=', $on)
+            // orWhere, not where: an approval is valid if it has NO expiry
+            // OR its expiry is on or after the date. Chaining these with AND
+            // makes the condition unsatisfiable and the scope returns nothing.
+            ->where(fn (Builder $q) => $q->whereNull('expires_on')->orWhereDate('expires_on', '>=', $on));
+    }
+
     #[Scope]
     protected function current(Builder $query): void
     {
-        $query->whereNotIn('status', [self::STATUS_REVOKED, self::STATUS_SUPERSEDED, self::STATUS_DRAFT])
-            ->whereDate('issued_on', '<=', now())
-            // orWhere, not where: an approval is current if it has NO expiry
-            // OR its expiry is in the future. Chaining these with AND makes the
-            // condition unsatisfiable and the scope returns nothing.
-            ->where(fn (Builder $q) => $q->whereNull('expires_on')->orWhereDate('expires_on', '>=', now()));
+        $query->validOn(now());
     }
 
     #[Scope]
