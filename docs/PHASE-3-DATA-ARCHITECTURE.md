@@ -437,11 +437,49 @@ FLUSH PRIVILEGES;
 - **Receipts show a breakdown**, not a single total: deductible subtotal, non-deductible subtotal, gross. `donation_receipts` gains `deductible_amount_minor` and a `tax_statement` text snapshot, because the prescribed wording can change between years and an old receipt must keep the wording it was issued with.
 - **`{{TIN}}` becomes required** on any receipt claiming deductibility, which promotes it from a §0.1 placeholder to a launch blocker for the donation flow.
 
-> ⚠️ **Still needed from you:** the exact wording the Ghana Revenue Authority requires on a deductible receipt, and which of the four divisions' causes qualify. The schema is ready for either answer; the copy is not something to guess at.
+> ✅ **Answered 2026-09-03.** The GRA prescribes no mandatory receipt wording, so the question was the wrong shape. See *Acknowledgements* below.
+
+### Acknowledgements — corrected 2026-09-03
+
+The document is an **ACKNOWLEDGEMENT OF CONTRIBUTION/DONATION TO A WORTHWHILE CAUSE**, not a "tax-deductible receipt". Under Act 896 s.100 the donor claims the deduction on their own return, supported by a written acknowledgement from a verifiable beneficiary; for the charitable-organisation route the recipient must hold an unexpired written approval issued by the Commissioner-General under s.97. The Foundation acknowledges the gift; the GRA decides the deduction. A document titled "tax-deductible receipt" asserts the second thing, which is not the Foundation's to assert.
+
+This **corrects the note above**: `causes.is_tax_deductible` is necessary but **not sufficient**. Deductibility wording also requires a current written GRA approval, held in `tax_approvals` and evaluated from its dates on every call. With no approval on file every deductibility claim is suppressed, whatever any cause or CMS setting says.
+
+Three paragraphs, in `config/compliance.php`:
+
+1. **s.97 status** — rendered only while a valid Notice of Approval is held *on the date of the donation*
+2. **the acknowledgement of receipt** — always, with the amount in figures and in words
+3. **s.100 purpose and the GRA-determination disclaimer** — mandatory alongside paragraph 1, never omitted
+
+Validity is tested against the **donation date**, not today. An acknowledgement reprinted after an approval lapses still cites what was true when the gift was received; a gift received before the Foundation was approved never acquires that approval retroactively; a revoked approval is never cited at all.
+
+A donation received while no approval was held still produces a document — a plain receipt with no tax wording anywhere in it. The donor is entitled to evidence of their gift; what they are not entitled to is wording the Foundation cannot support.
+
+`{{TIN}}` is a hard blocker: `Settings` reports an unfilled placeholder as absent, and acknowledgements **refuse to issue** rather than printing a blank line on a document destined for a tax authority.
 
 ### Answered 2026-09-03
 
 **2. Beneficiary data retention — purpose-based, per Act 843.** Declined applications 24 months from decision; incomplete or withdrawn 12 months from last activity; approved case records 6 years from closure, then de-identified rather than deleted so the financial trail survives while the person does not; medical and other highly sensitive supporting documents 24 months from closure — deliberately far shorter than the case record they support, because a report proving eligibility has served its purpose once the case closes; tax and accounting records a 6-year statutory MINIMUM and never auto-deleted; anonymised statistics indefinitely. Legal, audit and investigation holds override every date. Implemented in `config/compliance.php` (policy, git-versioned) plus `legal_holds` and `retention_log` (operational facts).
+
+**2a. De-identification — refined 2026-09-03.** Two corrections to the above.
+
+**Closure starts the clock; it does not license destruction.** The record stays lawfully identifiable for the whole retention period and is acted on only once `anchor + months + grace` has passed, and only if no hold covers it. `Beneficiary::retentionAnchorDate()` returns null for an open case, which is what stops a live case being swept up.
+
+**The "keep" side needed widening.** Act 843 covers a person identifiable from the retained data *combined with other information held*, so stripping the name is not sufficient — `Legacy of Love / Widower Support / GHS 4,735 / 13 March 2026 / Tamale` singles out one person with no name in it. The boundary therefore has three dispositions, not two:
+
+| | |
+|---|---|
+| **destroy** | name, phone, email, ID numbers and documents, date of birth, address, **community**, coordinates, photograph, signature, bank and MoMo details, next of kin, household, medical, religion, school/employer, narrative, case notes, uploaded documents, IP, **case reference**, **payment reference** |
+| **generalise** | age → band · assistance amount → band · assistance date → period (month) · programme (subject to the minimum-group rule) |
+| **keep** | division, region, district, gender, broad coded outcome, statistical indicators |
+
+Community, case reference and payment reference are on the destroy side deliberately: a reference kept "for traceability" is exactly the linkage that makes everything else pseudonymous rather than anonymous.
+
+**Two datasets, not one.** `beneficiaries` is operational and is destroyed at retention expiry; `beneficiary_impact_records` is anonymous, projected at case closure, and outlives it. Its `source_beneficiary_id` is `ON DELETE SET NULL`, so the linkage is severed in the same statement that destroys the case record — pseudonymous while the identifiable record lawfully exists, genuinely unlinked afterwards. A hash would not do: holding the means to reverse it keeps the data personal under Act 843.
+
+**Minimum group size 5.** Not mandated by Act 843 — a disclosure control, because the Foundation works with small populations in sensitive categories. `DisclosureControl` suppresses any published breakdown cell below it, and nulls every measure on a suppressed row, not just the count.
+
+Every column on a de-identifiable model maps to a classified element, and a test fails on any that maps to nothing. The failure mode being guarded is not a wrong decision about a field; it is a field added in two years that nobody classified at all.
 
 **4. Shop sells branded merchandise, stationery, drinkware, books and campaign goods only.** Medicines, regulated medical products, supplements, food and cosmetics require a separate FDA Ghana regulatory review and cannot be listed without one. **Shop sales and charitable donations are separate throughout** — separate accounting, receipts, payment records and reporting. A charitable acknowledgement is never issued for a purchase.
 

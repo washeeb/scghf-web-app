@@ -8,6 +8,89 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Module 3, Programmes — 2026-09-03
+
+#### Added
+
+**Divisions and projects**
+- `divisions` is the spine — the four divisions from the foundation profile, seeded
+  and **locked**: projects, causes, donations and years of reporting hang off them,
+  so deletion is refused and deactivation offered instead
+- Each division names a **theme token** for its colour, never a hex. A hex in a data
+  column would bypass `theme_settings` and its AA contrast validation exactly as a hex
+  in a Blade template would; a test asserts every division names a token that exists
+- `division_id` is nullable everywhere and **null means foundation-wide, not unknown**.
+  `forDivision()` therefore includes the shared rows by default. Foreign keys are
+  `ON DELETE SET NULL`: content outlives the structure
+- The eight CMS tables Module 2 deferred gain `division_id` **with its foreign key**,
+  as that migration promised — expand-only, constraint and column together
+- `projects`, `project_updates`, `project_milestones`, `project_locations`, and pivots
+  to focus areas, partners and documents. Budgets are integer pesewas through
+  `MoneyCast`; a float budget is refused rather than silently stored a hundredfold low
+
+**Causes and impact**
+- `causes` is the fundraising unit, `projects` the work — separate tables, because a
+  cause can fund several projects and a project can run with no appeal behind it
+- **General Fund** seeded and locked, so a gift made with no appeal chosen still has a
+  destination. `Cause::generalFund()` throws rather than returning null
+- Per-division funds seeded as drafts with no copy: the foundation writes its own
+  appeal text
+- Progress is not clamped at 100% — an appeal that raised 140% should say so
+- `impact_metrics` + `impact_metric_values` as a **time series**, not a running total,
+  with who verified each figure and when
+
+**Beneficiaries, consent and analytics**
+- **Two datasets.** `beneficiaries` is operational and destroyed at retention expiry;
+  `beneficiary_impact_records` is anonymous, projected at case closure, and outlives
+  it. `source_beneficiary_id` is `ON DELETE SET NULL`, so the linkage is severed in
+  the same statement that destroys the case record
+- **Closure starts the retention clock; it destroys nothing.** An open case has no
+  anchor date, which is what stops a live case being swept up
+- `consents` — polymorphic, evaluated from its dates. A story needs story consent; a
+  photograph needs photo consent as well; a real name needs name-use consent on top.
+  Enforced in the model's saving hook, so `update(['is_published' => true])` cannot
+  walk past it. `missingConsents()` says *which* consent is missing
+- A minor's consent is refused unless it names the guardian who gave it, and a minor
+  cannot consent on their own behalf
+- Sensitive documents get 24 months against the case record's 72, and a medical or
+  identity document is sensitive whatever the flag says
+- `Beneficiary::privacyElements()` classifies every column; a test fails on any column
+  that maps to nothing
+
+#### Changed
+- **The GRA acknowledgement wording.** The document is an *acknowledgement of
+  contribution/donation to a worthwhile cause*, not a "tax-deductible receipt" — the
+  Foundation acknowledges the gift, the GRA decides the deduction. Three paragraphs:
+  s.97 status (only while a valid approval is held), the acknowledgement itself with
+  the amount in figures and words, and the mandatory s.100 disclaimer
+- **Approval validity is evaluated against the donation date, not today.** A receipt
+  reprinted after an approval lapses still cites what was true when the gift was
+  received; a gift received before approval never acquires it retroactively; a revoked
+  approval is never cited
+- **`causes.is_tax_deductible` is necessary but not sufficient.** Deductibility also
+  requires a current written GRA approval; `qualifiesForTaxRelief()` delegates to the
+  single gate rather than reading the column
+- **The de-identification boundary gained a third disposition.** Destroy / generalise /
+  keep, because an exact amount and an exact day beside a division and a district
+  identify a person with no name in the row. Community, case reference and payment
+  reference moved to destroy
+- `AmountInWords` is pure PHP rather than `ext-intl` — intl is not guaranteed on shared
+  cPanel hosting, and a legal document whose wording changes when the host upgrades PHP
+  is not acceptable
+
+#### Fixed
+- **Fixture tables in tests caused a full `migrate:fresh` before every test.** MySQL
+  implicitly commits on DDL, ending the transaction `RefreshDatabase` wraps each test
+  in; Laravel then resets its migrated flag, re-migrates, drops the fixture table, and
+  the test recreates it. Thirteen seconds per test. Fixture tables moved to
+  `tests/database/migrations`, loaded only in the testing environment
+- **`de-identify` was not idempotent** — a NOT NULL column got a fresh random redaction
+  marker on every run. Already-redacted values are now skipped
+- **`AGGREGATION_LATEST` returned the earliest figure.** The `values()` relation carries
+  an ascending order for display, and appending `orderByDesc` does not override it
+
+468 tests, 982 assertions.
+
 ### Phase 3 — Database architecture — 2026-09-02
 
 #### Added
