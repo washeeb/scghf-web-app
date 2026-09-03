@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
+use App\Models\EventRegistration;
+use App\Models\PrayerRequest;
 use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
 use App\Shop\RegulatoryScreener;
@@ -123,5 +125,11 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $runner->register('volunteer_record', Volunteer::class);
+
+        // Event registrations and prayer requests. Both hold personal data with
+        // a short, purpose-limited life — a prayer request especially, which is
+        // the most sensitive thing most people ever send this foundation.
+        $runner->register('event_registration', EventRegistration::class);
+        $runner->register('prayer_request', PrayerRequest::class);
     }
 }
