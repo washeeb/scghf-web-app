@@ -8,6 +8,77 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Module 5, Shop — 2026-09-03
+
+#### Added
+
+**Catalogue and the FDA guard**
+- Every product save screens name, summary and description against
+  `compliance.shop.prohibited_keywords`. A flagged product cannot go live until
+  somebody records a review **with a reference** — "we looked at it" is not a
+  review an auditor can follow up
+- Screening runs on **every** save, so a published mug edited to mention a
+  supplement is caught. An existing review is cleared when new flags appear that
+  it did not cover
+- A newly flagged save **unpublishes** rather than refusing — refusing would
+  discard the editor's work and leave the older text live. An explicit
+  `publish()` still throws, naming the keywords and the regulator
+- Word-boundary matched: "creamery" does not trip "cream", "drugstore" does trip
+  "drug"
+- The taxonomy is **seeded from the compliance policy**, not duplicated, so the
+  two cannot drift. Categories outside the agreed list are visibly marked
+
+**Stock as an append-only ledger**
+- `inventory_movements` with a reason on every row; `stock_on_hand` is a cache
+  and `recalculateStock()` rebuilds it. An adjustment without a note is refused
+- Holds reserve the shelf at **order time**, not at payment, so two customers
+  cannot buy the last mug while both sit on the payment page
+
+**Orders, on the shared payment path**
+- `Order` is a `Payable` — same gateway, same verification, same mismatch
+  handling. Two payment paths is how a ledger diverges
+- `order_items` snapshot name, SKU and unit price; the variant FK is nullable
+  with `ON DELETE SET NULL`, so a discontinued product takes no history with it
+- Line totals are **derived**, never accepted from the caller
+- Totals reconcile — lines to subtotal, and subtotal + shipping − discount to
+  total — before the gateway is called
+- Status history is append-only and attributed; a system change is marked as
+  such rather than shown as nobody
+- A paid order cannot be cancelled outright: the money has to go back, and a
+  refund is its own record with its own approval
+
+**Invoices — the separation rule, both directions**
+- `SCGHF-INV-…`, its own counter table, never the `SCGHF-R-…` donation series
+- `InvoiceIssuer` **asserts** before writing that the order could not lawfully
+  receive a charitable acknowledgement
+- Every invoice states in words that it is not a donation acknowledgement and
+  cannot support a section 100 claim
+
+**Shipping, coupons, downloads**
+- All sixteen Ghanaian regions covered, seeded **inactive with no rates** — the
+  regions are a fact, the prices are a commercial decision
+- Collection is a zone with a zero rate, not a branch in the checkout
+- Free-delivery thresholds compare against the **subtotal**, not the total
+- Coupons in basis points, capped, never larger than the basket; a refused code
+  returns a reason
+- Digital downloads are long random tokens with an expiry and a use limit
+
+#### Fixed
+- **Abandoned checkouts stranded their stock.** Reconciliation marked the
+  transaction abandoned but told the payable nothing. `Payable` gains
+  `onPaymentAbandoned()`; a donation is marked abandoned, an order puts its
+  goods back on the shelf
+- `stock_held` is UNSIGNED, so `stock_held - 1` underflowed before
+  `GREATEST(0, …)` could clamp it — a repeated release errored instead of being
+  a no-op. Cast to SIGNED first
+
+#### Changed
+- `App\Models\Order` removed from `TaxDeductibility`'s pending-module list now
+  that the class exists — keeping it would silence the warning that should fire
+  if the model is ever renamed
+
+746 tests, 1562 assertions.
+
 ### Phase 3 — Module 4, Fundraising — 2026-09-03
 
 #### Added
