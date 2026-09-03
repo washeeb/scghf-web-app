@@ -65,6 +65,11 @@ class DatabaseSeeder extends Seeder
                 PageSeeder::class,
                 MenuSeeder::class,
                 CmsReferenceSeeder::class,
+                // Templates before newsletters: a list points at the campaign
+                // wrapper template, and a list seeded first would point at
+                // nothing.
+                MessageTemplateSeeder::class,
+                NewsletterSeeder::class,
             ]);
         } finally {
             activity()->enableLogging();
