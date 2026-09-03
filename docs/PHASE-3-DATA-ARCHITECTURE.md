@@ -488,5 +488,7 @@ Every column on a de-identifiable model maps to a classified element, and a test
 | # | Question | Blocks |
 |---|---|---|
 | 5 | **Multi-currency ever?** Schema supports it; if the answer is a firm no, some validation tightens. | several |
+| 6 | **Is recurring mobile money viable on this merchant account?** Recurring charges need a *reusable* authorization. Paystack issues those readily for cards; for MoMo it depends on the network and the account's configuration. If MoMo authorizations are not reusable, recurring giving is card-only — or becomes a "remind me to give again" flow. Confirm with Paystack once the merchant account is open. | recurring giving on the channel most donors use |
+| 7 | **Who signs an acknowledgement?** `general.receipt_signatory` has a placeholder default. The document goes to the GRA, so the wording of the authorised signature is the foundation's call. | issuing acknowledgements |
 
 None block starting module 1.

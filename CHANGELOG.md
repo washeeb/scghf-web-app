@@ -8,6 +8,91 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Module 4, Fundraising — 2026-09-03
+
+#### Added
+
+**The gateway boundary**
+- One payment path for donations *and* shop orders, via a polymorphic payable.
+  Two payment paths is how a ledger diverges from the gateway
+- **Webhook is truth.** The redirect only says the donor came back; the
+  HMAC-authenticated endpoint says the money arrived. Raw body, `hash_equals()`,
+  stored before parsing, queued, 200 returned immediately
+- Answers **200 even to a forged request** — Paystack retries anything that is not
+  2xx, so a 401 turns a probe into a retry storm. The exception is a failure to
+  *store* the event, which returns 500 so it is not lost
+- Idempotency lives in the database: `payment_webhook_events.event_id` is UNIQUE,
+  so a replayed `charge.success` is a no-op even if the PHP handling it is wrong.
+  An event with no id falls back to a hash of its body
+- `PaymentTransaction` stores **expected** and **actual** separately. A mismatch
+  becomes `mismatch` — not `success` (wrong figure) and not `failed` (the money
+  may have been taken). It alerts and waits for a human
+- `FeeCalculator` holds the rate in basis points, never a float. Gross-up solves
+  `charge − fee(charge) = intended` rather than adding the fee to the original,
+  which always leaves the foundation short. Property-tested at 18 amounts
+- Card data: allow-listed authorization fields, a refusal to store more than four
+  digits, and a scrubber that redacts card-shaped **values** at any depth
+- Refunds are their own rows, need a stated reason, cannot exceed what remains,
+  and **cannot be approved by the person who requested them**
+- `FakeGateway` makes the module buildable before the merchant account exists —
+  and verifies signatures with the same HMAC-SHA512, because faking that would
+  leave the most security-critical line untested. **Production refuses to boot**
+  on the fake driver or a test key
+
+**Donations**
+- Append-only, enforced: a completed gift refuses to have its amount, cause,
+  reference, currency or deductible subtotal changed, and none can be deleted
+- `donation_items` for **every** gift. A GH₵ 500 donation can be GH₵ 300
+  deductible and GH₵ 200 not, so the subtotal is a sum over items
+- Items are reconciled against the total **before** the gateway is called
+- `is_tax_deductible` is snapshotted from `TaxDeductibility` and cannot be
+  rewritten. A gift stays deductible after the approval lapses — the
+  acknowledgement in the donor's hands must not change meaning
+- Settlement is idempotent under a row lock; totals increment atomically in SQL
+- Donors are separate from users, matched by email then normalised phone, never
+  by name. Their details are snapshotted onto each gift
+- Consent captured per channel with its Act 843 evidence
+
+**Acknowledgements**
+- Sequential per financial year with **no gaps**, from a counter row under
+  `lockForUpdate` — not an AUTO_INCREMENT, which burns a number on a rolled-back
+  insert
+- Every figure and sentence **snapshotted**, never re-rendered
+- The tax wording covers the **deductible subtotal**, not the gross
+- Refuses a gift that has not completed, a payable on the never-acknowledge list,
+  and a missing Foundation TIN
+
+**Recurring giving**
+- ⚠ **The mobile-money caveat is surfaced, not hidden.** Recurring charges need a
+  reusable authorization; Paystack issues those readily for cards but not
+  reliably for MoMo — which is how most Ghanaian donors pay. The default is
+  conservative, blocked subscriptions are **reported** in the run summary and as
+  skipped charge rows, and the decision is the foundation's to make
+- Two drivers: `gateway` (Paystack owns the schedule) and `managed` (we charge a
+  stored authorization from cron). A gateway-driven one is never charged locally
+- Overlapping cron runs cannot double-charge — unique on
+  `(subscription_id, scheduled_on)`
+- One decline sets `failing`; three consecutive failures pause it. Any success
+  clears the counter. A cancelled commitment refuses to resume
+- Deductibility snapshotted fresh per cycle; every cycle gets its own receipt
+
+**Offline gifts and reconciliation**
+- Cash, cheques and bank transfers go into the **same** ledger and number series
+- Reconciliation recovers payments the gateway settled that the site never heard
+  about, and verifies once more before writing off an abandonment
+- Mismatches, unprocessed webhooks and missing acknowledgements are reported,
+  never auto-fixed. `--series` finds gaps in a year's receipt numbers
+- Both commands registered in the **scheduler**, not as new cron lines. The
+  retention sweep is scheduled **dry**
+
+#### Fixed
+- **The donation append-only guard did nothing.** It compared
+  `getOriginal('status')` — a cast enum — against a string. `getRawOriginal` now
+- `received_on` had no date cast; settlement was copying the offline method onto
+  the donation's `channel`
+
+646 tests, 1357 assertions.
+
 ### Phase 3 — Module 3, Programmes — 2026-09-03
 
 #### Added
