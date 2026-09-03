@@ -51,6 +51,10 @@ class DatabaseSeeder extends Seeder
                 // item pointing at a division that does not exist yet is a
                 // broken link seeded on purpose.
                 DivisionSeeder::class,
+                // After divisions, because the General Fund and the per-division
+                // funds both need them. Before anything that could take a
+                // donation.
+                CauseSeeder::class,
                 PageSeeder::class,
                 MenuSeeder::class,
                 CmsReferenceSeeder::class,
