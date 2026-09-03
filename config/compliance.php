@@ -181,6 +181,40 @@ return [
                     .'consent.',
             ],
 
+            /*
+            |------------------------------------------------------------------
+            | Communications
+            |------------------------------------------------------------------
+            |
+            | Delivery logs hold an address, a phone number and, for
+            | transactional mail, the rendered message — which for a case update
+            | or a prayer follow-up is not a summary of personal data, it IS the
+            | personal data.
+            |
+            | Two years, from the send, and then deleted. Long enough to answer
+            | "did my receipt ever arrive?", to investigate a deliverability
+            | problem, and to reconcile an SMS invoice. Not long enough to
+            | become a searchable archive of everything the Foundation has ever
+            | said to anybody.
+            |
+            | The financial trail does NOT depend on this: the donation and its
+            | receipt are their own records under `financial_record`, and they
+            | are the evidence that a gift was acknowledged. This log is
+            | evidence of DELIVERY, which is a shorter-lived question.
+            |
+            | The suppression list is deliberately NOT swept — see the note on
+            | App\Models\Suppression. Forgetting that somebody objected is how
+            | they start receiving mail again after asking not to.
+            */
+            'communication_log' => [
+                'label' => 'Email, SMS and notification delivery logs',
+                'months' => 24,
+                'anchor' => 'created_at',
+                'action' => 'delete',
+                'purpose' => 'Answering delivery queries, diagnosing deliverability problems and '
+                    .'reconciling SMS invoices. Not a permanent archive of correspondence.',
+            ],
+
             'financial_record' => [
                 'label' => 'Tax and accounting records',
                 'months' => 72,   // 6 years, statutory minimum

@@ -62,3 +62,20 @@ Schedule::command('scghf:retention')
     ->weeklyOn(1, '07:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+ * The outbox, every minute.
+ *
+ * Every minute rather than every five because the host's cap is per HOUR: a
+ * frequent, small drain spreads the same allowance evenly instead of sending
+ * two hundred messages in one burst and nothing for the next fifty-nine
+ * minutes. Bursts are what trip shared-hosting rate limiters.
+ *
+ * The command sends only what the throttle allows and stops, so overlapping
+ * runs would be harmless — but `withoutOverlapping()` keeps the process count
+ * down on an account with an entry-process limit.
+ */
+Schedule::command('scghf:send-messages')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();

@@ -6,8 +6,10 @@ namespace App\Providers;
 
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
+use App\Models\EmailLog;
 use App\Models\EventRegistration;
 use App\Models\PrayerRequest;
+use App\Models\SmsLog;
 use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
 use App\Shop\RegulatoryScreener;
@@ -131,5 +133,16 @@ class AppServiceProvider extends ServiceProvider
         // the most sensitive thing most people ever send this foundation.
         $runner->register('event_registration', EventRegistration::class);
         $runner->register('prayer_request', PrayerRequest::class);
+
+        /*
+         * Delivery logs. Two years, then deleted.
+         *
+         * `suppressions` is deliberately absent from this list and must stay
+         * absent: forgetting that somebody objected to being contacted is how
+         * they start receiving mail again after asking not to. The list exists
+         * precisely to prevent processing, so sweeping it would defeat it.
+         */
+        $runner->register('communication_log', EmailLog::class);
+        $runner->register('communication_log', SmsLog::class);
     }
 }
