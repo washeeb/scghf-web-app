@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -76,6 +77,10 @@ class Donation extends Model implements Payable
             'consent_at' => 'datetime',
             'paid_at' => 'datetime',
             'failed_at' => 'datetime',
+            // A date, not a datetime: nobody records the minute a cash gift
+            // changed hands at an event, and pretending otherwise invents
+            // precision the record does not have.
+            'received_on' => 'date',
         ];
     }
 
@@ -189,6 +194,12 @@ class Donation extends Model implements Payable
     public function transaction(): MorphOne
     {
         return $this->morphOne(PaymentTransaction::class, 'payable');
+    }
+
+    /** @return HasOne<DonationReceipt, $this> */
+    public function receipt(): HasOne
+    {
+        return $this->hasOne(DonationReceipt::class);
     }
 
     // ── The Payable contract ─────────────────────────────────────────────────
