@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Beneficiary;
+use App\Models\BeneficiaryDocument;
 use App\Support\Anonymiser;
 use App\Support\ContrastChecker;
 use App\Support\DisclosureControl;
@@ -73,5 +75,34 @@ class AppServiceProvider extends ServiceProvider
         // Ghana is UTC+0 with no DST, so this changes no arithmetic — but being
         // explicit means "today" in a report is unambiguous.
         Date::use(Carbon::class);
+
+        $this->registerRetentionSubjects();
+    }
+
+    /**
+     * Tell the retention runner which models fall under which policy.
+     *
+     * Registered here rather than discovered, so the set of tables subject to
+     * automated destruction is a short, readable list somebody can check
+     * against the policy — and so a model that should be swept but is missing
+     * from it is visible by its absence.
+     *
+     * Beneficiary reports its class per instance (declined, withdrawn and
+     * closed cases have very different lives), so it registers under all three.
+     */
+    private function registerRetentionSubjects(): void
+    {
+        $runner = $this->app->make(RetentionRunner::class);
+
+        foreach ([
+            'beneficiary_application_declined',
+            'beneficiary_application_withdrawn',
+            'beneficiary_case_record',
+        ] as $class) {
+            $runner->register($class, Beneficiary::class);
+        }
+
+        $runner->register('beneficiary_sensitive_document', BeneficiaryDocument::class);
+        $runner->register('beneficiary_case_record', BeneficiaryDocument::class);
     }
 }
