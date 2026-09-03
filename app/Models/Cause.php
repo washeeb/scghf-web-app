@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
@@ -170,6 +171,52 @@ class Cause extends Model
     public function raisedAmount(): Money
     {
         return $this->raised ?? Money::zero($this->currency);
+    }
+
+    /**
+     * Fold a completed gift into the appeal total.
+     *
+     * Incremented atomically in SQL — `UPDATE ... SET raised_minor =
+     * raised_minor + ?` — never read-then-written. A read-modify-write loses
+     * money under concurrency, and two gifts landing in the same second is
+     * exactly when it matters.
+     *
+     * Safe to increment rather than recompute because donations are
+     * append-only: nothing is ever edited or removed, so the running total
+     * cannot drift away from the rows behind it.
+     */
+    public function recordDonation(Donation $donation): void
+    {
+        static::whereKey($this->getKey())->update([
+            'raised_minor' => DB::raw('raised_minor + '.(int) $donation->amount->toMinor()),
+            'donation_count' => DB::raw('donation_count + 1'),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Recompute the total from the donations themselves.
+     *
+     * For reconciliation and for repairing a total after an offline gift is
+     * corrected — not for the hot path, which increments. Counts only completed
+     * gifts, so a refunded donation drops out and the appeal stops overstating
+     * what it raised.
+     */
+    public function recalculateRaised(): Money
+    {
+        $minor = (int) Donation::query()
+            ->where('cause_id', $this->getKey())
+            ->completed()
+            ->sum('amount_minor');
+
+        $count = Donation::query()->where('cause_id', $this->getKey())->completed()->count();
+
+        static::whereKey($this->getKey())->update([
+            'raised_minor' => $minor,
+            'donation_count' => $count,
+        ]);
+
+        return Money::ofMinor($minor, $this->currency);
     }
 
     /**
