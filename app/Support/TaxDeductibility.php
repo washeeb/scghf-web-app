@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Models\Order;
 use App\Models\TaxApproval;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -208,15 +207,18 @@ class TaxDeductibility
     /**
      * Whether a configured class belongs to a module that has not landed yet.
      *
-     * `App\Models\Order` is referenced before Module 5 exists on purpose: the
-     * rule that a shop purchase never receives a charitable acknowledgement is
-     * policy, and stating it now means the guard is in place the moment orders
-     * become possible rather than being remembered afterwards.
+     * EMPTY, as of Module 5. `App\Models\Order` used to be listed here — it was
+     * referenced in the compliance config before the shop existed, so that the
+     * rule was in place the moment orders became possible rather than being
+     * remembered afterwards. The class exists now, so keeping it here would
+     * silence the very warning that should fire if somebody renames it.
+     *
+     * The list stays because the same trick will be wanted again.
      */
     private function isPendingModule(string $class): bool
     {
         return in_array($class, [
-            Order::class,
+            // Nothing pending.
         ], true);
     }
 

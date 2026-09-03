@@ -59,6 +59,9 @@ class DatabaseSeeder extends Seeder
                 // two cannot drift: nothing appears in the shop that is not in
                 // the agreed list.
                 ShopCategorySeeder::class,
+                // Zones only. What delivery costs is a commercial decision the
+                // foundation makes with a courier, not one to invent here.
+                ShippingZoneSeeder::class,
                 PageSeeder::class,
                 MenuSeeder::class,
                 CmsReferenceSeeder::class,
