@@ -94,3 +94,17 @@ Schedule::command('scghf:sms-delivery-reports')
     ->hourly()
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+ * Verify the audit trail, daily.
+ *
+ * Quiet when clean, so cron only emails when something is wrong. Each clean run
+ * also anchors the head hash to the application log — which is what turns the
+ * chain from a proof of internal consistency (which somebody who rewrote the
+ * whole chain would also have) into something an auditor can actually check
+ * against a value recorded outside the database.
+ */
+Schedule::command('scghf:verify-audit-log --quiet-when-clean')
+    ->dailyAt('05:30')
+    ->withoutOverlapping()
+    ->onOneServer();

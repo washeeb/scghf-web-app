@@ -14,6 +14,7 @@ use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
 use App\Shop\RegulatoryScreener;
 use App\Support\Anonymiser;
+use App\Support\AuditLogger;
 use App\Support\ContrastChecker;
 use App\Support\DisclosureControl;
 use App\Support\RetentionRunner;
@@ -48,6 +49,11 @@ class AppServiceProvider extends ServiceProvider
         // retention class. Modules register into it as they land, so it needs
         // no knowledge of models that do not exist yet.
         $this->app->singleton(RetentionRunner::class);
+
+        // The only writer to audit_logs — it is the only thing that knows how
+        // to extend the hash chain, which is why AuditLog itself is fully
+        // guarded.
+        $this->app->singleton(AuditLogger::class);
     }
 
     public function boot(): void
