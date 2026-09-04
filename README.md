@@ -73,6 +73,8 @@ These are in `CLAUDE.md` in full. The short version, because getting them wrong 
 
 **Every message goes through `MessageDispatcher`.** One door out, so the suppression list, the logging and the hourly rate limit are true rather than merely available. A second send path would be a path with no suppression check on it — and mail to somebody who asked us to stop is what stops receipts being delivered to everybody else.
 
+**Reading personal data is an auditable action.** Anything that opens a beneficiary's file, exports records, or takes data out of the application records an entry through `AuditLogger`. Those actions change no model, so nothing else would notice them — and *who read this?* is the question that matters most for the records this foundation holds.
+
 ---
 
 ## Branches and deployment
@@ -114,7 +116,7 @@ Run `vendor/bin/pint` before pushing.
 ## Status
 
 **Phase 2 complete** — environment, repository, deployment pipeline.
-**Phase 3 in progress** — data architecture designed; Modules 1–7 landed (core identity · settings & CMS · programmes · fundraising · shop · engagement · communications). Module 8, System, remains. See `CHANGELOG.md`.
+**Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system. ~150 tables, 973 tests. See `CHANGELOG.md`.
 
 **Hosting is not yet chosen.** New hosting running PHP 8.4 will be procured; the project does not launch on the shared account it was scaffolded against. The pipeline is host-agnostic by design, so only values change — `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`. Runbook steps 7–11 are deferred until then.
 

@@ -8,6 +8,87 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Module 8, System — 2026-09-04
+
+**Phase 3 complete.** Eight modules, ~150 tables, 973 tests, 2014 assertions.
+
+#### Added
+
+**An audit trail that records reads, not just writes**
+- `audit_logs` captures ACTIONS, including the ones that change nothing —
+  reading a beneficiary's medical history, exporting donor records, running the
+  retention sweep. spatie/laravel-activitylog records model *changes*; none of
+  those are changes, so until now none left a trace
+- Events are declared in `config/system.php` with a category and a severity, and
+  recording an undeclared one **throws** — a new export screen has to be
+  classified before it can log
+- **Volume escalates severity.** One donor record viewed is somebody doing their
+  job; two thousand exported is a question that needs asking the same day
+- Append-only and **hash-chained** — an edit or a deletion breaks every hash
+  after it, and `scghf:verify-audit-log` names the first break. It makes
+  tampering *detectable, not impossible*; the head hash is anchored to the
+  application log on every clean run, which is what an auditor can check against
+- Impersonation is recorded separately from the person impersonated
+- The actor's name is snapshotted, so the trail survives them leaving
+- **Auditing never breaks the action it audits** — a failed write goes to the
+  log off-database and the caller proceeds
+
+**API tokens**
+- Hashed and shown once; a leaked database is not a leaked set of credentials
+- **No abilities by default**, and a mistyped ability is refused rather than
+  silently granting nothing
+- Beneficiary, safeguarding, donor and refund abilities can never be granted
+- A **mandatory expiry**, with an expiring-soon list so an integration does not
+  stop working on a Saturday with nobody knowing why
+
+**Errors, grouped**
+- Keyed by a fingerprint of class, file, line and the message with its variable
+  parts normalised, so a failing page does not produce a row per visitor
+- **Nothing from the request body, ever.** Route parameter names, never values
+- Ordinary traffic — 404s, failed logins, validation — is not an error
+- A fault that recurs after being resolved **reopens**
+
+**Backups**
+- `backups_log` records **restore tests** as first-class rows. One with no row
+  count verified nothing; one with no named verifier is an assertion. Both are
+  refused
+- `healthWarnings()` says "no backup has ever been restored and verified" —
+  which is true, and stays true until somebody does one
+- `file_count` beside `size_bytes`, because shared hosting counts inodes
+
+**Visitor statistics**
+- Aggregate **by construction**: no IP, no fingerprint, no cross-site
+  identifier, no per-visitor row. A test asserts the exact column list
+- Counts after the response and swallows every failure — statistics are never
+  worth a millisecond on a 3G connection, and never worth an error page
+- Path only, never the query string, which is where tokens and email addresses
+  live. Referring host, never the full referrer
+- **This application cannot report unique visitors**, and that is the trade
+
+**Feature flags**
+- The database overrides a flag; it cannot invent one. `config/features.php`
+  stays the source of truth for which flags exist
+- Every override carries a **reason** — required for switching on as much as
+  off — and an **expiry**, which is what stops a temporary measure becoming
+  permanent
+- A lapsed override is simply not loaded, so nothing has to run to expire one
+- `donations` is locked against admin-panel override
+- Falls back to config when the table cannot be read
+
+**Settings history**
+- Hooked into the `Setting` model, not into Filament, so it holds however the
+  value is changed
+- Encrypted settings record *that* they changed, with both values redacted
+- `valueAt()` answers "what did the receipts we issued in March say?"
+- No foreign key to `settings`, so the history survives the setting
+
+#### Notes
+
+- New commands: `scghf:verify-audit-log` (daily, quiet when clean),
+  `scghf:sms-delivery-reports` (hourly), plus a daily error-table prune
+- Two open questions recorded: who performs the quarterly restore test and
+  where, and where the audit trail is archived from year three
+
 ### Phase 3 — mNotify — 2026-09-04
 
 #### Added
