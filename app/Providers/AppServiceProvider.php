@@ -10,6 +10,7 @@ use App\Models\EmailLog;
 use App\Models\EventRegistration;
 use App\Models\PrayerRequest;
 use App\Models\SmsLog;
+use App\Listeners\RecordBackupOutcome;
 use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
 use App\Shop\RegulatoryScreener;
@@ -23,7 +24,11 @@ use App\Support\TaxDeductibility;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Backup\Events\BackupHasFailed;
+use Spatie\Backup\Events\BackupWasSuccessful;
+use Spatie\Backup\Events\BackupZipWasCreated;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -94,6 +99,21 @@ class AppServiceProvider extends ServiceProvider
         Date::use(Carbon::class);
 
         $this->registerRetentionSubjects();
+        $this->recordBackupOutcomes();
+    }
+
+    /**
+     * Write what spatie/laravel-backup did into a table somebody can read.
+     *
+     * The package emails on failure, which is right and is not enough: an email
+     * is read once by whoever happened to open it, and a backup that has been
+     * failing for three weeks looks exactly like one nobody is emailing about.
+     */
+    private function recordBackupOutcomes(): void
+    {
+        Event::listen(BackupZipWasCreated::class, [RecordBackupOutcome::class, 'handleZipCreated']);
+        Event::listen(BackupWasSuccessful::class, [RecordBackupOutcome::class, 'handleSuccess']);
+        Event::listen(BackupHasFailed::class, [RecordBackupOutcome::class, 'handleFailure']);
     }
 
     /**

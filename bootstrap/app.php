@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\CountVisit;
+use App\Support\ErrorReporter;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -32,7 +34,37 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
         ]);
+
+        /*
+         * Counts page views, and nothing about the people who cause them.
+         *
+         * Appended to the web group so it runs after the session middleware —
+         * it needs the session that already exists, and creates nothing of its
+         * own. It counts after the response has been produced and swallows
+         * every failure: statistics are never worth a millisecond of a donor's
+         * time on a 3G connection, and certainly never worth an error page.
+         */
+        $middleware->appendToGroup('web', [
+            CountVisit::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        /*
+         * Record faults where the foundation's staff can see them.
+         *
+         * This does not replace logging — the log file is still the detailed
+         * record. It puts faults in the admin panel, for people who will never
+         * open a log file over SSH, which on this host is everybody at the
+         * foundation.
+         *
+         * `reportable` runs alongside the normal handler rather than instead of
+         * it: the closure returns nothing, so Laravel still logs as usual.
+         *
+         * App\Support\ErrorReporter swallows its own failures. An error
+         * reporter that turns a 500 into a different 500 has made the situation
+         * strictly worse.
+         */
+        $exceptions->reportable(function (Throwable $e): void {
+            app(ErrorReporter::class)->report($e);
+        });
     })->create();

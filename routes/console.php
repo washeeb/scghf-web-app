@@ -108,3 +108,15 @@ Schedule::command('scghf:verify-audit-log --quiet-when-clean')
     ->dailyAt('05:30')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+ * Trim the error table back if it has grown past its ceiling.
+ *
+ * Resolved groups go first, then muted, then the oldest untouched ones — a
+ * safety valve for the shared-hosting inode quota, not a retention policy,
+ * which is why it prefers to delete what somebody has already dealt with.
+ */
+Schedule::call(fn () => App\Models\ErrorReport::pruneToCeiling())
+    ->dailyAt('04:00')
+    ->name('prune-error-reports')
+    ->onOneServer();
