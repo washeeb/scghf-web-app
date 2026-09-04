@@ -8,6 +8,47 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — mNotify — 2026-09-04
+
+#### Added
+
+- **`MnotifyGateway`** — the SMS provider the foundation chose, sending under the
+  registered sender ID `GreaterHope`. The only class that talks to mNotify, on
+  the same terms as `PaystackService`
+- **Accepting is never read as delivering.** mNotify accepting a message says
+  only that mNotify accepted it; an unregistered or lapsed sender ID is accepted
+  by the provider and dropped by MTN/Telecel/AT with no error returned anywhere
+- An **unrecognised response code is a failure**, not a shrug. Treating an
+  unknown response as "probably fine" is how a provider changing its API goes
+  unnoticed until somebody asks why nobody got their receipt
+- Account-level failures — no credit, bad API key, rejected sender ID — are told
+  apart from message-level ones and logged `critical`. They break *every*
+  message, and the queue would otherwise fail quietly one message at a time
+- Remaining SMS credit is read from every send and warned on below a threshold.
+  Credits are pre-paid and running out is silent
+- **`scghf:sms-delivery-reports`**, hourly. The only way a dead sender ID becomes
+  visible: it looks like a total collapse in delivery while sending continues to
+  report success. Below 60% delivered over 20+ reported messages it exits
+  non-zero, naming the sender ID, so cron emails somebody
+- `ReportsDelivery` contract, separate from `SmsGateway` because `log` genuinely
+  cannot answer the question
+
+#### Changed
+
+- `SMS_SENDER_ID` default is now `GreaterHope` — eleven characters, exactly the
+  GSM maximum, and it must match the registration including casing
+- Production refuses to boot with `SMS_DRIVER=mnotify` and no `MNOTIFY_API_KEY`.
+  That configuration cannot send a single message, and finding out one failed
+  receipt at a time is the expensive way
+- `SMS_DRIVER` stays `log` until the key is in the server's `.env`
+
+#### Notes
+
+- Still worth confirming with mNotify before the first live send: that the
+  registration covers all three networks, and that the delivery-report response
+  shape matches what the gateway parses. The parsing is defensive and degrades
+  to "still don't know", but a verified shape beats a defensive one
+
 ### Phase 3 — Module 7, Communications — 2026-09-03
 
 #### Added

@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Communications\Contracts\SmsGateway;
 use App\Communications\LogSmsGateway;
 use App\Communications\MessageDispatcher;
+use App\Communications\MnotifyGateway;
 use App\Communications\SendThrottle;
 use App\Communications\SmsSegmenter;
 use App\Communications\TemplateRenderer;
@@ -30,16 +31,16 @@ class CommunicationServiceProvider extends ServiceProvider
         $this->app->singleton(SmsGateway::class, function ($app): SmsGateway {
             return match ($driver = (string) config('communications.sms.driver', 'log')) {
                 'log' => $app->make(LogSmsGateway::class),
+                'mnotify' => $app->make(MnotifyGateway::class),
                 /*
-                 * Arkesel, Hubtel and mNotify go here once the Foundation has
-                 * chosen one and registered the sender ID. Deliberately not
-                 * stubbed: an empty implementation that silently succeeds is
-                 * worse than no implementation, because `log` at least tells
-                 * the truth about what it did.
+                 * Arkesel and Hubtel are deliberately NOT stubbed. An empty
+                 * implementation that silently succeeds is worse than no
+                 * implementation, because `log` at least tells the truth about
+                 * what it did.
                  */
                 default => throw new RuntimeException(
-                    "Unknown SMS driver [{$driver}]. Only 'log' is implemented; a provider "
-                    .'is chosen once the sender ID is registered with the networks.'
+                    "Unknown SMS driver [{$driver}]. Use 'mnotify' (the Foundation's provider) "
+                    ."or 'log', which costs and records every message and sends none."
                 ),
             };
         });
@@ -53,6 +54,35 @@ class CommunicationServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->assertSenderIdIsPlausible();
+        $this->assertProviderIsConfigured();
+    }
+
+    /**
+     * Production refuses to boot with a provider selected and no key for it.
+     *
+     * Same reasoning as the Paystack guard in PaymentServiceProvider: this
+     * configuration cannot send a single message, it is purely a deployment
+     * mistake, and the alternative is discovering it one failed receipt at a
+     * time. `SMS_DRIVER=log` is left alone — it is a legitimate state that
+     * tells the truth about what it did.
+     */
+    private function assertProviderIsConfigured(): void
+    {
+        if (! $this->app->isProduction()) {
+            return;
+        }
+
+        if ((string) config('communications.sms.driver') !== 'mnotify') {
+            return;
+        }
+
+        if ((string) config('communications.sms.mnotify.api_key', '') === '') {
+            throw new RuntimeException(
+                'SMS_DRIVER is mnotify but MNOTIFY_API_KEY is empty, so no SMS can be sent. '
+                .'Set the key, or set SMS_DRIVER=log, which costs and records every message '
+                .'and sends none.'
+            );
+        }
     }
 
     /**

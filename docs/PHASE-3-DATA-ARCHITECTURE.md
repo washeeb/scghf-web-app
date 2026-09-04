@@ -510,6 +510,22 @@ Every column on a de-identifiable model maps to a classified element, and a test
 
 **4. Shop sells branded merchandise, stationery, drinkware, books and campaign goods only.** Medicines, regulated medical products, supplements, food and cosmetics require a separate FDA Ghana regulatory review and cannot be listed without one. **Shop sales and charitable donations are separate throughout** — separate accounting, receipts, payment records and reporting. A charitable acknowledgement is never issued for a purchase.
 
+### Answered 2026-09-04
+
+**13. SMS provider is mNotify; sender ID is `GreaterHope`.** Implemented as `MnotifyGateway` — the only class in the application that talks to mNotify, on the same terms as `PaystackService`.
+
+`GreaterHope` is **eleven characters, which is exactly the GSM maximum**. One more and the networks reject it, silently. The boot guard refuses to start production with an over-length sender ID for that reason, and the value must match the registration *exactly*, casing included.
+
+Three things the gateway is careful about:
+
+- **Accepting is not delivering.** mNotify accepting a message says only that mNotify accepted it. An unregistered or lapsed sender ID is accepted by the provider and dropped by MTN/Telecel/AT with no error returned anywhere — so `send()` yields `sent`, and only a delivery report moves a row to `delivered`.
+- **An unrecognised response is a failure.** Treating an unknown code as "probably fine" is how a provider changing its API goes unnoticed until somebody asks why nobody got their receipt.
+- **Account-level failures are told apart from message-level ones.** No credit, a bad API key or a rejected sender ID breaks *every* message, so those are logged `critical` rather than failing quietly one message at a time.
+
+`scghf:sms-delivery-reports` runs hourly and is the only way a dead sender ID becomes visible: it looks like a total collapse in delivery while sending continues to report success. Below 60% delivered over 20+ reported messages the command exits non-zero, naming the sender ID, so cron emails somebody.
+
+`SMS_DRIVER` stays `log` until `MNOTIFY_API_KEY` is in the server's `.env`; production refuses to boot with `mnotify` selected and no key, since that configuration cannot send a single message. **Still worth confirming with mNotify before the first live send:** that the registration covers all three networks, and that the delivery-report response shape matches what the gateway parses — it is written defensively and degrades to "still don't know", but a verified shape is better than a defensive one.
+
 ### Remaining
 
 | # | Question | Blocks |
@@ -522,7 +538,6 @@ Every column on a de-identifiable model maps to a classified element, and a test
 | 10 | **Which safeguarding checks does Ghanaian law actually require, and who may sign them off?** The software enforces a check set the moment one is defined, and refuses to approve a volunteer without it. What is currently configured — declaration, Ghana Police Service clearance, two references taken up, interview — is a defensible default, not advice. Confirm with the Department of Social Welfare. | recruiting volunteers for any role with vulnerable-person contact |
 | 11 | **How long should a safeguarding record be kept?** Set to 6 years after a volunteer leaves. Some jurisdictions keep them far longer, precisely so an allegation made years later can be investigated against what was known at the time. A trustees' decision with advice. | the retention sweep, once volunteers exist |
 | 12 | **Does a spam complaint stop receipts as well as appeals?** Currently yes — `complaint` maps to scope `all`, because continuing to mail somebody who reported us to their provider is what gets a domain blocklisted, and a blocklisted domain stops delivering everything. The cost is that their next receipt is not delivered. It is still logged and still raises a task, so Finance can post it or hand it over. The alternative — complaint suppresses marketing only — keeps receipts flowing at some reputational risk. **This is the one entry in the suppression policy that is a judgement call rather than a technical fact.** | how a complaint is handled; one line in `config/communications.php` |
-| 13 | **Which SMS provider, and is the sender ID registered?** `SMS_DRIVER=log` costs and records every message and sends none, so nothing is blocked today. But an unregistered alphanumeric sender ID is accepted by the provider and **dropped by the Ghanaian networks silently**, with no error anywhere — so registration has to be confirmed before the first real send, not after. Registration takes time; worth starting before it is needed. Also confirm the provider returns **delivery reports**: without them there is no way to detect a silently blocked sender. | any real SMS |
 | 14 | **Open and click tracking: on or off?** Off, deliberately. Turning it on records that a named person read a message, when, and roughly from where — Act 843 processing needing its own lawful basis and its own line in the privacy notice. The columns exist so it is a config change rather than a migration. A trustees' decision, not a default to inherit. | campaign open-rate reporting |
 
-None block starting module 1. **13 blocks the first real SMS send** and should be started early because registration is not instant.
+None block starting module 1.

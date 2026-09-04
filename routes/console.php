@@ -79,3 +79,18 @@ Schedule::command('scghf:send-messages')
     ->everyMinute()
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+ * SMS delivery reports, hourly.
+ *
+ * Hourly rather than every minute because a network takes minutes to report,
+ * and because this is the only way to detect a sender ID that has stopped being
+ * accepted — a failure that is completely invisible otherwise: mNotify accepts
+ * every message, the networks drop every message, and nothing anywhere reports
+ * an error. Exits non-zero when the delivery rate collapses, which is what
+ * makes cron email somebody.
+ */
+Schedule::command('scghf:sms-delivery-reports')
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();

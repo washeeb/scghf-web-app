@@ -278,7 +278,15 @@ return [
     'sms' => [
 
         'driver' => env('SMS_DRIVER', 'log'),
-        'sender_id' => env('SMS_SENDER_ID', 'GreaterHOPE'),
+
+        /*
+         * The registered alphanumeric sender ID.
+         *
+         * Confirmed with the Foundation 2026-09-04: mNotify, sender ID
+         * "GreaterHope". Eleven characters, which is exactly the GSM limit —
+         * one more and the networks would reject it, silently.
+         */
+        'sender_id' => env('SMS_SENDER_ID', 'GreaterHope'),
 
         // Alphanumeric sender IDs are capped at 11 characters by GSM.
         'sender_id_max_length' => 11,
@@ -325,6 +333,44 @@ return [
         ],
 
         'country_code' => '233',
+
+        /*
+         * mNotify — the chosen provider.
+         *
+         * Credentials live in .env and nowhere else. `base_url` is
+         * configurable because mNotify has moved its API host before, and a
+         * hardcoded hostname is a deployment nobody can do quickly.
+         */
+        'mnotify' => [
+            'api_key' => env('MNOTIFY_API_KEY'),
+            'base_url' => env('MNOTIFY_BASE_URL', 'https://api.mnotify.com/api'),
+
+            /*
+             * Short, and deliberately so. This runs inside a cron-launched
+             * worker with --max-time=55 draining a batch; a provider that
+             * hangs for sixty seconds on one message must not take the whole
+             * batch down with it. A timeout is a failed message that retries,
+             * which is recoverable.
+             */
+            'timeout' => (int) env('MNOTIFY_TIMEOUT', 15),
+
+            /*
+             * SMS credits are pre-paid. Running out is silent from our side —
+             * messages are simply rejected — so the balance is checked and
+             * recorded, and a low balance raises a warning while there is still
+             * time to top up.
+             */
+            'low_balance_credits' => (int) env('SMS_LOW_BALANCE_THRESHOLD', 50),
+        ],
+
+        /*
+         * How long to keep asking mNotify whether a message arrived.
+         *
+         * A report that has not appeared within a day is not going to. The
+         * message stays `sent` — never `delivered` — because handing a message
+         * to a provider is not evidence that a network accepted it.
+         */
+        'delivery_report_window_hours' => 24,
 
         /*
          * SMS is intrusive and, in Ghana, often paid for by the recipient's
