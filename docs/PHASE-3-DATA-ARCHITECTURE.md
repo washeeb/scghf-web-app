@@ -528,6 +528,29 @@ Every column on a de-identifiable model maps to a classified element, and a test
 
 **4. Shop sells branded merchandise, stationery, drinkware, books and campaign goods only.** Medicines, regulated medical products, supplements, food and cosmetics require a separate FDA Ghana regulatory review and cannot be listed without one. **Shop sales and charitable donations are separate throughout** — separate accounting, receipts, payment records and reporting. A charitable acknowledgement is never issued for a purchase.
 
+### Gap sweep — 2026-09-04
+
+A pass over every table named in the ERDs, every seeded permission, every feature flag and every documented `.env` key, checking each one against what actually exists. It found seven gaps, all now closed.
+
+The pattern is worth stating, because it is the reason `CLAUDE.md` now carries a standing rule about it: **each gap read as a feature to anybody auditing the code.** A permission that grants nothing, a flag switched on with nothing behind it, an env key annotated "never optional" that nothing reads — those are worse than an obvious absence, because somebody has looked at them and believed them.
+
+| Gap | State before | Now |
+|---|---|---|
+| **EXIF/GPS on uploads** | `MEDIA_STRIP_EXIF=true` in `.env.example` since Phase 2, annotated *"GPS in beneficiary photos — never optional"*, read by nothing | Stripped synchronously on upload; `Media::isPublishable()` refuses anything unsanitised |
+| **Delivery webhooks** | `markBounced()` / `markComplained()` built with nothing to call them | `inbound_webhook_events` + signed endpoint per provider |
+| **Audit archive** | Open question 16 | `audit_archives` + `scghf:archive-audit-log`, chain intact across the gap |
+| **`pledges`, `payouts`** | Named in §2.4, never built | Built. A pledge is not income; a payout needs two people and evidence |
+| **`fundraisers`** | `donations.fundraiser_id` promised in a Module 4 migration comment, never added | Built with its column, behind the p2p flag |
+| **`sponsorships`** | `features.sponsorship` **on** with nothing behind it | Built, consent-gated per disclosure |
+| **`event_tickets`, `product_reviews`** | Named in §2.5/§2.6; `reviews.moderate` seeded over a table that did not exist | Built |
+
+**Sponsorship is the one to read the code for.** It links a named adult to a named vulnerable child and then sends that adult photographs and news about them indefinitely — done carelessly, a system for introducing strangers to children and telling them where to find them. So: three separate permissions all defaulting to false; consent re-read from the `consents` table at the moment of sending rather than cached; the consent actually relied on stored on the update; approval by somebody other than the author; the child generalised to a first name, an age band and a district; and **no column anywhere for a route from sponsor to child** — absent, not disabled.
+
+**Two things found while building, both real:**
+
+- The audit verifier accepted the **first** entry's `previous_hash` unconditionally, so deleting the oldest entries would have passed verification. It now checks that against null, a pruned archive, or an explicit `--from`.
+- GD stamps `CREATOR: gd-jpeg` into every JPEG it writes, so counting that as metadata made every sanitised image look unsanitised again — re-encoded on every pass, losing quality each time, never converging.
+
 ### Answered 2026-09-04
 
 **13. SMS provider is mNotify; sender ID is `GreaterHope`.** Implemented as `MnotifyGateway` — the only class in the application that talks to mNotify, on the same terms as `PaystackService`.
@@ -558,6 +581,5 @@ Three things the gateway is careful about:
 | 12 | **Does a spam complaint stop receipts as well as appeals?** Currently yes — `complaint` maps to scope `all`, because continuing to mail somebody who reported us to their provider is what gets a domain blocklisted, and a blocklisted domain stops delivering everything. The cost is that their next receipt is not delivered. It is still logged and still raises a task, so Finance can post it or hand it over. The alternative — complaint suppresses marketing only — keeps receipts flowing at some reputational risk. **This is the one entry in the suppression policy that is a judgement call rather than a technical fact.** | how a complaint is handled; one line in `config/communications.php` |
 | 14 | **Open and click tracking: on or off?** Off, deliberately. Turning it on records that a named person read a message, when, and roughly from where — Act 843 processing needing its own lawful basis and its own line in the privacy notice. The columns exist so it is a config change rather than a migration. A trustees' decision, not a default to inherit. | campaign open-rate reporting |
 | 15 | **Who performs the quarterly restore test, and where?** `backups_log` refuses a restore test with no row count and no named verifier, so this cannot be ticked off — somebody has to actually restore an archive somewhere and count what came back. The staging subdomain has its own database and is the obvious target. Until the first one is recorded, the dashboard will keep saying the backups are a hypothesis, which is accurate. | proving the backups work; nothing else |
-| 16 | **How long is the audit trail kept, and where does it go afterwards?** Set to 7 years in `config/system.php` and never swept by the retention runner — it is the evidence that the retention policy was followed, and a policy that deletes its own evidence cannot be demonstrated. The entries hold an actor, an event and a count rather than case detail, so the Act 843 minimisation argument holds. What is not yet built is the archive step that moves old years out of the live table before it becomes the largest thing in the database. | nothing yet; matters from year three |
 
 None block starting module 1. **15 is worth scheduling now** — it is the only item on this list that cannot be satisfied by writing code.

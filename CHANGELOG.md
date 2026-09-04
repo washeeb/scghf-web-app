@@ -8,6 +8,59 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 3 — Gap sweep — 2026-09-04
+
+A pass over every table named in the ERDs, every seeded permission, every
+feature flag and every documented `.env` key, checked against what actually
+existed. Seven gaps, all closed.
+
+**The pattern is why `CLAUDE.md` now carries a standing rule about it.** Each
+gap read as a *feature* to anybody auditing the code — a permission that grants
+nothing, a flag switched on with nothing behind it, an env key annotated "never
+optional" that nothing reads. That is worse than an obvious absence, because
+somebody has looked at it and believed it.
+
+#### Added
+
+**EXIF and GPS stripping** *(`MEDIA_STRIP_EXIF` had been documented since Phase
+2, annotated "never optional", read by nothing)*
+- Stripped synchronously on upload, not queued — the cron queue would leave a
+  window in which the unsanitised original is on disk and reachable
+- `Media::isPublishable()` refuses anything unsanitised; null means "not yet"
+- Key names recorded, never values. `had_gps_data` kept as a safeguarding signal
+- Turning the switch off makes publishing **impossible**, not easier
+
+**Inbound delivery webhooks** *(`markBounced()` existed with nothing to call it)*
+- `inbound_webhook_events`, on the same terms as `payment_webhook_events`
+- A provider with no configured secret verifies as **false**, never true
+- Postmark's `SubscriptionChange` direction is read, not assumed — the obvious
+  mapping would have silently removed people who had just opted back in
+
+**The audit archive** *(open question 16, answered)*
+- `audit_archives` + `scghf:archive-audit-log`. Whole closed years to a
+  compressed, hash-verified file outside the web root
+- The chain continues across the gap; a gap with no **pruned** archive is still
+  reported as tampering
+- Write and verify before deleting anything
+
+**`pledges` and `payouts`** *(named in §2.4, never built)*
+- A pledge is not income, and lives apart so no total can accidentally include it
+- Payouts need two people — the requester may not approve — and evidence
+
+**`fundraisers`** *(promised in a Module 4 migration comment, never added)*
+**`sponsorships`** *(the flag was **on** with nothing behind it)*
+**`event_tickets`, `product_reviews`** *(`reviews.moderate` was seeded over a
+table that did not exist)*
+
+#### Fixed
+
+- **The audit verifier accepted the first entry's `previous_hash`
+  unconditionally**, so deleting the oldest entries would have passed. It now
+  checks that against null, a pruned archive, or an explicit `--from`
+- **GD stamps `CREATOR: gd-jpeg` into every JPEG it writes**, so counting that
+  as metadata made every sanitised image look unsanitised again — re-encoded on
+  every pass, losing quality each time, never converging
+
 ### Phase 3 — Module 8, System — 2026-09-04
 
 **Phase 3 complete.** Eight modules, ~150 tables, 973 tests, 2014 assertions.

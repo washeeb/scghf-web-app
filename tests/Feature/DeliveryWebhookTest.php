@@ -8,6 +8,7 @@ use App\Models\InboundWebhookEvent;
 use App\Models\SmsLog;
 use App\Models\Suppression;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 
 uses(RefreshDatabase::class);
 
@@ -38,7 +39,7 @@ beforeEach(function () {
     ]);
 });
 
-function postDelivery(string $provider, array $payload, ?string $secret = 'test-secret'): \Illuminate\Testing\TestResponse
+function postDelivery(string $provider, array $payload, ?string $secret = 'test-secret'): TestResponse
 {
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
 

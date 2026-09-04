@@ -163,6 +163,41 @@ move it into the CMS layer instead.
 - Keep `CHANGELOG.md` and `README.md` up to date as work lands.
 - Never commit secrets. `.env.example` must document every new key added to `.env`.
 
+### Flagged means built, not noted — added 2026-09-04
+
+**If something is identified as needed, add the schema and build it in the same
+phase. Do not leave it as a note.**
+
+This rule exists because the alternative was tried and produced, by Phase 3:
+
+- a suppression list with `markBounced()` and nothing to call it, so the list
+  would have stayed empty and receipts would have stopped arriving
+- `reviews.moderate` granted as a permission over a table that did not exist
+- `features.sponsorship` switched **on** with nothing behind it
+- `donations.fundraiser_id` promised in a migration comment and never added
+- `MEDIA_STRIP_EXIF=true` in `.env.example`, annotated "never optional", read by
+  nothing — while beneficiary photographs kept their GPS coordinates
+
+Each of those looked like a decision recorded for later. Each was actually a
+gap that read as a feature to anybody auditing the code — which is worse than
+an obvious absence, because somebody believed it.
+
+So:
+
+- A table named in an ERD gets built in its module, or the ERD is corrected.
+- A permission gets built with the thing it protects, or it is not seeded.
+- A feature flag is **off** until the feature exists. On-and-empty is a promise
+  the application cannot keep.
+- A deferred column arrives with its foreign key in the migration that creates
+  the table it points at — that migration, not a later one.
+- An `.env` key is read by something, or it is not documented.
+
+**A genuine deferral is a feature flag that is off, plus a line in the open
+questions table.** Anything else is a gap.
+
+Before closing a phase, re-read the ERDs and the flags and check every name in
+them exists.
+
 ### End-of-task checklist
 
 After finishing any unit of work, check:
@@ -170,6 +205,8 @@ After finishing any unit of work, check:
 2. Anything worth adding to make this genuinely production-ready.
 3. Any decision needed from the user before continuing.
 4. What is now testable, and how to verify it.
+5. **Anything this task flagged as needed.** Build it now, per the rule above,
+   or turn its flag off and record it as an open question.
 
 ---
 

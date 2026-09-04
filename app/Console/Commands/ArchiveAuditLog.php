@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\AuditArchive;
 use App\Models\AuditLog;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -170,7 +171,7 @@ class ArchiveAuditLog extends Command
      * file the break away in a directory nobody opens, and the live table would
      * come back clean.
      *
-     * @param  \Illuminate\Support\Collection<int, AuditLog>  $entries
+     * @param  Collection<int, AuditLog>  $entries
      */
     private function verifyBlock($entries): bool
     {
@@ -202,7 +203,7 @@ class ArchiveAuditLog extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, AuditLog>  $entries
+     * @param  Collection<int, AuditLog>  $entries
      */
     private function write(int $year, $entries): AuditArchive
     {

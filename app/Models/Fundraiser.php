@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\MoneyCast;
+use App\Support\Features;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -105,7 +106,7 @@ class Fundraiser extends Model
      */
     public function isVisible(): bool
     {
-        return app(\App\Support\Features::class)->enabled('p2p_fundraising')
+        return app(Features::class)->enabled('p2p_fundraising')
             && $this->status === self::STATUS_ACTIVE;
     }
 
