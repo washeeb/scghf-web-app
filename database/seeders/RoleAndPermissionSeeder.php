@@ -65,6 +65,17 @@ class RoleAndPermissionSeeder extends Seeder
             'payments.view_transactions', 'payments.replay_webhook',
             'payments.reconcile', 'payments.view_keys',
             'fundraisers.moderate',
+            'pledges.view', 'pledges.manage',
+
+            /*
+             * Payouts are split three ways on purpose.
+             *
+             * Requesting and approving are separate permissions because they
+             * must be held by different people — `Payout::approve()` refuses a
+             * self-approval outright, and giving one person both permissions
+             * would only let them discover that at the worst moment.
+             */
+            'payouts.view', 'payouts.request', 'payouts.approve', 'payouts.mark_paid',
         ],
         'shop' => [
             'products.view', 'products.create', 'products.update', 'products.delete',
@@ -169,9 +180,16 @@ class RoleAndPermissionSeeder extends Seeder
             'contact.view', 'contact.reply',
             'logs.email.view', 'logs.sms.view',
             'activity_log.view',
+            'pledges.view', 'pledges.manage',
+            'payouts.view', 'payouts.request', 'payouts.mark_paid',
             // NOT granted: donations.refund_over_limit (needs Admin approval),
             // payments.replay_webhook (rewrites financial history),
             // payments.view_keys.
+            //
+            // And NOT payouts.approve. The officer who prepares a payment is
+            // not the person who authorises it — `Payout::approve()` refuses a
+            // self-approval, and granting both here would only let somebody
+            // discover that on the afternoon they needed the money to move.
         ],
 
         'Shop Manager' => [

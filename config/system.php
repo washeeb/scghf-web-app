@@ -98,6 +98,15 @@ return [
             'refund.requested' => ['category' => 'money', 'severity' => 'warning'],
             'refund.approved' => ['category' => 'money', 'severity' => 'critical'],
             'receipt.issued' => ['category' => 'money', 'severity' => 'info'],
+
+            /*
+             * Money leaving the foundation. Critical on approval rather than on
+             * payment: approval is the decision, and the decision is the thing
+             * an auditor traces back to a person.
+             */
+            'payout.approved' => ['category' => 'money', 'severity' => 'critical'],
+            'payout.paid' => ['category' => 'money', 'severity' => 'warning'],
+            'pledge.recorded' => ['category' => 'money', 'severity' => 'info'],
             'receipt.reissued' => ['category' => 'money', 'severity' => 'warning'],
             'reconciliation.run' => ['category' => 'money', 'severity' => 'info'],
 

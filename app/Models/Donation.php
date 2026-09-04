@@ -41,6 +41,7 @@ class Donation extends Model implements Payable
 
     protected $fillable = [
         'reference', 'donor_id', 'user_id', 'cause_id', 'division_id', 'subscription_id',
+        'fundraiser_id', 'pledge_id',
         'amount', 'fee', 'fee_covered_by_donor', 'net', 'currency', 'status',
         'channel', 'momo_network', 'is_anonymous',
         'tribute_type', 'tribute_name', 'tribute_message', 'tribute_notify_email',

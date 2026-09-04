@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Support\ImageSanitiser;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as BaseMedia;
 
@@ -18,6 +19,8 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media as BaseMedia;
  */
 class Media extends BaseMedia
 {
+    use HasFactory;
+
     /** @return array<string, string> */
     protected function casts(): array
     {
