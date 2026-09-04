@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\ErrorReport;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -116,7 +117,7 @@ Schedule::command('scghf:verify-audit-log --quiet-when-clean')
  * safety valve for the shared-hosting inode quota, not a retention policy,
  * which is why it prefers to delete what somebody has already dealt with.
  */
-Schedule::call(fn () => App\Models\ErrorReport::pruneToCeiling())
+Schedule::call(fn () => ErrorReport::pruneToCeiling())
     ->dailyAt('04:00')
     ->name('prune-error-reports')
     ->onOneServer();

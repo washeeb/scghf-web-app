@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Listeners\RecordBackupOutcome;
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
 use App\Models\EmailLog;
 use App\Models\EventRegistration;
 use App\Models\PrayerRequest;
 use App\Models\SmsLog;
-use App\Listeners\RecordBackupOutcome;
 use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
 use App\Shop\RegulatoryScreener;
@@ -18,6 +18,7 @@ use App\Support\Anonymiser;
 use App\Support\AuditLogger;
 use App\Support\ContrastChecker;
 use App\Support\DisclosureControl;
+use App\Support\Features;
 use App\Support\RetentionRunner;
 use App\Support\Settings;
 use App\Support\TaxDeductibility;
@@ -59,6 +60,12 @@ class AppServiceProvider extends ServiceProvider
         // to extend the hash chain, which is why AuditLog itself is fully
         // guarded.
         $this->app->singleton(AuditLogger::class);
+
+        // Holds the overrides for the request. A singleton so a page rendering
+        // twenty flag checks is one query, not twenty — and deliberately not
+        // cached beyond the request, so a flag switched during an incident
+        // takes effect on the next page load.
+        $this->app->singleton(Features::class);
     }
 
     public function boot(): void

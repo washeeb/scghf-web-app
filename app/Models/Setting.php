@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -37,10 +38,47 @@ class Setting extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::updating(function (self $setting): void {
+            /*
+             * Record what it used to be, before it stops being that.
+             *
+             * On the model rather than in Filament, so it holds however the
+             * value is changed — an admin screen, a seeder, a console command
+             * or a forceFill. A history that only Filament wrote to would have
+             * a hole in it exactly where somebody bypassed Filament.
+             *
+             * Only when the VALUE changes: relabelling a setting or reordering
+             * it is not a change to what the site says, and recording those
+             * would bury the changes that matter.
+             */
+            if (! $setting->isDirty('value')) {
+                return;
+            }
+
+            SettingHistoryEntry::recordChange(
+                $setting,
+                $setting->getOriginal('value'),
+                $setting->value,
+            );
+        });
+    }
+
     /** `contact.phone_primary` — how every caller refers to a setting. */
     public function qualifiedKey(): string
     {
         return $this->group.'.'.$this->key;
+    }
+
+    /**
+     * Everything that ever happened to this setting.
+     *
+     * @return Collection<int, SettingHistoryEntry>
+     */
+    public function history(): Collection
+    {
+        return SettingHistoryEntry::forKey($this->qualifiedKey());
     }
 
     /**
