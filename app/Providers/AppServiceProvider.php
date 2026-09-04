@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Listeners\RecordAuthenticationEvent;
 use App\Listeners\RecordBackupOutcome;
 use App\Listeners\SanitiseUploadedImage;
 use App\Models\Beneficiary;
@@ -24,10 +25,16 @@ use App\Support\ImageSanitiser;
 use App\Support\RetentionRunner;
 use App\Support\Settings;
 use App\Support\TaxDeductibility;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Backup\Events\BackupHasFailed;
 use Spatie\Backup\Events\BackupWasSuccessful;
@@ -124,6 +131,44 @@ class AppServiceProvider extends ServiceProvider
          * home coordinates that window is the entire problem.
          */
         Event::listen(MediaHasBeenAddedEvent::class, SanitiseUploadedImage::class);
+
+        $this->recordAuthenticationEvents();
+        $this->forceHttpsWhereConfigured();
+    }
+
+    /**
+     * Write what happens at the front door into `login_histories` and the audit
+     * trail.
+     *
+     * Both were built earlier with nothing emitting into them — the table since
+     * Module 1, the `auth.*` audit events since Module 8.
+     */
+    private function recordAuthenticationEvents(): void
+    {
+        Event::listen(Login::class, [RecordAuthenticationEvent::class, 'handleLogin']);
+        Event::listen(Failed::class, [RecordAuthenticationEvent::class, 'handleFailed']);
+        Event::listen(Lockout::class, [RecordAuthenticationEvent::class, 'handleLockout']);
+        Event::listen(Logout::class, [RecordAuthenticationEvent::class, 'handleLogout']);
+        Event::listen(PasswordReset::class, [RecordAuthenticationEvent::class, 'handlePasswordReset']);
+    }
+
+    /**
+     * Force https on every generated URL where configured.
+     *
+     * `FORCE_HTTPS` has been documented since Phase 2 and read by nothing.
+     *
+     * It matters beyond the usual reasons here: this application sets a session
+     * cookie authenticating an administrator who can read beneficiary case
+     * files, and one plaintext request on a shared network hands that cookie
+     * over. Behind a cPanel proxy, Laravel frequently cannot tell it is already
+     * on https, and generates http links that a browser then upgrades — or
+     * does not.
+     */
+    private function forceHttpsWhereConfigured(): void
+    {
+        if (config('security.force_https', false)) {
+            URL::forceScheme('https');
+        }
     }
 
     /**

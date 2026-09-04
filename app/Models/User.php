@@ -6,6 +6,9 @@ namespace App\Models;
 
 use App\Enums\UserType;
 use Database\Factories\UserFactory;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use SensitiveParameter;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Contracts\Permission;
@@ -33,7 +37,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property UserType $type
  * @property bool $is_active
  */
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;
@@ -235,7 +239,90 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasTwoFactorEnabled(): bool
     {
-        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
+        return $this->getAppAuthenticationSecret() !== null
+            && $this->loaded('two_factor_confirmed_at') !== null;
+    }
+
+    /**
+     * An attribute's value, or null when the column was not loaded.
+     *
+     * Strict mode turns reading an unloaded attribute into an exception, which
+     * is usually exactly what you want — it catches the `select('id')` that
+     * silently returns null everywhere else. It is wrong here.
+     *
+     * A `User` that has just been created, or one loaded by a partial select,
+     * genuinely has no `two_factor_secret` in memory. The honest answer to
+     * "does this account have 2FA?" in that state is "no evidence that it
+     * does", and the consequence of that answer is that `mustEnrolInTwoFactor()`
+     * returns true — the account is asked to enrol.
+     *
+     * That is the safe direction. Throwing instead would mean an exception on
+     * the login path for anybody whose model was loaded slightly differently,
+     * and returning true would let an unloaded column skip the second factor.
+     */
+    private function loaded(string $key): mixed
+    {
+        return array_key_exists($key, $this->attributes) ? $this->getAttribute($key) : null;
+    }
+
+    // ── Two-factor authentication (Filament's TOTP contracts) ────────────────
+    //
+    // Wired to the columns Module 1 created rather than to a second set of
+    // Filament's own. Both are already `encrypted` casts and both are in
+    // `$hidden`, so the secret is never serialised into a response, a log line
+    // or a queued job payload.
+    //
+    // No new dependency: Filament v5 ships TOTP, which matters on a host where
+    // adding a package means a deploy.
+
+    public function getAppAuthenticationSecret(): ?string
+    {
+        return $this->loaded('two_factor_secret');
+    }
+
+    /**
+     * Store a new TOTP secret.
+     *
+     * `two_factor_confirmed_at` moves with it, because the two must never
+     * disagree: a secret with no confirmation reads as "enrolment started and
+     * abandoned", and `hasTwoFactorEnabled()` — which the enrolment gate relies
+     * on — would then be false for somebody who actually has 2FA working.
+     *
+     * Filament passes null to disable, which clears both.
+     */
+    public function saveAppAuthenticationSecret(#[SensitiveParameter] ?string $secret): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => $secret === null ? null : now(),
+        ])->save();
+    }
+
+    /**
+     * What the authenticator app shows beside the code.
+     *
+     * The email address, not the name. Staff frequently hold more than one
+     * account here — their own and a shared finance login — and two entries
+     * reading "Ama Mensah" in an authenticator app is a code typed from the
+     * wrong one at the worst moment.
+     */
+    public function getAppAuthenticationHolderName(): string
+    {
+        return $this->email;
+    }
+
+    /** @return array<string>|null */
+    public function getAppAuthenticationRecoveryCodes(): ?array
+    {
+        return $this->loaded('two_factor_recovery_codes');
+    }
+
+    /**
+     * @param  array<string>|null  $codes
+     */
+    public function saveAppAuthenticationRecoveryCodes(#[SensitiveParameter] ?array $codes): void
+    {
+        $this->forceFill(['two_factor_recovery_codes' => $codes])->save();
     }
 
     /**

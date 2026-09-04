@@ -8,6 +8,65 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — Admin panel front door — 2026-09-04
+
+#### Added
+
+**The Filament panel**
+- Path from `config/admin.php`, never hardcoded. `/admin` is the first path a
+  scanner tries; moving it protects nothing on its own but takes the site out of
+  the sweeps looking for a login form to spray credentials at
+- Brand name resolved through a **closure**, so renaming the foundation in the
+  settings screen takes effect immediately. Passing the resolved string would
+  have frozen it at boot and quietly made the CMS rule false for the one piece
+  of content on every admin page
+- Colours read from the `theme_settings` tokens sampled from the logo pack —
+  resolved at boot, because Filament compiles them into a CSS palette
+- Both fall back safely: a panel that will not boot because a setting is missing
+  is worse than one showing a placeholder, and `theme_settings` does not exist
+  during `migrate:fresh`
+
+**Two-factor authentication, required**
+- Filament v5 ships TOTP, so no new dependency — which matters on a host where
+  adding a package means a deploy
+- Wired to the `two_factor_*` columns Module 1 already built, both already
+  encrypted casts and both in `$hidden`
+- `two_factor_confirmed_at` moves with the secret, so the two can never disagree
+- Recovery codes enabled, because the alternative to a recovery code is a
+  support call that ends in somebody disabling 2FA over the phone
+- The authenticator entry is labelled with the **email**, not the name — staff
+  hold more than one account here, and two entries reading "Ama Mensah" is a
+  code typed from the wrong one at the worst moment
+
+**Sign-in records, which had no writer**
+- `login_histories` has existed since Module 1 and the `auth.*` audit events
+  since Module 8, with nothing emitting into either. Both are written now
+- A failed attempt records the address tried **including for addresses with no
+  account** — a spraying run is only visible if the misses are recorded, and
+  recording only the hits would make the log a list of valid addresses
+- A lockout is recorded separately from a plain failure: failures happen to
+  everybody, a lockout is an attack or somebody who needs help in five minutes
+- New-device detection, used only to say "check it was you", never to deny
+
+**Configuration that had been documented and ignored since Phase 2**
+- `config/admin.php` reads `ADMIN_PATH`, `ADMIN_2FA_REQUIRED`,
+  `ADMIN_SESSION_TIMEOUT`
+- `config/security.php` reads every `RATE_LIMIT_*` key and `FORCE_HTTPS`
+- `RecordAdminActivity` middleware ends an idle staff session — measured from
+  the last request, so somebody working steadily is never interrupted
+
+#### Fixed
+
+- **`hasTwoFactorEnabled()` threw on any `User` whose column was not loaded** —
+  which a freshly created user is. It now treats "not loaded" as "no evidence of
+  2FA", which fails towards asking somebody to enrol
+- **`isNewDevice()` queried the logging table outside the protected block**, so
+  "logging never breaks a sign-in" was true of the insert and false of the
+  lookup one line before it
+- **`runningInConsole()` was the wrong guard for device detection** — Pest runs
+  in console, so it disabled the whole path under test while looking correct in
+  production. It asks whether there is a user agent instead
+
 ### Phase 3 — Gap sweep — 2026-09-04
 
 A pass over every table named in the ERDs, every seeded permission, every
