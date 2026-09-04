@@ -47,6 +47,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             CountVisit::class,
         ]);
+
+        /*
+         * Where an already-signed-in visitor goes if they open /login.
+         *
+         * Laravel's default is `/`, which is the home page — so somebody who is
+         * signed in and clicks a stale "Sign in" link lands on the front page
+         * with no explanation, and reasonably concludes the click did nothing.
+         * Their account is the answer to what they were trying to reach.
+         */
+        $middleware->redirectUsersTo('/account');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         /*

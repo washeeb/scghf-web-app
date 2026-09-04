@@ -32,5 +32,12 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+
+        <!--
+            A test suite that makes a network call per registration is a test
+            suite that fails whenever the wifi does. The breach check is on in
+            every other environment; PasswordPolicy reads this key.
+        -->
+        <env name="PASSWORD_CHECK_COMPROMISED" value="false"/>
     </php>
 </phpunit>

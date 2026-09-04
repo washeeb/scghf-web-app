@@ -81,6 +81,12 @@ These are in `CLAUDE.md` in full. The short version, because getting them wrong 
 
 **Reading personal data is an auditable action.** Anything that opens a beneficiary's file, exports records, or takes data out of the application records an entry through `AuditLogger`. Those actions change no model, so nothing else would notice them — and *who read this?* is the question that matters most for the records this foundation holds.
 
+**Staff do not sign in at the public form.** Two-factor is mandatory for staff and it is enforced *inside Filament's login flow*. A public login form that authenticated a staff account would hand out a fully authenticated session on one factor — and `canAccessPanel()` would then let it into the admin panel, past the check, with nothing visibly wrong. `LoginController` redirects staff to the panel once they have proved the password, and `LoginRequest` constrains the attempt to donor accounts so a change in the controller cannot quietly reopen it.
+
+**A form never says whether an address has an account.** Not sign-in, not password reset. The cost is real — somebody who mistypes their address is told a link is coming and it never arrives — and the alternative is a free service for enumerating this foundation's donors. The `email_logs` row is what lets support answer *did it go?* without the form having to.
+
+**Verification is what earns the giving history.** `donors` is matched on email address, so an account that has not proved the address sees nothing. Attaching the record at registration would let anybody who types a known donor's address read what that person has given.
+
 ---
 
 ## Branches and deployment
@@ -124,11 +130,23 @@ Run `vendor/bin/pint` before pushing.
 **Phase 2 complete** — environment, repository, deployment pipeline.
 **Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system, plus a gap sweep. ~131 tables.
 
-**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, and the layout shell (theme system, header and footer from the seeded menus, branded error pages). Still to come: public donor accounts and the media library UI. See `CHANGELOG.md`.
+**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, the layout shell (theme system, header and footer from the seeded menus, branded error pages), and public donor accounts (register, sign in, verify, reset, account area). Still to come: the media library UI and the mobile navigation menu. See `CHANGELOG.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
+> Donors sign in at **`/login`**. Staff cannot: see below.
 
-**Hosting is not yet chosen.** New hosting running PHP 8.4 will be procured; the project does not launch on the shared account it was scaffolded against. The pipeline is host-agnostic by design, so only values change — `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`. Runbook steps 7–11 are deferred until then.
+**Hosting is not yet chosen — Hostinger is under consideration.** The project does not launch on the shared cPanel account it was scaffolded against, and everything runs locally without a host. The pipeline is host-agnostic by design, so most of a move is values: `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`.
+
+Four things to confirm on any candidate host **before** committing, because each one is load-bearing rather than a preference:
+
+| Check | Why it is load-bearing |
+|---|---|
+| **Cron at one-minute resolution** | `schedule:run` must run every minute. The outbox drains on that tick, and it drains *frequently and small* on purpose because the mail cap is per hour — a five- or fifteen-minute floor turns an even trickle into bursts, which is what trips shared-hosting rate limiters. Verify the smallest interval the plan's cron UI actually allows. |
+| **SSH, on the plan being bought** | The deploy pipeline builds `vendor/` and the Vite assets on the GitHub runner and rsyncs a release directory over SSH. Without SSH the fallback is the host's own Git integration, which means Composer on the server. Note Hostinger uses hPanel and a non-standard SSH port, so `deploy/cpanel/.cpanel.yml` does not apply there. |
+| **PHP 8.4** | Not negotiable — Pest 5 needs PHPUnit 13 needs PHP ≥ 8.4.1. See the Phase 2 stack amendment in `CLAUDE.md`. |
+| **The document root can point at a subdirectory** | Laravel's `public/` must be the web root with the application above it. If the root is fixed at `public_html`, the app has to be arranged around that. |
+
+Runbook steps 7–11 are deferred until the host is decided.
 
 Placeholders are tracked in `docs/PHASE-1-BLUEPRINT.md` §0. Paystack credentials and the SMS sender ID are deliberately placeholdered: the payments module is built and fully tested against a fake gateway, and SMS runs on the `log` driver, until the real accounts exist.
 

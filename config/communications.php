@@ -500,11 +500,20 @@ return [
         /*
          * Variables available to EVERY template without being declared, drawn
          * from the CMS settings layer so none of it is hardcoded.
+         *
+         * ⚠ Each value on the right must be a key the settings seeder actually
+         * creates, or a null meaning "computed below". Three of these pointed
+         * at keys that do not exist — `general.site_name`, `general.site_url`
+         * and `organisation.legal_name` — which is why every seeded template
+         * signed off "With gratitude," and every receipt subject read "Your
+         * donation to  — SCGHF-R…". An unresolved global collapses to an empty
+         * string rather than leaving a visible {{token}}, so the failure was
+         * silent by design and invisible in review.
          */
         'global_variables' => [
-            'site_name' => 'general.site_name',
-            'site_url' => 'general.site_url',
-            'organisation_legal_name' => 'organisation.legal_name',
+            'site_name' => 'general.short_name',
+            'site_url' => null,
+            'organisation_legal_name' => 'general.legal_name',
             'organisation_address' => 'contact.address',
             'contact_email' => 'contact.email_general',
             'contact_phone' => 'contact.phone_primary',

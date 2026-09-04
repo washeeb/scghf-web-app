@@ -79,4 +79,80 @@ return [
     | to hand that cookie over.
     */
     'force_https' => (bool) env('FORCE_HTTPS', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Passwords
+    |--------------------------------------------------------------------------
+    |
+    | The rules a public donor account must meet. Staff accounts are created in
+    | the admin panel and meet the same bar — the users table carries one
+    | password policy, not two.
+    */
+    'passwords' => [
+
+        /*
+         * Twelve, not eight.
+         *
+         * Length is the property of a password that resists an offline attack;
+         * the usual complexity theatre — one capital, one digit, one symbol —
+         * mostly produces Password1! on every site the person uses. NIST
+         * SP 800-63B has preferred length over composition since 2017, and this
+         * follows it: long, checked against known breaches, no character-class
+         * rules at all.
+         */
+        'min_length' => (int) env('PASSWORD_MIN_LENGTH', 12),
+
+        /*
+         * Check the password against Have I Been Pwned's breach corpus.
+         *
+         * k-anonymity: only the first five characters of the SHA-1 hash leave
+         * this server, so neither the password nor anything identifying it is
+         * transmitted.
+         *
+         * Off under test, because a suite that makes a network call per
+         * registration is a suite that fails when the wifi does. Laravel fails
+         * OPEN when the API is unreachable, so a donor is never stopped from
+         * registering by somebody else's outage.
+         */
+        'check_compromised' => (bool) env('PASSWORD_CHECK_COMPROMISED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public accounts
+    |--------------------------------------------------------------------------
+    */
+    'accounts' => [
+
+        /*
+         * Whether the public may create an account at all.
+         *
+         * A switch rather than a route comment, because the realistic reason to
+         * need it is a registration-spam wave at 2am — and taking the form down
+         * must not require a deploy.
+         */
+        'registration_open' => (bool) env('ACCOUNT_REGISTRATION_OPEN', true),
+
+        /*
+         * Email somebody when their account is signed into from a device it has
+         * not been used on before.
+         *
+         * Never on the first sign-in of a new account: every device is new
+         * then, and an alert that fires when it cannot mean anything is an
+         * alert people learn to dismiss.
+         */
+        'alert_on_new_device' => (bool) env('ACCOUNT_ALERT_NEW_DEVICE', true),
+
+        /*
+         * How long a verification or password-reset link stays usable, in
+         * minutes.
+         *
+         * Sixty rather than Laravel's default, because the outbox drains on a
+         * cron tick and a Ghanaian mobile inbox is not read the second it
+         * arrives. Short enough that a forwarded email is not a standing key to
+         * the account.
+         */
+        'link_lifetime_minutes' => (int) env('ACCOUNT_LINK_LIFETIME', 60),
+    ],
 ];

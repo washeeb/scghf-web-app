@@ -348,6 +348,153 @@ class MessageTemplateSeeder extends Seeder
                     Someone will reply as soon as they can.
                     TEXT,
             ],
+
+            // ── Public accounts ─────────────────────────────────────────────
+            //
+            // All four are transactional and all four are LOCKED. Not because
+            // the wording is sacred, but because each one carries a link that
+            // does something: confirms an address, sets a password, or points
+            // at the security page. An editor who removes {{verify_url}} while
+            // rewording the welcome produces an email that cannot do the only
+            // thing it exists to do — and `required` below makes that a
+            // validation error at save time rather than a support ticket a
+            // week later.
+            [
+                'key' => 'account.verify_email',
+                'name' => 'Confirm your email address',
+                'description' => 'Sent when somebody creates an account, and again if they ask '
+                    .'for another link. The link expires — the wording must say so.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'verify_url', 'expires_in'],
+                'required' => ['name', 'verify_url'],
+                'subject' => 'Confirm your email address for {{site_name}}',
+                'preheader' => 'One link, and your account is ready.',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Please confirm this is your email address so we can finish setting up
+                    your account:</p>
+                    <p><a href="{{verify_url}}">Confirm my email address</a></p>
+                    <p>This link expires {{expires_in}}. If it has already expired, sign in and
+                    ask for another one.</p>
+                    <p>If you did not create an account with {{site_name}}, you can ignore this
+                    message — nothing will happen and no account will be usable.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Please confirm this is your email address so we can finish setting up your
+                    account:
+
+                    {{verify_url}}
+
+                    This link expires {{expires_in}}. If it has already expired, sign in and
+                    ask for another one.
+
+                    If you did not create an account with {{site_name}}, you can ignore this
+                    message — nothing will happen and no account will be usable.
+                    TEXT,
+            ],
+            [
+                'key' => 'account.password_reset',
+                'name' => 'Reset your password',
+                'description' => 'Sent when somebody asks to reset a forgotten password. Never '
+                    .'sent unprompted, which is what the closing paragraph tells the reader.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'reset_url', 'expires_in'],
+                'required' => ['name', 'reset_url'],
+                'subject' => 'Reset your {{site_name}} password',
+                'preheader' => 'Only if you asked for it.',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Someone asked to reset the password on your {{site_name}} account. If
+                    that was you:</p>
+                    <p><a href="{{reset_url}}">Set a new password</a></p>
+                    <p>This link expires {{expires_in}} and can only be used once.</p>
+                    <p><strong>If it was not you, do nothing.</strong> Your password has not
+                    changed, and nobody can change it without this link. If you keep receiving
+                    these, please tell us at {{contact_email}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Someone asked to reset the password on your {{site_name}} account. If that
+                    was you, set a new one here:
+
+                    {{reset_url}}
+
+                    This link expires {{expires_in}} and can only be used once.
+
+                    If it was not you, do nothing. Your password has not changed, and nobody
+                    can change it without this link. If you keep receiving these, please tell
+                    us at {{contact_email}}.
+                    TEXT,
+            ],
+            [
+                'key' => 'account.password_changed',
+                'name' => 'Your password was changed',
+                'description' => 'Sent after a password change, whether the person used a '
+                    .'reset link or changed it while signed in. Nobody asks for this email, '
+                    .'and it is the only thing that makes a silent account takeover visible '
+                    .'to the person it happened to.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'changed_at'],
+                'required' => ['name'],
+                'subject' => 'Your {{site_name}} password was changed',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>The password on your {{site_name}} account was changed on
+                    {{changed_at}}.</p>
+                    <p><strong>If that was not you, contact us immediately</strong> on
+                    {{contact_phone}} or at {{contact_email}}. Whoever changed it can sign in
+                    to your account until we stop them.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    The password on your {{site_name}} account was changed on {{changed_at}}.
+
+                    If that was not you, contact us immediately on {{contact_phone}} or at
+                    {{contact_email}}. Whoever changed it can sign in to your account until we
+                    stop them.
+                    TEXT,
+            ],
+            [
+                'key' => 'account.new_device',
+                'name' => 'Sign-in from a new device',
+                'description' => 'Sent when an account is signed into from a device it has not '
+                    .'been used on before — never on the first sign-in of a new account, when '
+                    .'every device is new and the alert would mean nothing.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'signed_in_at', 'device', 'ip_address', 'security_url'],
+                'required' => ['name'],
+                'subject' => 'New sign-in to your {{site_name}} account',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Your account was signed into on {{signed_in_at}} from a device we have
+                    not seen before: {{device}}, at {{ip_address}}.</p>
+                    <p>If that was you there is nothing to do, and you will not get this
+                    message again from the same device.</p>
+                    <p><strong>If it was not you</strong>, change your password now:
+                    {{security_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Your account was signed into on {{signed_in_at}} from a device we have not
+                    seen before: {{device}}, at {{ip_address}}.
+
+                    If that was you there is nothing to do, and you will not get this message
+                    again from the same device.
+
+                    If it was not you, change your password now:
+
+                    {{security_url}}
+                    TEXT,
+            ],
         ];
     }
 

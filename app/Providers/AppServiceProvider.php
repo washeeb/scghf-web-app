@@ -30,12 +30,16 @@ use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Spatie\Backup\Events\BackupHasFailed;
 use Spatie\Backup\Events\BackupWasSuccessful;
 use Spatie\Backup\Events\BackupZipWasCreated;
@@ -133,7 +137,49 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(MediaHasBeenAddedEvent::class, SanitiseUploadedImage::class);
 
         $this->recordAuthenticationEvents();
+        $this->registerRateLimiters();
         $this->forceHttpsWhereConfigured();
+    }
+
+    /**
+     * The named limiters the public front door hangs off.
+     *
+     * config/security.php has carried these numbers since Phase 2 and nothing
+     * read them, which meant the registration form had no limit at all and the
+     * comment explaining how carefully the limits were chosen was describing
+     * something that did not exist.
+     *
+     * ── The key matters as much as the number ───────────────────────────────
+     *
+     * Login is limited in LoginRequest rather than here, because it needs two
+     * keys at once and needs to fire Illuminate\Auth\Events\Lockout — which the
+     * `throttle` middleware does not. See App\Http\Requests\Auth\LoginRequest.
+     *
+     * Password reset is keyed on the ADDRESS as well as the IP. Keyed on IP
+     * alone, one person behind a shared mobile-network NAT — which in Ghana is
+     * most people — would lock out everybody else on that gateway. Keyed on the
+     * address alone, anybody could stop a named donor resetting their password.
+     */
+    private function registerRateLimiters(): void
+    {
+        RateLimiter::for('register', fn (Request $request) => Limit::perMinute(
+            (int) config('security.rate_limits.registration', 3)
+        )->by((string) $request->ip()));
+
+        RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(
+            (int) config('security.rate_limits.password_reset', 3)
+        )->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
+
+        /*
+         * Re-sending a verification email. Keyed by account, because the person
+         * asking is signed in and there is nothing to enumerate — and because
+         * the cost being protected is the host's hourly mail cap, which one
+         * impatient donor clicking "send it again" eleven times can spend.
+         */
+        RateLimiter::for('verification', fn (Request $request) => Limit::perMinutes(
+            5,
+            (int) config('security.rate_limits.password_reset', 3),
+        )->by((string) ($request->user()?->getKey() ?? $request->ip())));
     }
 
     /**

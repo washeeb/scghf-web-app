@@ -177,10 +177,19 @@ class TemplateRenderer
         return $d;
     }
 
+    /**
+     * Globals with no setting behind them.
+     *
+     * `site_url` comes from APP_URL rather than a setting, because it is not
+     * content: the address the application answers on is decided by the
+     * deployment, and a settings row holding a different one would produce
+     * links into a site that is not this one.
+     */
     private function computedGlobal(string $name): string
     {
         return match ($name) {
             'current_year' => (string) now()->year,
+            'site_url' => rtrim((string) config('app.url'), '/'),
             default => '',
         };
     }

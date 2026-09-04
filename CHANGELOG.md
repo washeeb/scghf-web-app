@@ -8,6 +8,136 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — Public donor accounts — 2026-09-04
+
+Registration, sign-in, verification and password reset for donors — as full page
+form posts through plain controllers rather than Livewire components. This is
+the part of the site that has to work on a five-year-old Android phone on a 2G
+fallback, and there is nothing here a form post does not do well.
+
+**Nothing on this site requires an account.** A donor can give, get a receipt
+and never come back, which is the majority path and the reason `donors` is a
+separate table from `users`. An account exists to look at your own giving
+afterwards. If registration ever appears between a donor and the payment button,
+it is in the wrong place.
+
+#### Added
+
+**The front door**
+- Register, sign in, sign out, confirm email, forgotten password, reset password
+- An account area: overview with giving totals and recent gifts, editable
+  details and communication preferences, and a security page
+- `PasswordPolicy` — one policy in one place, twelve characters minimum and a
+  Have I Been Pwned breach check by k-anonymity. **No character-class rules**:
+  composition requirements produce `Password1!` on every site the person uses,
+  and NIST SP 800-63B has preferred length over composition since 2017
+- Honeypot on registration. A hidden field and a minimum fill time stops the
+  volume bots without putting a CAPTCHA in front of the people least able to get
+  past one
+
+**Staff cannot sign in at the public form**
+- The security decision in this module. Two-factor is mandatory for staff and it
+  is enforced *inside Filament's login flow* — so a public form that
+  authenticated a staff account would produce a fully authenticated session
+  having shown one factor, and `canAccessPanel()` would then let it walk into
+  the admin panel past the check with nothing visibly wrong
+- Staff with the right password are redirected to the panel; staff without it
+  get the same generic failure as anybody else, because "this is a staff
+  account" is information about an address
+- `LoginRequest::authenticate()` also constrains the attempt to donor accounts,
+  so a change in the controller cannot quietly reopen the path
+- Password reset excludes staff for the same reason
+
+**The rate limits config/security.php has described since Phase 2**
+- All of them were read by nothing. The registration form had no limit at all,
+  and the comment explaining how carefully the numbers were chosen was
+  describing something that did not exist
+- Login is limited on **two keys at once**: address + IP narrowly, IP alone five
+  times looser. On the address alone, anybody could lock a named donor out of
+  their own account at no cost — a denial of service that looks exactly like the
+  control working. On the IP alone, one shared mobile-network gateway is one
+  bucket for thousands of people
+- Throttled in `LoginRequest` rather than by middleware, because `throttle`
+  cannot fire `Illuminate\Auth\Events\Lockout` — which is what puts the lockout
+  in the login history and the audit trail — and applies a one-minute decay
+  rather than the fifteen `lockout_seconds` sets
+
+**Every account email goes through MessageDispatcher**
+- `User::sendEmailVerificationNotification()` and `sendPasswordResetNotification()`
+  are overridden. Laravel's defaults post straight to the mail channel, which
+  would be a second way out of this application — one with no suppression check,
+  no `email_logs` row and no share of the host's hourly cap
+- Four new locked templates: `account.verify_email`, `account.password_reset`,
+  `account.password_changed`, `account.new_device`
+- They send immediately rather than through the outbox. A person is looking at
+  their inbox right now, and a link that arrives ninety seconds later is a donor
+  who has closed the tab. The hourly cap is still respected — `SendThrottle`
+  counts rows in `email_logs`, and these write one
+- **A password change emails the account holder**, whether it came from a reset
+  link or from the security page. Nobody asks for that email, and it is the only
+  thing that turns a silent account takeover into one the owner finds out about
+- **A sign-in from an unrecognised device emails them too** — but never on the
+  first sign-in of a new account, when every device is new and the alert would
+  mean nothing. An alert that fires when it cannot mean anything is one people
+  learn to dismiss, including on the day it matters
+
+**Verification is what earns the giving history**
+- `donors` is matched on email address. Attaching the record at registration
+  would let anybody who types a known donor's address read what that person has
+  given, and to what — so `User::claimDonorRecord()` refuses to run before
+  `hasVerifiedEmail()`, and the dashboard is behind `verified`
+- A record already claimed by another account is left alone. Two accounts on one
+  address is a merge decision for staff, not something to resolve silently
+  inside a request
+- The security page is deliberately **not** behind `verified`: somebody who
+  suspects the account was created by somebody else needs to change the
+  password, and that must not require verifying an address they may not control
+
+**Unticking a marketing box does something**
+- The profile form writes both the column the campaign builder reads **and** a
+  `marketing`-scope suppression, which is what `MessageDispatcher` checks on
+  every message. Writing only the column would mean the box shows unticked and
+  the next appeal goes out anyway
+- Scope `marketing`, never `all` — an unsubscribe stops appeals, not receipts
+- Ticking it back on releases **only** an unsubscribe. A hard bounce or a spam
+  complaint on the same address stays: releasing a hard bounce because somebody
+  ticked a checkbox sends mail to a mailbox that does not exist, and the damage
+  lands on everybody else's receipts
+
+**`login_histories` finally has a reader**
+- The table has held sign-in records since Module 1 and nothing showed them to
+  the person they are about. The account security page lists the last twenty
+  attempts including the failures — a run of failures followed by one success is
+  the shape of a password that was eventually guessed, and it is invisible if
+  only successes are listed
+
+#### Fixed
+
+- **Every seeded email template was signing off "With gratitude," and every
+  receipt subject read "Your donation to  — SCGHF-R…".** Three template globals
+  in `config/communications.php` pointed at settings keys that do not exist —
+  `general.site_name`, `general.site_url` and `organisation.legal_name`. An
+  unresolved global collapses to an empty string rather than leaving a visible
+  `{{token}}`, so the failure was silent by design and invisible in review
+- `ProfileUpdateRequest` no longer clears the phone number when the field is
+  absent from a request. A field that was not submitted is not a field that was
+  cleared, and for donors who mostly pay by Mobile Money the number is the
+  contact detail that matters most
+
+#### Changed
+
+- `bootstrap/app.php` sends already-signed-in visitors to `/account` rather than
+  Laravel's default `/` — somebody who clicks a stale "Sign in" link and lands
+  on the front page reasonably concludes the click did nothing
+- Two new audit events, `auth.account_created` and `auth.password_changed`. Both
+  are separate from the events they resemble because they are different facts: a
+  reset is somebody who could not get in, a change is somebody who was already
+  in, and the second one unexpected is what a takeover looks like from outside
+- Header and footer carry an account control. It is a component rather than a
+  menu item because it is session state, not content — the menu tables can
+  already express guest-only and signed-in-only links if the foundation wants
+  its own
+
 ### Phase 4 — The layout shell — 2026-09-04
 
 Built against the menus `MenuSeeder` already produces, so the CMS rule holds

@@ -66,6 +66,22 @@ return [
             'auth.locked_out' => ['category' => 'security', 'severity' => 'warning'],
 
             /*
+             * Public account lifecycle.
+             *
+             * `account_created` is separate from `auth.login` because it is a
+             * different fact: an account existing is what a later sign-in is
+             * evidence about, and a registration wave is only visible if it can
+             * be counted on its own.
+             *
+             * `password_changed` is separate from `password_reset` for the same
+             * reason. A reset is somebody who could not get in; a change is
+             * somebody who was already in — and the second one, unexpected, is
+             * what an account takeover looks like from the outside.
+             */
+            'auth.account_created' => ['category' => 'auth', 'severity' => 'info'],
+            'auth.password_changed' => ['category' => 'auth', 'severity' => 'notice'],
+
+            /*
              * Impersonation. Always at least a warning, never info: an
              * administrator acting as somebody else is a serious capability
              * even when the reason is good.

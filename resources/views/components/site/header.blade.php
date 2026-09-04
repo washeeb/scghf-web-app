@@ -53,6 +53,14 @@
         <div class="ml-auto flex items-center gap-2 md:ml-0">
             <x-site.theme-toggle />
 
+            {{-- Sign in, or the account. Session state rather than content, so
+                 it is a component rather than a menu item — see the component
+                 for why. Hidden below `sm` so the donate button keeps the
+                 thumb-reachable corner of a phone to itself. --}}
+            <div class="hidden sm:block">
+                <x-site.account-nav />
+            </div>
+
             {{--
                 The donate call to action.
 

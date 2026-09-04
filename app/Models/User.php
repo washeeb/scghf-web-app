@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Communications\AccountNotifier;
 use App\Enums\UserType;
 use Database\Factories\UserFactory;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -122,6 +124,67 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function loginHistories(): HasMany
     {
         return $this->hasMany(LoginHistory::class)->latest();
+    }
+
+    /**
+     * The giving record this account is attached to, if any.
+     *
+     * `hasOne`, not `belongsTo` — the foreign key is on `donors`. Most donors
+     * have no user account at all (they gave once, from a phone, and left), so
+     * this is null far more often than not, and every caller must handle that.
+     *
+     * @return HasOne<Donor, $this>
+     */
+    public function donor(): HasOne
+    {
+        return $this->hasOne(Donor::class);
+    }
+
+    /**
+     * Attach this account to the giving record for its email address, creating
+     * one if there is none.
+     *
+     * ── Why this waits for verification ─────────────────────────────────────
+     *
+     * A donor record holds somebody's entire giving history, and it is matched
+     * on email. Attaching at registration would mean anybody who typed a known
+     * donor's address into the sign-up form could read what that person has
+     * given, and to what — before proving they own the address.
+     *
+     * So the caller is the email verification controller, not the registration
+     * one. Proving the address is what earns the history.
+     *
+     * Returns null when the record is already claimed by a different account,
+     * which is not an error: two accounts on one address is a merge decision
+     * for staff, not something to resolve silently in a request.
+     */
+    public function claimDonorRecord(): ?Donor
+    {
+        if (! $this->hasVerifiedEmail()) {
+            return null;
+        }
+
+        $existing = Donor::where('user_id', $this->getKey())->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $donor = Donor::whereNull('user_id')
+            ->where('email', mb_strtolower(trim((string) $this->email)))
+            ->first();
+
+        if ($donor === null) {
+            $donor = Donor::create([
+                'name' => $this->name,
+                'email' => $this->email,
+                'phone' => $this->phone_raw ?? $this->phone,
+            ]);
+        }
+
+        $donor->forceFill(['user_id' => $this->getKey()])->save();
+
+        return $donor;
     }
 
     // ── Accessors ────────────────────────────────────────────────────────────
@@ -346,6 +409,53 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function canAccessPanel(mixed $panel = null): bool
     {
         return $this->isStaff() && $this->is_active && ! $this->isSuspended();
+    }
+
+    // ── The messages this account sends about itself ─────────────────────────
+    //
+    // Both of these are overrides. Laravel's defaults push a Notification
+    // through the mail channel directly, which would be a second way out of
+    // this application — one with no suppression check, no email_logs row and
+    // no share of the host's hourly cap. README calls that out as the rule the
+    // whole communications module rests on, so the front door obeys it too.
+    //
+    // The practical consequence: a donor who marked us as spam and then asks to
+    // reset their password gets a suppressed row explaining why nothing
+    // arrived, rather than silence.
+
+    public function sendEmailVerificationNotification(): void
+    {
+        app(AccountNotifier::class)->sendEmailVerification($this);
+    }
+
+    /**
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
+    {
+        app(AccountNotifier::class)->sendPasswordReset($this, $token);
+    }
+
+    /**
+     * Change the password and tell the account holder it happened.
+     *
+     * One method rather than two calls at three call sites, because the
+     * notification is the security control here — a password changed without
+     * the owner being told is an account takeover nobody finds out about — and
+     * a control that has to be remembered at every call site is one that will
+     * eventually be forgotten at one of them.
+     */
+    public function changePassword(#[SensitiveParameter] string $plain): void
+    {
+        $this->forceFill([
+            'password' => $plain,
+            // Every other session holding the old remember cookie stops working.
+            // If the reason for this change is a stolen password, whoever stole
+            // it is still signed in until this line runs.
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        app(AccountNotifier::class)->sendPasswordChanged($this);
     }
 
     // ── Scopes ───────────────────────────────────────────────────────────────

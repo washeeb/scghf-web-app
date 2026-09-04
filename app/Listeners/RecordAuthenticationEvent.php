@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
+use App\Communications\AccountNotifier;
 use App\Enums\LoginOutcome;
 use App\Models\LoginHistory;
 use App\Models\User;
@@ -54,9 +55,14 @@ class RecordAuthenticationEvent
             return;
         }
 
+        /*
+         * Asked BEFORE the row for this sign-in is written, or the answer is
+         * always "yes, they have signed in before" — this one.
+         */
+        $hasSignedInBefore = $this->hasSignedInBefore($user);
         $isNewDevice = $this->isNewDevice($user);
 
-        $this->write(LoginOutcome::Success, (string) $user->email, $user, [
+        $entry = $this->write(LoginOutcome::Success, (string) $user->email, $user, [
             // Filament's MFA runs before this fires for staff, so a successful
             // staff login has been through the second factor by definition.
             'was_two_factor_used' => $user->hasTwoFactorEnabled(),
@@ -67,20 +73,58 @@ class RecordAuthenticationEvent
             ? 'Signed in to the admin panel.'
             : 'Signed in.', $user);
 
-        if ($isNewDevice) {
-            /*
-             * Worth its own audit entry rather than only a column.
-             *
-             * A sign-in from a device this account has never used before is the
-             * single most useful early signal of a stolen password, and it is
-             * the thing somebody scanning the trail should be able to filter on
-             * without joining to another table.
-             */
-            $this->audit(
-                'auth.login',
-                'Signed in from a device this account has not used before.',
-                $user,
-            );
+        if (! $isNewDevice) {
+            return;
+        }
+
+        /*
+         * Worth its own audit entry rather than only a column.
+         *
+         * A sign-in from a device this account has never used before is the
+         * single most useful early signal of a stolen password, and it is the
+         * thing somebody scanning the trail should be able to filter on without
+         * joining to another table.
+         */
+        $this->audit(
+            'auth.login',
+            'Signed in from a device this account has not used before.',
+            $user,
+        );
+
+        /*
+         * And tell the account holder, unless this is their first sign-in.
+         *
+         * On a brand new account every device is new, so the alert would fire
+         * on the very first use and mean nothing — and an alert that fires when
+         * it cannot mean anything is one people learn to dismiss, including on
+         * the day it matters.
+         *
+         * Best effort: AccountNotifier swallows its own failures, because this
+         * runs inside the sign-in path and an advisory must never be the reason
+         * somebody cannot get in.
+         */
+        if ($hasSignedInBefore && $entry !== null) {
+            app(AccountNotifier::class)->sendNewDeviceAlert($user, $entry);
+        }
+    }
+
+    /**
+     * Whether this account has ever completed a sign-in.
+     *
+     * Wrapped like every other query against this table: a broken login history
+     * must not be able to stop somebody signing in. Returning false when it
+     * cannot tell means no alert, which is the quiet direction — the audit
+     * entry above is written either way.
+     */
+    private function hasSignedInBefore(User $user): bool
+    {
+        try {
+            return LoginHistory::query()
+                ->where('user_id', $user->getKey())
+                ->where('outcome', LoginOutcome::Success)
+                ->exists();
+        } catch (Throwable) {
+            return false;
         }
     }
 
@@ -152,10 +196,10 @@ class RecordAuthenticationEvent
     /**
      * @param  array<string, mixed>  $extra
      */
-    private function write(LoginOutcome $outcome, string $email, ?User $user, array $extra = []): void
+    private function write(LoginOutcome $outcome, string $email, ?User $user, array $extra = []): ?LoginHistory
     {
         try {
-            LoginHistory::create([
+            return LoginHistory::create([
                 'user_id' => $user?->getKey(),
                 // Truncated rather than dropped: an over-long address is still
                 // evidence of what was tried.
@@ -178,6 +222,8 @@ class RecordAuthenticationEvent
              * separately and swallows its own failures the same way.
              */
         }
+
+        return null;
     }
 
     private function audit(string $event, string $description, ?User $user = null): void

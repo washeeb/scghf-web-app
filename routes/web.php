@@ -2,9 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Account\DashboardController;
+use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Account\SecurityController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
 use Illuminate\Support\Facades\Route;
+use Spatie\Honeypot\ProtectAgainstSpam;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,3 +68,92 @@ Route::post(
     trim((string) config('communications.webhooks.path_prefix', 'webhooks/delivery'), '/').'/{provider}',
     DeliveryWebhookController::class,
 )->name('webhooks.delivery');
+
+/*
+|--------------------------------------------------------------------------
+| Public accounts
+|--------------------------------------------------------------------------
+|
+| Registration, sign-in, verification and password reset for DONORS. Staff sign
+| in at the Filament panel, where the mandatory second factor lives — see
+| App\Http\Controllers\Auth\LoginController for why a public form that accepted
+| staff would be a bypass of it.
+|
+| Plain controllers and full page POSTs rather than Livewire components. This is
+| the one part of the site that has to work on a five-year-old Android phone on
+| a 2G fallback, with whatever the browser has decided to do to the JavaScript —
+| and there is nothing here that a form post does not do well.
+|
+| Every write path is rate limited. The numbers come from config/security.php,
+| which has carried them since Phase 2 with nothing reading them.
+*/
+Route::middleware('guest')->group(function (): void {
+    Route::get('register', [RegisterController::class, 'show'])->name('register');
+    Route::post('register', [RegisterController::class, 'store'])
+        // The honeypot is a hidden field plus a minimum fill time. It stops the
+        // volume bots, which are most of them, without a CAPTCHA — and a CAPTCHA
+        // on a donation site is a wall in front of the people least able to get
+        // over it.
+        ->middleware(['throttle:register', ProtectAgainstSpam::class]);
+
+    Route::get('login', [LoginController::class, 'show'])->name('login');
+    Route::post('login', [LoginController::class, 'store']);
+
+    Route::get('forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('forgot-password', [PasswordResetController::class, 'email'])
+        ->middleware('throttle:password-reset')
+        ->name('password.email');
+
+    Route::get('reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('reset-password', [PasswordResetController::class, 'update'])
+        ->middleware('throttle:password-reset')
+        ->name('password.store');
+});
+
+Route::post('logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+/*
+| Email verification.
+|
+| The link itself is NOT behind `auth`: somebody who registers on a phone and
+| opens the link on a laptop is not signed in there, and bouncing them to a
+| login form at that moment loses them. `signed` is the authentication — the
+| signature cannot be produced without the application key, and it expires.
+*/
+Route::get('verify-email', [EmailVerificationController::class, 'notice'])
+    ->middleware('auth')
+    ->name('verification.notice');
+
+Route::get('verify-email/{ulid}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware('signed')
+    ->name('verification.verify');
+
+Route::post('verify-email/resend', [EmailVerificationController::class, 'resend'])
+    ->middleware(['auth', 'throttle:verification'])
+    ->name('verification.send');
+
+/*
+| The account area.
+|
+| `auth.session` is Illuminate\Session\Middleware\AuthenticateSession, and it is
+| what makes "signed out everywhere else" true rather than a sentence in a flash
+| message: without it, changing the password invalidates nothing for a session
+| that is already open on another device.
+|
+| `verified` guards the dashboard and not the whole group, deliberately. An
+| unverified account must still be able to reach its own security page to change
+| a password — that is the first thing somebody does when they suspect the
+| account was created by somebody else.
+*/
+Route::middleware(['auth', 'auth.session'])
+    ->prefix('account')
+    ->name('account.')
+    ->group(function (): void {
+        Route::get('/', DashboardController::class)->middleware('verified')->name('dashboard');
+
+        Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
+        Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+
+        Route::get('security', [SecurityController::class, 'show'])->name('security');
+        Route::put('security/password', [SecurityController::class, 'updatePassword'])->name('password.update');
+    });
