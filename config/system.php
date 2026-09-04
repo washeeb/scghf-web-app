@@ -151,6 +151,36 @@ return [
          * move old years out of the live table.
          */
         'retain_years' => 7,
+
+        /*
+        |----------------------------------------------------------------------
+        | Archiving (open question 16, answered)
+        |----------------------------------------------------------------------
+        |
+        | Kept for seven years and never swept — so on shared hosting this
+        | becomes the largest table in the database, dragged across a slow
+        | connection by every nightly backup.
+        |
+        | The answer is not to delete it. Whole CLOSED years are written to a
+        | compressed, hash-verified file and removed from the live table,
+        | leaving an `audit_archives` row that proves what was moved and lets
+        | the chain continue across the gap. A gap with no archive row is still
+        | reported as tampering, which is what should happen when somebody
+        | deletes a year by hand.
+        |
+        | Two full years stay live because that is the window in which anybody
+        | actually searches them — an incident investigation looks at the last
+        | few months, and a data-subject request at the last year or two.
+        */
+        'archive_after_years' => (int) env('AUDIT_ARCHIVE_AFTER_YEARS', 2),
+
+        /*
+         * Where archives are written. `local` is storage/app, which is OUTSIDE
+         * the web root and therefore not reachable over HTTP — an audit archive
+         * behind a guessable URL would be a worse leak than the table it came
+         * from. Point this at an off-server disk once one exists.
+         */
+        'archive_disk' => env('AUDIT_ARCHIVE_DISK', 'local'),
     ],
 
     /*
@@ -196,6 +226,32 @@ return [
         'forbidden_ability_prefixes' => [
             'beneficiaries', 'safeguarding', 'donors', 'refunds', 'users', 'roles', 'settings',
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Media
+    |--------------------------------------------------------------------------
+    |
+    | `MEDIA_STRIP_EXIF` has been in .env.example since Phase 2, annotated
+    | "GPS in beneficiary photos — never optional", with nothing reading it.
+    | Now something does.
+    |
+    | ⚠ Turning this off does not make publishing easier. It makes it
+    | IMPOSSIBLE.
+    |
+    | `Media::isPublishable()` refuses any image that has not been sanitised, so
+    | switching this off stops files being stripped and therefore stops them
+    | being published. That is deliberate: the reason somebody would reach for
+    | this switch is an upload failing, and the wrong fix for a failing upload
+    | is to publish photographs with coordinates in them.
+    |
+    | The only legitimate use is diagnosing a broken GD installation. Images
+    | uploaded while it is off stay unpublishable until it is back on and
+    | `scghf:strip-media-metadata --execute` has run over them.
+    */
+    'media' => [
+        'strip_exif' => env('MEDIA_STRIP_EXIF', true),
     ],
 
     /*

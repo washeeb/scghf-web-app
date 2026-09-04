@@ -129,6 +129,17 @@ class Media extends BaseMedia
             return;
         }
 
+        if (! config('system.media.strip_exif', true)) {
+            /*
+             * Switched off. Nothing is stripped and, crucially, nothing is
+             * recorded as stripped — so `isPublishable()` keeps refusing the
+             * file. Turning this off does not make publishing easier; it makes
+             * it impossible, which is the intended behaviour. See the note in
+             * config/system.php.
+             */
+            return;
+        }
+
         $path = $this->getPath();
         $result = app(ImageSanitiser::class)->sanitise($path);
 

@@ -134,3 +134,16 @@ Schedule::command('scghf:strip-media-metadata --execute --verify')
     ->weeklyOn(2, '04:30')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+ * Archive a closed year of the audit trail, once a year.
+ *
+ * DRY BY DEFAULT, deliberately. It removes rows from a table whose whole value
+ * is that rows are never removed from it — so the scheduled run reports what
+ * WOULD move and a person runs it for real, having read that report. Automating
+ * the destruction as well as the detection is a step this project has not taken
+ * anywhere else either.
+ */
+Schedule::command('scghf:archive-audit-log')
+    ->yearlyOn(2, 1, '03:00')
+    ->onOneServer();

@@ -384,6 +384,74 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Inbound delivery webhooks
+    |--------------------------------------------------------------------------
+    |
+    | Where bounces, complaints and delivery reports come back in. Without this
+    | the suppression list never fills, the bounce rate climbs, and the first
+    | thing to stop being delivered is donation receipts — which is the failure
+    | the suppression list exists to prevent.
+    |
+    | ⚠ A provider with NO SECRET verifies as FALSE, never as true.
+    |
+    | The tempting shortcut is "no secret configured, so skip the check", and it
+    | turns an unconfigured endpoint into an open one that anybody can use to
+    | suppress any address they can guess. Failing closed means an unconfigured
+    | provider records events and acts on none of them: visible, and harmless.
+    |
+    | Every path lives under /webhooks/ because that prefix is what
+    | bootstrap/app.php exempts from CSRF — a webhook path outside it would be
+    | rejected on every delivery.
+    */
+    'webhooks' => [
+
+        'providers' => [
+
+            'mnotify' => [
+                'channel' => 'sms',
+                'secret' => env('MNOTIFY_WEBHOOK_SECRET'),
+                'signature_header' => 'x-mnotify-signature',
+                'algorithm' => 'sha256',
+            ],
+
+            /*
+             * Whichever transactional mail provider is chosen. Blueprint risk
+             * DEL-3 says receipts should not go through the shared cPanel IP,
+             * so one of these will be in use — and each signs differently,
+             * which is why the signed string is assembled from config rather
+             * than hardcoded.
+             */
+            'postmark' => [
+                'channel' => 'email',
+                'secret' => env('POSTMARK_WEBHOOK_SECRET'),
+                'signature_header' => 'x-postmark-signature',
+                'algorithm' => 'sha256',
+            ],
+
+            'mailgun' => [
+                'channel' => 'email',
+                'secret' => env('MAILGUN_WEBHOOK_SECRET'),
+                'signature_header' => 'x-mailgun-signature',
+                // Mailgun signs timestamp + body, so a captured signature
+                // cannot be replayed against a different payload.
+                'timestamp_header' => 'x-mailgun-timestamp',
+                'algorithm' => 'sha256',
+            ],
+
+            'resend' => [
+                'channel' => 'email',
+                'secret' => env('RESEND_WEBHOOK_SECRET'),
+                'signature_header' => 'svix-signature',
+                'timestamp_header' => 'svix-timestamp',
+                'algorithm' => 'sha256',
+            ],
+        ],
+
+        'path_prefix' => 'webhooks/delivery',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tracking
     |--------------------------------------------------------------------------
     |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\AuditArchive;
 use App\Models\AuditLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -43,8 +44,14 @@ class VerifyAuditLog extends Command
     public function handle(): int
     {
         $from = $this->option('from') !== null ? (int) $this->option('from') : 0;
+
+        // A --from run deliberately begins part-way along, so the first entry
+        // it sees is expected to have a predecessor it will not examine.
+        $startsMidChain = $from > 0;
+
         $previousHash = null;
         $checked = 0;
+        $archived = 0;
         $firstBreak = null;
 
         AuditLog::query()
@@ -53,28 +60,64 @@ class VerifyAuditLog extends Command
             // webhook processed late — still chains in insertion order, and
             // verifying by timestamp would report clock skew as tampering.
             ->orderBy('id')
-            ->chunk(500, function ($entries) use (&$previousHash, &$checked, &$firstBreak): bool {
+            ->chunk(500, function ($entries) use (
+                &$previousHash, &$checked, &$archived, &$firstBreak, $startsMidChain
+            ): bool {
                 foreach ($entries as $entry) {
+                    $isFirst = $checked === 0;
                     $checked++;
-
-                    /*
-                     * On the first entry examined we adopt whatever it claims
-                     * its predecessor was, because a --from run legitimately
-                     * starts mid-chain. Every entry after that must match what
-                     * we actually computed.
-                     */
-                    if ($previousHash !== null && $entry->previous_hash !== $previousHash) {
-                        $firstBreak = [$entry, 'the link to the previous entry does not match — '
-                            .'an entry has been removed, reordered or inserted'];
-
-                        return false;
-                    }
 
                     if (! $entry->hashIsIntact()) {
                         $firstBreak = [$entry, 'the entry\'s own content no longer matches its hash — '
                             .'it has been edited'];
 
                         return false;
+                    }
+
+                    /*
+                     * What this entry claims came before it, checked against
+                     * what actually did.
+                     *
+                     * The first entry examined is the awkward one. It has
+                     * nothing computed to compare against, so it is checked
+                     * against the three things that could legitimately precede
+                     * it: nothing at all (the genuine start of the chain), a
+                     * pruned archive (a documented move), or a --from run that
+                     * deliberately began mid-chain.
+                     *
+                     * Accepting it unconditionally — which is the obvious
+                     * implementation — would mean somebody could delete the
+                     * OLDEST entries and have verification pass, because
+                     * whatever survived would become the new start.
+                     */
+                    $expected = $isFirst ? $entry->previous_hash : $previousHash;
+
+                    if ($entry->previous_hash !== $expected) {
+                        $firstBreak = [$entry, 'the link to the previous entry does not match — '
+                            .'an entry has been removed, reordered or inserted, and no archive '
+                            .'accounts for the gap'];
+
+                        return false;
+                    }
+
+                    if ($isFirst && ! $startsMidChain && $entry->previous_hash !== null) {
+                        /*
+                         * Something came before this and is no longer here. That
+                         * is legitimate only if an archive took it — and only if
+                         * the archive was actually PRUNED. An archive written
+                         * but not pruned means the rows should still be present,
+                         * so their absence is a deletion by some other hand.
+                         */
+                        $archive = AuditArchive::endingWith((string) $entry->previous_hash);
+
+                        if ($archive === null || ! $archive->isPruned()) {
+                            $firstBreak = [$entry, 'entries before this one are missing and no '
+                                .'pruned archive accounts for them'];
+
+                            return false;
+                        }
+
+                        $archived++;
                     }
 
                     $previousHash = $entry->hash;
@@ -87,7 +130,7 @@ class VerifyAuditLog extends Command
             return $this->reportBreak($firstBreak[0], $firstBreak[1], $checked);
         }
 
-        return $this->reportClean($checked, $previousHash);
+        return $this->reportClean($checked, $previousHash, $archived);
     }
 
     private function reportBreak(AuditLog $entry, string $reason, int $checked): int
@@ -118,7 +161,7 @@ class VerifyAuditLog extends Command
         return self::FAILURE;
     }
 
-    private function reportClean(int $checked, ?string $head): int
+    private function reportClean(int $checked, ?string $head, int $archived = 0): int
     {
         if ($checked === 0) {
             if (! $this->option('quiet-when-clean')) {
@@ -142,6 +185,17 @@ class VerifyAuditLog extends Command
 
         if (! $this->option('quiet-when-clean')) {
             $this->info("Audit trail intact — {$checked} entries verified.");
+
+            if ($archived > 0) {
+                // Said out loud, because a chain that "jumped" is exactly what
+                // somebody reading this needs to know was deliberate.
+                $this->line(sprintf(
+                    'The chain continues across %d archived %s.',
+                    $archived,
+                    $archived === 1 ? 'period' : 'periods',
+                ));
+            }
+
             $this->line('Head hash anchored to the application log: '.substr((string) $head, 0, 16).'…');
         }
 

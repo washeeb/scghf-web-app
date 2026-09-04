@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,3 +31,25 @@ Route::post(
     (string) config('payments.paystack.webhook_path', '/webhooks/paystack'),
     PaystackWebhookController::class,
 )->name('webhooks.paystack');
+
+/*
+|--------------------------------------------------------------------------
+| Delivery webhooks — bounces, complaints and delivery reports
+|--------------------------------------------------------------------------
+|
+| One route for every provider, distinguished by a path segment, because the
+| difference between them is a signature scheme rather than a workflow.
+|
+| Under `/webhooks/` because that is the prefix bootstrap/app.php exempts from
+| CSRF. A provider posts from a server: it holds no session and no token, and
+| the endpoint is authenticated by its HMAC signature instead — a stronger check
+| than CSRF, which only proves a request came from our own page.
+|
+| Not rate-limited, for the same reason the Paystack endpoint is not: providers
+| retry on any non-2xx, so throttling into 429s turns a busy minute into a retry
+| storm. The endpoint answers 200 to everything and stores rather than trusts.
+*/
+Route::post(
+    trim((string) config('communications.webhooks.path_prefix', 'webhooks/delivery'), '/').'/{provider}',
+    DeliveryWebhookController::class,
+)->name('webhooks.delivery');

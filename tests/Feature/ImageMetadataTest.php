@@ -251,3 +251,19 @@ it('treats a decorative image as described', function () {
     expect($media->isPublishable())->toBeTrue()
         ->and($media->altText())->toBe('');
 });
+
+it('makes publishing impossible when stripping is switched off, not easier', function () {
+    /*
+     * MEDIA_STRIP_EXIF has been in .env.example since Phase 2 annotated "never
+     * optional", with nothing reading it. It is read now — and the reason
+     * somebody reaches for that switch is an upload failing, for which the
+     * wrong fix is publishing photographs with coordinates in them.
+     */
+    config()->set('system.media.strip_exif', false);
+
+    $media = new Media(['mime_type' => 'image/jpeg', 'alt_text' => 'A photograph.']);
+    $media->stripMetadata();
+
+    expect($media->hasBeenSanitised())->toBeFalse()
+        ->and($media->isPublishable())->toBeFalse();
+});
