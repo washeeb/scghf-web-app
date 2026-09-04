@@ -9,3 +9,42 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/*
+ * Class-based dark mode.
+ *
+ * Tailwind v4 defaults `dark:` to the `prefers-color-scheme` media query, which
+ * cannot be overridden by a toggle — a visitor on a dark laptop would have no
+ * way to choose light. Redefining the variant against the `.dark` class puts
+ * the decision back in the application's hands, where the three-state toggle
+ * needs it.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * The colour tokens are NOT defined here.
+ *
+ * They come from `theme_settings` and are inlined in the document head by
+ * App\Support\ThemeTokens, because the palette is CMS content and must be
+ * changeable without a deploy. Referencing them as `var(--brand-primary)` in a
+ * utility works because they resolve at paint time.
+ */
+
+/*
+ * Respect a request for less motion.
+ *
+ * Vestibular disorders are not rare, and a site that ignores this setting can
+ * make somebody physically unwell. Left as a blanket rule rather than
+ * per-animation, because the failure mode of forgetting one animation is worse
+ * than the cost of disabling a flourish.
+ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

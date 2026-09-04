@@ -8,6 +8,64 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — The layout shell — 2026-09-04
+
+Built against the menus `MenuSeeder` already produces, so the CMS rule holds
+from the first render — the content is in the database, and Phase 5 adds the
+editing UI on top rather than the shell waiting for it.
+
+#### Added
+
+**The theme system, and no flash of the wrong colours**
+- `ThemeTokens` renders both palettes from `theme_settings` as CSS custom
+  properties, **inlined in the head rather than compiled into `app.css`** — the
+  palette is CMS content sampled from the logo pack, and compiling it would mean
+  a deploy to change the brand colour
+- Both themes always emitted, so a system flip or a toggle needs no round trip
+- **A cookie as well as localStorage, and the cookie is the part that works.**
+  localStorage is only readable by JavaScript, which runs after the HTML
+  arrives — so with it alone the server always sends light, the browser paints
+  it, and the script corrects it. That correction *is* the flash. The cookie
+  lets the server put `.dark` on `<html>` in the bytes it emits
+- The inline script covers the one case the server cannot know — `system` — and
+  is deliberately **not deferred**: a deferred script runs after the paint
+- **Three states.** `system` is a real choice, not "nothing recorded": somebody
+  who picked dark stays dark when their laptop flips at sunset
+- `color-scheme` on both, so scrollbars and autofill match rather than staying
+  white on a dark page
+- Token names and values are sanitised — they come from a column an
+  administrator edits and land in an inline `<style>`, so a value closing the
+  block would be stored XSS with the site's own blessing. `url()` is refused
+  outright
+- A fallback palette for when the table cannot be read. Not the brand colours,
+  deliberately — a page rendering black on black because a query failed is worse
+  than one rendering in plain greys
+
+**The shell**
+- Base layout with a skip link *before* the navigation, named landmarks, and a
+  polite live region
+- Header and footer rendered from the seeded menus via `Menu::renderable()`,
+  which returns an empty collection rather than throwing — a fresh environment
+  gets a bare header, not a 500 on the home page
+- The donate CTA takes its destination from whichever menu item is highlighted,
+  so a campaign can retarget it without a deploy
+- Footer carries the registration number, registering authority and TIN — what a
+  Ghanaian donor looks for, and whose absence is what a scam site has in common
+  with a real one that forgot
+- Three-state theme control as a `<select>`, because three states cannot be
+  represented honestly by one cycling button
+- `prefers-reduced-motion` respected as a blanket rule
+- Branded 403/404/419/429/500/503 pages inside the site layout — an unstyled
+  framework error on a donation site reads as "this is broken", which is the
+  moment a donor abandons a payment
+
+#### Changed
+
+- Tailwind's `dark:` variant redefined against the `.dark` class. Its default is
+  the `prefers-color-scheme` media query, which a toggle cannot override — a
+  visitor on a dark laptop would have had no way to choose light
+- `routes/web.php` serves a named `home` route; the `welcome` stub is gone
+
 ### Phase 4 — Policies, and the admin path — 2026-09-04
 
 #### Added

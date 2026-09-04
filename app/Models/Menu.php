@@ -55,6 +55,41 @@ class Menu extends Model
     }
 
     /**
+     * The renderable tree for a menu key, or an empty collection.
+     *
+     * ── Why this never throws ───────────────────────────────────────────────
+     *
+     * The header calls this on every page render. A missing menu — the seeder
+     * has not run on a fresh environment, somebody renamed a key, the table
+     * does not exist yet during `migrate:fresh` — must produce a header with no
+     * navigation, not a 500 on the home page.
+     *
+     * A site with a bare header is visibly wrong and somebody fixes it. A site
+     * that will not load is an outage.
+     *
+     * Items whose destination has gone are dropped by `isRenderable()`, so a
+     * link into the site's own navigation can never 404.
+     *
+     * @return Collection<int, MenuItem>
+     */
+    public static function renderable(string $key, bool $authenticated = false): Collection
+    {
+        try {
+            $menu = static::query()->where('key', $key)->first();
+
+            if ($menu === null) {
+                return new Collection;
+            }
+
+            return $menu->tree($authenticated)
+                ->filter(fn (MenuItem $item): bool => $item->isRenderable())
+                ->values();
+        } catch (\Throwable) {
+            return new Collection;
+        }
+    }
+
+    /**
      * The renderable tree for a given auth state.
      *
      * Loads the whole menu in ONE query and assembles the tree in memory. The

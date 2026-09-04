@@ -6,9 +6,16 @@ use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+/*
+|--------------------------------------------------------------------------
+| The public site
+|--------------------------------------------------------------------------
+|
+| A home route so the layout shell is reachable and testable. CMS page
+| rendering — the page builder, blocks, templates — arrives in Phase 5 and
+| replaces this rather than being added alongside it.
+*/
+Route::get('/', fn () => view('home'))->name('home');
 
 /*
 |--------------------------------------------------------------------------

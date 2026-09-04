@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\ContrastChecker;
+use App\Support\ThemeTokens;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,22 @@ class ThemeSetting extends Model
             'is_locked' => 'boolean',
             'min_contrast' => 'float',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        /*
+         * The rendered CSS is cached for ever and busted here, rather than
+         * being given a TTL.
+         *
+         * A TTL would mean an editor changing the brand colour sees nothing
+         * happen, refreshes, still sees nothing, and concludes the admin panel
+         * is broken — then the change appears ten minutes later while they are
+         * looking at something else. Busting on save makes the panel behave the
+         * way somebody using it expects.
+         */
+        static::saved(fn () => ThemeTokens::flush());
+        static::deleted(fn () => ThemeTokens::flush());
     }
 
     public function isColour(): bool

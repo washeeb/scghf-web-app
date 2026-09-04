@@ -75,6 +75,8 @@ These are in `CLAUDE.md` in full. The short version, because getting them wrong 
 
 **Flagged means built, not noted.** If something is identified as needed, the schema goes in and it gets built in the same phase — see `CLAUDE.md`. A genuine deferral is a feature flag that is *off* plus a line in the open-questions table; anything else is a gap that reads as a feature to whoever audits it next.
 
+**The theme comes from the database, and the server decides it.** Colour tokens live in `theme_settings` and are inlined into the head — changing the brand colour is an edit in the admin panel, not a deploy. A cookie carries the visitor's choice so the server can render `.dark` in the HTML itself; localStorage alone would mean every page paints light and then corrects itself, which is the flash.
+
 **No image is published until its metadata has been removed.** A photograph taken on a phone carries the coordinates of where it was taken, which here is frequently a beneficiary's home. `Media::isPublishable()` refuses anything unsanitised, and "we have not checked yet" is refused the same way as "we checked and it failed".
 
 **Reading personal data is an auditable action.** Anything that opens a beneficiary's file, exports records, or takes data out of the application records an entry through `AuditLogger`. Those actions change no model, so nothing else would notice them — and *who read this?* is the question that matters most for the records this foundation holds.
@@ -122,7 +124,7 @@ Run `vendor/bin/pint` before pushing.
 **Phase 2 complete** — environment, repository, deployment pipeline.
 **Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system, plus a gap sweep. ~131 tables.
 
-**Phase 4 in progress** — application foundation. The admin panel and its front door are in (Filament at a configurable path, mandatory TOTP, sign-in recording), and every model now has a policy, with a test that keeps it that way. Still to come: public donor accounts, the media library UI, and the layout shell. See `CHANGELOG.md`.
+**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, and the layout shell (theme system, header and footer from the seeded menus, branded error pages). Still to come: public donor accounts and the media library UI. See `CHANGELOG.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 
