@@ -121,3 +121,16 @@ Schedule::call(fn () => ErrorReport::pruneToCeiling())
     ->dailyAt('04:00')
     ->name('prune-error-reports')
     ->onOneServer();
+
+/*
+ * Verify that images marked sanitised really are, weekly.
+ *
+ * New uploads are stripped on the way in and the backfill handles the rest, so
+ * this is the check rather than the work: `metadata_stripped_at` records that
+ * the sanitiser RAN, and this asks whether it WORKED. Exits non-zero on any
+ * file still carrying metadata, which is what makes cron email somebody.
+ */
+Schedule::command('scghf:strip-media-metadata --execute --verify')
+    ->weeklyOn(2, '04:30')
+    ->withoutOverlapping()
+    ->onOneServer();

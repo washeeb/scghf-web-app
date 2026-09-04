@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Listeners\RecordBackupOutcome;
+use App\Listeners\SanitiseUploadedImage;
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
 use App\Models\EmailLog;
@@ -19,6 +20,7 @@ use App\Support\AuditLogger;
 use App\Support\ContrastChecker;
 use App\Support\DisclosureControl;
 use App\Support\Features;
+use App\Support\ImageSanitiser;
 use App\Support\RetentionRunner;
 use App\Support\Settings;
 use App\Support\TaxDeductibility;
@@ -30,6 +32,7 @@ use Illuminate\Support\ServiceProvider;
 use Spatie\Backup\Events\BackupHasFailed;
 use Spatie\Backup\Events\BackupWasSuccessful;
 use Spatie\Backup\Events\BackupZipWasCreated;
+use Spatie\MediaLibrary\MediaCollections\Events\MediaHasBeenAddedEvent;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -66,6 +69,10 @@ class AppServiceProvider extends ServiceProvider
         // cached beyond the request, so a flag switched during an incident
         // takes effect on the next page load.
         $this->app->singleton(Features::class);
+
+        // Stateless, but a singleton so the GD/EXIF capability checks are not
+        // repeated for every file in a bulk upload.
+        $this->app->singleton(ImageSanitiser::class);
     }
 
     public function boot(): void
@@ -107,6 +114,16 @@ class AppServiceProvider extends ServiceProvider
 
         $this->registerRetentionSubjects();
         $this->recordBackupOutcomes();
+
+        /*
+         * Strip camera metadata the moment a file is added.
+         *
+         * Synchronously, not queued. The queue runs from cron once a minute, so
+         * a queued sanitiser leaves a window in which the unsanitised original
+         * is on disk and reachable — and for a photograph carrying a child's
+         * home coordinates that window is the entire problem.
+         */
+        Event::listen(MediaHasBeenAddedEvent::class, SanitiseUploadedImage::class);
     }
 
     /**
