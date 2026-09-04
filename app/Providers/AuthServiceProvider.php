@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\User;
+use App\Policies\PolicyMap;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,6 +13,8 @@ class AuthServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        $this->registerPolicies();
+
         /*
          * ORDER MATTERS. Gate::before callbacks run in registration order and
          * the first non-null result wins. The suspension check is registered
@@ -39,5 +42,27 @@ class AuthServiceProvider extends ServiceProvider
         Gate::before(function (User $user, string $ability): ?bool {
             return $user->hasRole('Super Admin') ? true : null;
         });
+    }
+
+    /**
+     * Bind every model to the policy that governs it.
+     *
+     * Registered from an explicit list rather than left to Laravel's naming
+     * convention. The convention guesses `Donation` → `DonationPolicy`, which
+     * works right up until a model has no policy of its own — at which point it
+     * returns nothing, every check quietly answers false, and a Filament
+     * resource disappears with no error to explain why.
+     *
+     * Most models here ARE governed by a parent's permissions: a `DonationItem`
+     * belongs to a donation and is not separately authorised. A naming
+     * convention cannot express that; a list can — and `PolicyCoverageTest`
+     * fails on any model missing from it, so one added in a year cannot arrive
+     * unauthorised.
+     */
+    private function registerPolicies(): void
+    {
+        foreach (PolicyMap::policies() as $model => $policy) {
+            Gate::policy($model, $policy);
+        }
     }
 }

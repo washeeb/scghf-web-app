@@ -23,16 +23,41 @@ return [
     | Where the panel lives
     |--------------------------------------------------------------------------
     |
-    | `/admin` is the first path a scanner tries, and the second is `/administrator`.
-    | Moving it is not security on its own — the panel is protected by
+    | `/admin` is the first path a scanner tries, and `/administrator` is the
+    | second. Moving it is not security on its own — the panel is protected by
     | authentication, staff-only access and mandatory 2FA — but it removes this
     | site from the automated sweeps that go looking for a login form to spray
-    | credentials at, and that is most of the traffic.
+    | credentials at, and that is most of the traffic a small site's login page
+    | ever sees.
+    |
+    | The default is foundation-specific rather than a generic word, because
+    | `manage`, `backend`, `panel`, `console`, `dashboard` and `office` are all
+    | in the same wordlists `admin` is. A hyphenated organisation name is not.
     |
     | Changing it invalidates every bookmarked admin URL, so it is a decision to
-    | make once, before launch, rather than later.
+    | make once, before staff have bookmarks.
+    |
+    | ⚠ AN EMPTY VALUE IS REFUSED, and that is not pedantry.
+    |
+    | `ADMIN_PATH=` in a .env — a key somebody cleared rather than deleted —
+    | would mount the whole admin panel at `/`, where it would shadow the public
+    | site. The home page would become a login form, silently, on deploy. The
+    | fallback below is what stops a blank line in a config file taking the
+    | website down.
     */
-    'path' => trim((string) env('ADMIN_PATH', 'admin'), '/'),
+    'path' => (static function (): string {
+        $path = trim((string) env('ADMIN_PATH', 'scghf-office'), " \t\n\r/");
+
+        /*
+         * Paths that would collide with something the application already
+         * serves. Mounting the panel on any of these does not fail loudly — it
+         * quietly wins or loses a routing race, and which one depends on
+         * registration order.
+         */
+        $reserved = ['', 'webhooks', 'storage', 'livewire', 'up', 'api'];
+
+        return in_array($path, $reserved, true) ? 'scghf-office' : $path;
+    })(),
 
     /*
     |--------------------------------------------------------------------------

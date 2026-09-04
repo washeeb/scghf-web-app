@@ -37,10 +37,38 @@ uses(RefreshDatabase::class);
 
 // ── Where the panel lives ───────────────────────────────────────────────────
 
-it('puts the panel where the configuration says, not at a hardcoded path', function () {
-    // /admin is the first path a scanner tries; /administrator is the second.
-    expect(config('admin.path'))->toBe('admin')
-        ->and(route('filament.admin.auth.login'))->toContain('/admin/login');
+it('does not sit on a path a scanner already knows', function () {
+    /*
+     * `manage`, `backend`, `panel`, `console`, `dashboard` and `office` are all
+     * in the same wordlists `admin` is. This does not protect the panel — auth,
+     * staff-only access and 2FA do — but it takes the site out of the automated
+     * sweeps, which are most of the traffic a small login page ever sees.
+     */
+    expect(config('admin.path'))->not->toBeIn([
+        'admin', 'administrator', 'adm', 'backend', 'panel', 'cpanel',
+        'manage', 'manager', 'console', 'dashboard', 'login', 'portal',
+    ]);
+});
+
+it('refuses an empty path rather than mounting the panel over the home page', function () {
+    /*
+     * `ADMIN_PATH=` — a key somebody cleared rather than deleted — would mount
+     * the whole panel at `/`, turning the home page into a login form. Silently,
+     * on deploy. This is what stops a blank line in a config file taking the
+     * public website down.
+     */
+    expect(config('admin.path'))->not->toBe('');
+});
+
+it('does not collide with a path the application already serves', function () {
+    // Mounting on `webhooks` or `storage` does not fail loudly — it wins or
+    // loses a routing race depending on registration order.
+    expect(config('admin.path'))->not->toBeIn(['webhooks', 'storage', 'livewire', 'up', 'api']);
+});
+
+it('routes the login form under the configured path', function () {
+    expect(route('filament.admin.auth.login'))
+        ->toContain('/'.config('admin.path').'/login');
 });
 
 it('reads the admin env keys that were documented and ignored since Phase 2', function () {
@@ -61,7 +89,7 @@ it('takes its branding from the CMS rather than hardcoding it', function () {
 // ── Who may open it ─────────────────────────────────────────────────────────
 
 it('turns away somebody who is not signed in', function () {
-    $this->get('/admin')->assertRedirect();
+    $this->get('/'.config('admin.path'))->assertRedirect();
 });
 
 it('turns away a donor', function () {

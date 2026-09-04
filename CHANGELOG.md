@@ -8,6 +8,69 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — Policies, and the admin path — 2026-09-04
+
+#### Added
+
+**Policies for every model, enforced mechanically**
+- `BasePolicy` maps the standard abilities onto the permission strings that
+  already exist, so a concrete policy is usually three lines naming its prefix —
+  and the ones that override something are therefore the ones worth reading
+- **Deny by default.** An ability with no matching permission resolves to
+  `false`, never to "nothing said no, so yes". The likeliest way this breaks is
+  a permission renamed in the seeder and not in a policy; failing closed makes
+  that a support ticket rather than a breach nobody notices
+- A `.manage` fallback, so pages can keep `view`/`create`/`update`/`delete`
+  while menus keep a single `menus.manage`, without forcing one shape onto both
+- `PolicyCoverageTest` fails on **any model in neither the policy map nor the
+  "authorised through its parent" list** — so "policies for every model" is a
+  test rather than a matter of discipline. All 109 are accounted for
+
+**Archetypes, where the rule is structural rather than per-resource**
+- `AppendOnlyPolicy` — `delete` returns false for donations, payments, payouts,
+  orders and inventory movements **whatever permissions somebody holds**. Not
+  "no permission grants it": refused, so no future grant can turn it on. It also
+  stops Filament rendering a "delete selected" checkbox that would throw a stack
+  trace after somebody selected forty rows
+- `ReadOnlyPolicy` — delivery logs, the audit trail, activity log, backup
+  records, visitor counts. A log somebody can edit is not a log
+- `PublishablePolicy` — `publish` as a first-class ability, so a contributor can
+  draft and somebody accountable decides what goes out under the foundation's name
+
+**Policies with rules of their own**
+- `BeneficiaryPolicy` refuses hard deletion outright — not because the data must
+  be kept, but because destruction is the retention runner's job, and it checks
+  for a legal hold, writes the audit entry first, projects the anonymous record,
+  and stores a one-way digest. A delete button would skip all five
+- `ConsentPolicy` refuses **updates**. A consent that can be edited proves
+  nothing; getting one wrong means capturing a new one, as it would on paper
+
+**Permissions the policies needed and that did not exist**
+- `suppressions.view` / `.release` — putting an address back into circulation
+  after a complaint is not the same act as reading the list
+- `messages.view` / `.cancel` — cancelling a queued message can stop a campaign
+  mid-send
+- `sponsorships.view` / `.manage` — its own permissions rather than riding on
+  `beneficiaries`, since it is the one feature that deliberately discloses
+  information about a child outside the foundation
+- `audit.view` — and deliberately **no** `audit.manage`
+- `compliance.view` / `.manage`, `api_tokens.manage`, `error_reports.*`,
+  `visitor_stats.view`
+- Auditor gains `audit.view` and `compliance.view`: the two records an auditor
+  actually comes for, both read-only like everything else that role holds
+
+#### Fixed
+
+- **`ADMIN_PATH` moved off `admin`.** The panel is now at `/scghf-office` —
+  `manage`, `backend`, `panel`, `console`, `dashboard` and `office` are all in
+  the same wordlists `admin` is; a hyphenated organisation name is not
+- **An empty `ADMIN_PATH` is refused rather than obeyed.** `ADMIN_PATH=` — a key
+  somebody cleared rather than deleted — would have mounted the panel at `/`,
+  turning the home page into a login form, silently, on deploy
+- Paths that would collide with something already served (`webhooks`, `storage`,
+  `livewire`, `up`, `api`) fall back too. Mounting there does not fail loudly; it
+  wins or loses a routing race depending on registration order
+
 ### Phase 4 — Admin panel front door — 2026-09-04
 
 #### Added

@@ -55,6 +55,17 @@ class RoleAndPermissionSeeder extends Seeder
             'beneficiaries.view', 'beneficiaries.manage',
             'consents.view', 'consents.manage',
             'stories.publish',
+
+            /*
+             * Sponsorship gets its own permissions rather than riding on
+             * `beneficiaries`.
+             *
+             * It is the one feature that deliberately discloses information
+             * about a child to somebody outside the foundation, so who may
+             * arrange one should be a decision somebody made — not a capability
+             * inherited by everybody who can open a case file.
+             */
+            'sponsorships.view', 'sponsorships.manage',
         ],
         'fundraising' => [
             'donations.view', 'donations.view_pii', 'donations.export',
@@ -94,6 +105,22 @@ class RoleAndPermissionSeeder extends Seeder
         'communications' => [
             'templates.email.manage', 'templates.sms.manage',
             'logs.email.view', 'logs.sms.view',
+
+            /*
+             * Releasing a suppression is its own permission, separate from
+             * reading the list.
+             *
+             * Putting an address back into circulation after a hard bounce or a
+             * complaint is what gets a sending domain blocklisted, and
+             * `Suppression::release()` already demands a named person and a
+             * reason. Granting that with the same permission that lets somebody
+             * look at the list would make the recorded decision meaningless.
+             */
+            'suppressions.view', 'suppressions.release',
+
+            // The outbox. Cancelling a queued message is not the same as
+            // reading the queue — a campaign mid-send can be stopped by it.
+            'messages.view', 'messages.cancel',
         ],
         'system' => [
             'admin.access',
@@ -104,6 +131,30 @@ class RoleAndPermissionSeeder extends Seeder
             'backups.run', 'backups.restore',
             'activity_log.view', 'activity_log.view_all',
             'queue.manage',
+
+            /*
+             * The audit trail is READ-only, for everybody.
+             *
+             * There is no `audit.manage` and there must not be: the trail is
+             * hash-chained and append-only precisely so that nobody can tidy an
+             * inconvenient entry away, and a permission implying otherwise
+             * would be a promise the model refuses to keep.
+             */
+            'audit.view',
+
+            /*
+             * Legal holds, the retention log and the GRA approval record.
+             *
+             * Separated from `settings.manage` because placing a legal hold
+             * stops the retention sweep destroying somebody's records, and
+             * lifting one lets it resume — decisions with legal weight, not
+             * configuration.
+             */
+            'compliance.view', 'compliance.manage',
+
+            'api_tokens.manage',
+            'error_reports.view', 'error_reports.manage',
+            'visitor_stats.view',
         ],
     ];
 
@@ -239,6 +290,14 @@ class RoleAndPermissionSeeder extends Seeder
             'orders.view',
             'impact.view', 'projects.view', 'causes.view',
             'activity_log.view_all',
+
+            /*
+             * The two records an auditor actually comes for: the trail showing
+             * who read and exported what, and the compliance record showing the
+             * retention policy was followed. Both read-only, like everything
+             * else this role holds.
+             */
+            'audit.view', 'compliance.view',
             // Read-only by construction. No .create, .update, .delete anywhere.
             // A trustee or external auditor can see the whole financial picture
             // and change none of it.

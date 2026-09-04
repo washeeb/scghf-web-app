@@ -122,7 +122,9 @@ Run `vendor/bin/pint` before pushing.
 **Phase 2 complete** — environment, repository, deployment pipeline.
 **Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system, plus a gap sweep. ~131 tables.
 
-**Phase 4 in progress** — application foundation. The admin panel and its front door are in: Filament at a configurable path, mandatory TOTP, and sign-in recording. Still to come: policies for every model, public donor accounts, the media library UI, and the layout shell. See `CHANGELOG.md`.
+**Phase 4 in progress** — application foundation. The admin panel and its front door are in (Filament at a configurable path, mandatory TOTP, sign-in recording), and every model now has a policy, with a test that keeps it that way. Still to come: public donor accounts, the media library UI, and the layout shell. See `CHANGELOG.md`.
+
+> The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 
 **Hosting is not yet chosen.** New hosting running PHP 8.4 will be procured; the project does not launch on the shared account it was scaffolded against. The pipeline is host-agnostic by design, so only values change — `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`. Runbook steps 7–11 are deferred until then.
 
