@@ -8,6 +8,89 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 5 — Block rendering and preview — 2026-09-05
+
+Module 2 of 5. The page builder from this morning can now be seen: twenty block
+views, a public route, and a preview for drafts.
+
+#### Added
+
+**Twenty block views**
+- One for every key in `BlockRegistry`, with a test that fails if the registry
+  ever gains a block the site cannot draw — a block an editor can place and
+  nothing renders is a CMS that looks broken with no error anywhere
+- A shared `x-blocks.section` wrapper owns the framing, so no block builds its
+  own background or spacing classes and a change to the scale moves the whole
+  site at once
+- Every block heading is an `h2`. The page title is the `h1`, and a block
+  emitting a second one breaks the outline a screen reader navigates by — the
+  easiest accessibility mistake to make in a CMS with twenty block types
+
+**Decisions inside the blocks worth knowing**
+- **The hero takes a separate mobile crop.** A 1600px hero scaled down by the
+  browser is the largest single cost of a first paint on 3G, which is most of
+  what the LCP budget is spent on. `<picture>` chooses before anything downloads
+- **The video block does not embed a player.** An embedded iframe pulls roughly
+  a megabyte of JavaScript and sets third-party cookies before anybody presses
+  play — a real cost imposed on every visitor for a video most will not watch,
+  and a consent question the site would then have to answer. The poster is a
+  link
+- **The testimonials block renders a list, not a carousel.** A carousel needs
+  JavaScript to show anything past the first slide, hides its content from
+  search engines, and auto-advances past people who read slowly
+- **The FAQ block is `<details>`**, like every other disclosure here — readable
+  with no JavaScript, and by a search engine
+- **Impact figures go through `publishedTotal()`**, never `total()`. That is the
+  method carrying the disclosure control, so a metric counting people below the
+  minimum group size is withheld rather than published — the foundation's
+  categories include health, orphan status and widowhood, and "3 widows
+  supported in Bongo" identifies them
+- Each figure carries the date it was measured. An unsourced statistic on a
+  fundraising site is a trust risk
+- **The donation block is a link, not a form.** The real form is Phase 6, and a
+  donation form that looks real and does nothing is worse than a link — somebody
+  will type their card details into it
+
+**`BlockDataResolver`**
+- Every query a block needs, in one file, each limited and eager-loaded. A
+  `@foreach (Cause::live()->get())` in a template is untestable, invisible to
+  anybody auditing what a page costs, and the usual route to an N+1 that only
+  appears once the site has real content
+- An editor's `limit` is clamped. A block asking for ten thousand causes is a
+  page that times out and an editor with no idea why
+- A failure returns empty rather than throwing: a block whose data will not load
+  should be an absent block, not a 500 on a donation page
+
+**The public route, and preview**
+- `/{path}` resolves by the materialised `path` column — one lookup, no walk
+  down the tree — and is **registered last on purpose**, since `.*` would
+  otherwise swallow `/login` and everything else. There is a test for that
+- A draft is a **404, not a 403**. A 403 confirms something is there, which is
+  what an unannounced appeal must not do
+- Preview is **signed AND staff-only**. A signed URL is still a string somebody
+  can paste into a chat, so the signature proves the link came from the panel
+  and the policy check proves the person opening it is entitled to
+- The preview banner says plainly whether the page is published, so nobody
+  wonders why a campaign nobody could see got no response
+- A page with no blocks renders its title rather than a blank response, which
+  would look like a server fault to a visitor and a deleted page to its author
+
+#### Fixed
+
+- **A malformed JSON setting took down every page that read it.** `SettingType`
+  cast JSON with `JSON_THROW_ON_ERROR`, and `cast()` runs on every setting when
+  the repository loads — once per request, on every page. One unparseable value
+  anywhere in the table was a site-wide 500, including the donation page, since
+  `donations.presets` is JSON. Found the honest way: an unfilled
+  `{{PLACEHOLDER}}` is not valid JSON, and `Settings::get()`'s placeholder check
+  never got the chance to run because the cast threw first. It now returns null,
+  which `get()` turns into the caller's default — while the raw value stays in
+  the column for `Settings::unfilled()` to report
+- The layout honoured the site-wide noindex switch but not a page's own
+  `no_index`. A thank-you page could not be kept out of search results
+- The preview route bound `{page}` by `path`, which contains slashes. Now
+  `{page:ulid}`
+
 ### Phase 5 — The page builder — 2026-09-05
 
 The first of five modules in the CMS phase. Phase 3 had already built the

@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\DeliveryWebhookController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaystackWebhookController;
 use Illuminate\Support\Facades\Route;
 use Spatie\Honeypot\ProtectAgainstSpam;
@@ -26,7 +27,7 @@ use Spatie\Honeypot\ProtectAgainstSpam;
 | rendering — the page builder, blocks, templates — arrives in Phase 5 and
 | replaces this rather than being added alongside it.
 */
-Route::get('/', fn () => view('home'))->name('home');
+Route::get('/', [PageController::class, 'home'])->name('home');
 
 /*
 |--------------------------------------------------------------------------
@@ -214,3 +215,39 @@ Route::get('account/email/confirm/{ulid}/{hash}', [EmailController::class, 'conf
 Route::get('account/email/cancel/{ulid}/{hash}', [EmailController::class, 'cancel'])
     ->middleware('signed')
     ->name('account.email.cancel');
+
+/*
+|--------------------------------------------------------------------------
+| CMS pages
+|--------------------------------------------------------------------------
+|
+| ⚠ LAST IN THE FILE, AND IT HAS TO BE.
+|
+| `{path}` with `.*` matches everything, including `/login`, `/account` and the
+| webhook endpoints. Laravel matches routes in the order they are registered, so
+| every named route above wins — and a route added BELOW this one would never be
+| reached at all, silently, with the CMS answering 404 for it.
+|
+| Anything new goes above this block.
+*/
+/*
+ * `{page:ulid}`, not `{page}`.
+ *
+ * `Page::getRouteKeyName()` is `path`, so the default binding would look this
+ * up by `/about/leadership` — which contains slashes and cannot be one route
+ * segment. The ULID is what §1.1 already requires of anything in a URL, and it
+ * does not move when a page is re-slugged or re-parented.
+ */
+Route::get('pages/{page:ulid}/preview', [PageController::class, 'preview'])
+    /*
+     * Signed AND authenticated. A signed URL is still a string somebody can
+     * paste into a chat, so the signature only proves the link came from the
+     * panel; the policy check in the controller proves the person opening it is
+     * entitled to see an unpublished page.
+     */
+    ->middleware(['signed', 'auth'])
+    ->name('pages.preview');
+
+Route::get('/{path}', [PageController::class, 'show'])
+    ->where('path', '.*')
+    ->name('pages.show');

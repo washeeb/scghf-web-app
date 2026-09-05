@@ -40,13 +40,42 @@ enum SettingType: string
         return match ($this) {
             self::Integer => (int) $raw,
             self::Boolean => filter_var($raw, FILTER_VALIDATE_BOOL),
-            self::Json => json_decode($raw, true, 512, JSON_THROW_ON_ERROR),
+            self::Json => self::decodeJson($raw),
             // Stored as minor units, so a setting round-trips through the same
             // exact-integer path as every other amount in the system.
             self::Money => Money::ofMinor((int) $raw),
             self::Media => (int) $raw,
             default => $raw,
         };
+    }
+
+    /**
+     * Decode a JSON setting without taking the page down.
+     *
+     * ── Why this does not throw ─────────────────────────────────────────────
+     *
+     * `cast()` runs on every setting the moment the repository loads, which is
+     * once per request on every page. `JSON_THROW_ON_ERROR` here meant that a
+     * single unparseable value anywhere in the table was a 500 on the entire
+     * site — including the donation page, since `donations.presets` is JSON.
+     *
+     * It was found the honest way: an unfilled `{{PLACEHOLDER}}`, which every
+     * other type treats as absent, is not valid JSON. `Settings::get()` has the
+     * check that turns a placeholder into "not set", and it never got the
+     * chance to run because the cast threw first.
+     *
+     * Null is the right failure. `get()` returns the caller's default for it,
+     * so a malformed list behaves exactly like an empty one — and the value is
+     * still raw in the column, so `Settings::unfilled()` and the preflight
+     * command still report it to somebody who can fix it.
+     */
+    private static function decodeJson(string $raw): mixed
+    {
+        try {
+            return json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
     }
 
     /** Turn an application value back into the stored string. */

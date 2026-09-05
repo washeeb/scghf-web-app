@@ -41,6 +41,11 @@ class SettingsSeeder extends Seeder
         ['general', 'registered_on', '2026-01-15', SettingType::String, 'Date registered', true],
         ['general', 'founder_name', 'Adam Kingsley Washeeb', SettingType::String, 'Founder', true],
         ['general', 'in_memory_of', 'Mrs Cecilia Anyatuik Adam', SettingType::String, 'In memory of', true],
+        // Read by the `core-values` block, which renders nothing until this is
+        // filled — an unfilled {{PLACEHOLDER}} counts as absent, so the block
+        // is silently omitted rather than rendering an empty list.
+        ['general', 'core_values', '{{CORE_VALUES}}', SettingType::Json, 'Core values', true,
+            'A JSON list of the values from the foundation profile, e.g. ["Faith","Compassion"].'],
         ['general', 'registration_number', '{{REGISTRATION_NUMBER}}', SettingType::String, 'Registration number', true,
             'Registrar-General / Department of Social Welfare. Required in the footer and on receipts.'],
         ['general', 'registering_authority', '{{REGISTERING_AUTHORITY}}', SettingType::String, 'Registering authority', true],

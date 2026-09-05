@@ -46,12 +46,21 @@
 
     <meta name="description" content="{{ $description ?? setting('seo.default_description', '') }}">
 
-    {{-- Staging is noindexed. `seo.allow_indexing` is seeded false and turned
-         on deliberately at launch, because a staging site indexed alongside the
-         real one splits its search ranking and confuses donors. --}}
-    @unless (setting('seo.allow_indexing', false))
+    {{--
+        Two independent reasons not to be indexed, and either is enough.
+
+        `seo.allow_indexing` is the SITE switch: seeded false and turned on
+        deliberately at launch, because a staging site indexed alongside the
+        real one splits its search ranking and confuses donors.
+
+        `$noindex` is the PAGE switch, from that page's own SEO settings — for a
+        thank-you page, a receipt, anything reached only by having just done
+        something. A page-level yes must never be overridden by a site-level
+        yes, so they are combined with `or` rather than the page winning.
+    --}}
+    @if (! setting('seo.allow_indexing', false) || ($noindex ?? false))
         <meta name="robots" content="noindex, nofollow">
-    @endunless
+    @endif
 
     {{-- Matches the painted background, so the mobile browser chrome does not
          sit as a white bar above a dark page. --}}

@@ -143,7 +143,7 @@ Run `vendor/bin/pint` before pushing.
 **Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system, plus a gap sweep. ~131 tables.
 **Phase 4 complete** — application foundation. The admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording); a policy for every model with a test that keeps it that way; the layout shell (theme system, header and footer from the seeded menus, branded error pages); public donor accounts (register, sign in, verify, reset, account area); the media library, engine and admin screen both; and the navigation, as dropdowns on a laptop and an expanding panel on a phone. See `CHANGELOG.md`.
 
-**Phase 5 in progress** — the CMS. Landed: the page builder (blocks as drag-orderable rows, fields generated from the block registry, a closed vocabulary for per-block presentation, and revisions with restore). Still to come: the menu builder, global content and the theme editor, the content modules, and the admin dashboard. See `CHANGELOG.md`.
+**Phase 5 in progress** — the CMS. Landed: the page builder (blocks as drag-orderable rows, fields generated from the block registry, a closed vocabulary for per-block presentation, revisions with restore) and block rendering (twenty block views, the public page route, and a signed staff-only preview for drafts). Still to come: the menu builder, global content and the theme editor, the content modules, and the admin dashboard. See `CHANGELOG.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 > Donors sign in at **`/login`**. Staff cannot: see below.

@@ -13,6 +13,7 @@ use Filament\Forms\Components\Radio;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Text;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Editing a page, with a way back.
@@ -50,12 +51,40 @@ class EditPage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            static::previewAction(),
             static::revisionsAction(),
             DeleteAction::make()
                 // A locked page is one the application links to by slug —
                 // deleting it breaks a route rather than removing content.
                 ->visible(fn (Page $record): bool => ! $record->is_locked),
         ];
+    }
+
+    /**
+     * See the page as a visitor would, whether or not it is published.
+     *
+     * -- Signed AND behind auth, both ---------------------------------------
+     *
+     * The obvious implementation is a secret URL, and a secret URL is a URL: it
+     * ends up in a chat message, a browser history, a referrer header. The
+     * signature proves the link came from the panel; the policy check in
+     * `PageController::preview()` proves the person who opened it is entitled
+     * to see an unpublished page. A leaked preview link is useless to anybody
+     * outside the foundation.
+     *
+     * Twenty minutes, because a preview link is for looking at something now.
+     */
+    private static function previewAction(): Action
+    {
+        return Action::make('preview')
+            ->label(__('Preview'))
+            ->icon('heroicon-o-eye')
+            ->url(fn (Page $record): string => URL::temporarySignedRoute(
+                'pages.preview',
+                now()->addMinutes(20),
+                ['page' => $record->ulid],
+            ))
+            ->openUrlInNewTab();
     }
 
     /**
