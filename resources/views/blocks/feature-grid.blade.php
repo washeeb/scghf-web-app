@@ -14,7 +14,7 @@
         ])>
             @foreach ($items as $item)
                 <li class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-                    <h3 class="font-semibold text-[var(--text)]">{{ $item['title'] }}</h3>
+                    <h3 class="font-semibold text-[var(--text-primary)]">{{ $item['title'] }}</h3>
 
                     @if (filled($item['body'] ?? null))
                         <p class="mt-2 text-sm text-[var(--text-muted)]">{{ $item['body'] }}</p>

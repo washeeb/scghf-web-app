@@ -8,7 +8,7 @@
 --}}
 <x-layouts.app>
     <div class="mx-auto max-w-6xl px-4 py-16">
-        <h1 class="text-3xl font-semibold tracking-tight text-[var(--text)] sm:text-4xl">
+        <h1 class="text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
             {{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}
         </h1>
 

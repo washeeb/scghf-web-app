@@ -19,7 +19,7 @@
 
         <ol class="space-y-6">
             <li class="space-y-3">
-                <h2 class="font-semibold text-[var(--text)]">{{ __('1. Scan this with your authenticator app') }}</h2>
+                <h2 class="font-semibold text-[var(--text-primary)]">{{ __('1. Scan this with your authenticator app') }}</h2>
 
                 <p class="text-sm text-[var(--text-muted)]">
                     {{ __('Google Authenticator, Microsoft Authenticator, 1Password, Aegis — any of them.') }}
@@ -40,8 +40,8 @@
                 @endif
 
                 <div class="space-y-1">
-                    <p class="text-sm text-[var(--text)]">{{ __('Or type this key in:') }}</p>
-                    <p class="select-all break-all rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-mono text-sm text-[var(--text)]">{{ $secret }}</p>
+                    <p class="text-sm text-[var(--text-primary)]">{{ __('Or type this key in:') }}</p>
+                    <p class="select-all break-all rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-mono text-sm text-[var(--text-primary)]">{{ $secret }}</p>
                     <p class="text-xs text-[var(--text-muted)]">
                         {{ __('Setting this up on the phone you are reading this on? You cannot scan your own screen — use the key.') }}
                     </p>
@@ -49,7 +49,7 @@
             </li>
 
             <li class="space-y-3 border-t border-[var(--border)] pt-6">
-                <h2 class="font-semibold text-[var(--text)]">{{ __('2. Enter the code it shows you') }}</h2>
+                <h2 class="font-semibold text-[var(--text-primary)]">{{ __('2. Enter the code it shows you') }}</h2>
 
                 <form method="POST" action="{{ route('account.two-factor.store') }}" class="space-y-5">
                     @csrf
@@ -73,7 +73,7 @@
 
                     <button
                         type="submit"
-                        class="rounded-md bg-[var(--brand-primary)] px-5 py-2.5 font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                        class="rounded-md bg-[var(--brand-primary)] px-5 py-2.5 font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                     >{{ __('Turn it on') }}</button>
                 </form>
             </li>

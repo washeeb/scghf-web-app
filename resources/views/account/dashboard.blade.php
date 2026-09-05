@@ -18,7 +18,7 @@
 
     @if ($donor === null)
         <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-            <h2 class="font-semibold text-[var(--text)]">{{ __('Nothing here yet') }}</h2>
+            <h2 class="font-semibold text-[var(--text-primary)]">{{ __('Nothing here yet') }}</h2>
 
             <p class="mt-2 text-sm text-[var(--text-muted)]">
                 {{ __('When you give, it will appear here. If you have given before using a different email address, tell us and we will join the two together.') }}
@@ -34,24 +34,24 @@
         <div class="grid gap-4 sm:grid-cols-3">
             <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
                 <p class="text-sm text-[var(--text-muted)]">{{ __('Given in total') }}</p>
-                <p class="mt-1 text-2xl font-semibold text-[var(--text)]">{{ $donor->totalDonated() }}</p>
+                <p class="mt-1 text-2xl font-semibold text-[var(--text-primary)]">{{ $donor->totalDonated() }}</p>
             </div>
 
             <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
                 <p class="text-sm text-[var(--text-muted)]">{{ __('Gifts') }}</p>
-                <p class="mt-1 text-2xl font-semibold text-[var(--text)]">{{ number_format((int) $donor->donation_count) }}</p>
+                <p class="mt-1 text-2xl font-semibold text-[var(--text-primary)]">{{ number_format((int) $donor->donation_count) }}</p>
             </div>
 
             <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
                 <p class="text-sm text-[var(--text-muted)]">{{ __('First gift') }}</p>
-                <p class="mt-1 text-2xl font-semibold text-[var(--text)]">
+                <p class="mt-1 text-2xl font-semibold text-[var(--text-primary)]">
                     {{ $donor->first_donated_at?->format('M Y') ?? '—' }}
                 </p>
             </div>
         </div>
 
         <section class="space-y-3" aria-labelledby="recent-giving">
-            <h2 id="recent-giving" class="font-semibold text-[var(--text)]">{{ __('Recent giving') }}</h2>
+            <h2 id="recent-giving" class="font-semibold text-[var(--text-primary)]">{{ __('Recent giving') }}</h2>
 
             @if ($recent->isEmpty())
                 <p class="text-sm text-[var(--text-muted)]">
@@ -74,7 +74,7 @@
                         <tbody class="divide-y divide-[var(--border)]">
                             @foreach ($recent as $donation)
                                 <tr>
-                                    <td class="whitespace-nowrap px-4 py-3 text-[var(--text)]">
+                                    <td class="whitespace-nowrap px-4 py-3 text-[var(--text-primary)]">
                                         {{ $donation->paid_at?->format('j M Y') ?? '—' }}
                                     </td>
                                     <td class="px-4 py-3 text-[var(--text-muted)]">
@@ -83,7 +83,7 @@
                                     <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-[var(--text-muted)]">
                                         {{ $donation->reference }}
                                     </td>
-                                    <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-[var(--text)]">
+                                    <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-[var(--text-primary)]">
                                         {{ $donation->amount }}
                                     </td>
                                 </tr>

@@ -26,7 +26,7 @@
             rel="noopener noreferrer"
         @endif
         @if ($current) aria-current="page" @endif
-        {{ $attributes->class(['rounded px-3 py-2 text-sm font-medium text-[var(--text)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] aria-[current=page]:text-[var(--brand-primary)]']) }}
+        {{ $attributes->class(['rounded px-3 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] aria-[current=page]:text-[var(--brand-primary)]']) }}
     >
         {{ $item->label }}
         @if ($external)

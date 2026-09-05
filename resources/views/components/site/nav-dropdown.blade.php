@@ -31,7 +31,7 @@
     class="group relative"
 >
     <summary
-        class="flex cursor-pointer list-none items-center gap-1 rounded px-3 py-2 text-sm font-medium text-[var(--text)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+        class="flex cursor-pointer list-none items-center gap-1 rounded px-3 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
     >
         {{ $item->label }}
 
@@ -53,7 +53,7 @@
             <li>
                 <a
                     href="{{ $parentUrl }}"
-                    class="block rounded px-3 py-2 text-sm font-medium text-[var(--text)] hover:bg-[var(--surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                    class="block rounded px-3 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                 >{{ $item->label }}</a>
             </li>
 

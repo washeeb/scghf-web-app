@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\MoneyCast;
+use App\Models\Concerns\RecordsAuthor;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,6 +32,7 @@ class Coupon extends Model
 {
     use HasFactory;
     use HasUlids;
+    use RecordsAuthor;
 
     public const TYPE_PERCENTAGE = 'percentage';
 

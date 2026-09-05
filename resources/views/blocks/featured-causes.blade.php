@@ -9,7 +9,7 @@
                     @endif
 
                     <div class="flex flex-1 flex-col p-5">
-                        <h3 class="font-semibold text-[var(--text)]">{{ $cause->title }}</h3>
+                        <h3 class="font-semibold text-[var(--text-primary)]">{{ $cause->title }}</h3>
 
                         @if ($cause->summary)
                             <p class="mt-2 text-sm text-[var(--text-muted)]">{{ $cause->summary }}</p>

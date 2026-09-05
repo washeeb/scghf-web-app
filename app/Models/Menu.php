@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,8 @@ use RuntimeException;
  */
 class Menu extends Model
 {
+    use RecordsAuthor;
+
     protected $fillable = ['key', 'name', 'description', 'is_locked', 'max_depth'];
 
     /** @return array<string, string> */

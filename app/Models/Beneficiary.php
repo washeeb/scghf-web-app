@@ -9,6 +9,7 @@ use App\Contracts\Retainable;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\DeIdentifiable;
 use App\Models\Concerns\HasConsents;
+use App\Models\Concerns\RecordsAuthor;
 use App\Support\Anonymiser;
 use App\Support\RetentionRunner;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -53,6 +54,7 @@ class Beneficiary extends Model implements Retainable
     use HasFactory;
     use HasUlids;
     use LogsActivity;
+    use RecordsAuthor;
     use SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';

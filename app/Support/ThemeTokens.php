@@ -49,19 +49,34 @@ class ThemeTokens
      * renders in plain greys for a minute. The real values live in
      * `theme_settings`, seeded from the logo pack.
      *
+     * ⚠ The NAMES here must match the seeded ones exactly.
+     *
+     * They did not. This list called them `text` and `focus` while the seeder
+     * called them `text-primary` and `focus-ring`, and every view referenced
+     * the fallback's names — so the site was correct only when the palette
+     * could NOT be read. With a seeded palette, `color: var(--text)` resolved
+     * to nothing, the declaration fell back to the initial black, and the dark
+     * theme rendered black text on a dark background.
+     *
+     * It stayed invisible for exactly the reason it is dangerous: tests that
+     * do not seed the palette hit this fallback, where the names matched.
+     * `ThemeTokenCoverageTest` now compares the two lists and the views against
+     * each other, so a token can no longer be referenced by a name nothing
+     * defines.
+     *
      * @var array<string, array{string, string}> token => [light, dark]
      */
     private const FALLBACK = [
         'bg' => ['#ffffff', '#0b0b0d'],
         'surface' => ['#f6f6f7', '#141417'],
-        'text' => ['#18181b', '#f4f4f5'],
+        'text-primary' => ['#18181b', '#f4f4f5'],
         'text-muted' => ['#52525b', '#a1a1aa'],
         'border' => ['#e4e4e7', '#27272a'],
         'brand-primary' => ['#0b4d3f', '#2ec4a8'],
         'text-on-brand' => ['#ffffff', '#04241e'],
         'brand-secondary' => ['#fc6302', '#ff9c5c'],
         'text-on-secondary' => ['#3a1200', '#3a1200'],
-        'focus' => ['#0b4d3f', '#2ec4a8'],
+        'focus-ring' => ['#0b4d3f', '#2ec4a8'],
     ];
 
     /**

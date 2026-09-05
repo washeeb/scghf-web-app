@@ -26,7 +26,7 @@
         @method('PATCH')
 
         <section class="space-y-5" aria-labelledby="about-you">
-            <h2 id="about-you" class="font-semibold text-[var(--text)]">{{ __('About you') }}</h2>
+            <h2 id="about-you" class="font-semibold text-[var(--text-primary)]">{{ __('About you') }}</h2>
 
             <x-site.field
                 name="name"
@@ -37,7 +37,7 @@
             />
 
             <div class="space-y-1.5">
-                <span class="block text-sm font-medium text-[var(--text)]" id="email-label">{{ __('Email address') }}</span>
+                <span class="block text-sm font-medium text-[var(--text-primary)]" id="email-label">{{ __('Email address') }}</span>
                 <p
                     aria-labelledby="email-label"
                     class="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-muted)]"
@@ -69,7 +69,7 @@
         </section>
 
         <section class="space-y-3 border-t border-[var(--border)] pt-6" aria-labelledby="what-we-send">
-            <h2 id="what-we-send" class="font-semibold text-[var(--text)]">{{ __('What we send you') }}</h2>
+            <h2 id="what-we-send" class="font-semibold text-[var(--text-primary)]">{{ __('What we send you') }}</h2>
 
             <x-site.checkbox
                 name="accepts_email_marketing"
@@ -96,12 +96,12 @@
 
         <button
             type="submit"
-            class="rounded-md bg-[var(--brand-primary)] px-5 py-2.5 font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+            class="rounded-md bg-[var(--brand-primary)] px-5 py-2.5 font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
         >{{ __('Save changes') }}</button>
     </form>
 
     <section class="mt-10 max-w-md space-y-5 border-t border-[var(--border)] pt-8" aria-labelledby="change-email">
-        <h2 id="change-email" class="font-semibold text-[var(--text)]">{{ __('Change your email address') }}</h2>
+        <h2 id="change-email" class="font-semibold text-[var(--text-primary)]">{{ __('Change your email address') }}</h2>
 
         <p class="text-sm text-[var(--text-muted)]">
             {{ __('Three steps, on purpose. We ask for your password, we send a link to the new address, and we tell the old one what is happening so you can stop it if it was not you.') }}
@@ -132,7 +132,7 @@
 
             <button
                 type="submit"
-                class="rounded-md border border-[var(--border)] px-5 py-2.5 font-semibold text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                class="rounded-md border border-[var(--border)] px-5 py-2.5 font-semibold text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >{{ __('Send the confirmation link') }}</button>
         </form>
     </section>

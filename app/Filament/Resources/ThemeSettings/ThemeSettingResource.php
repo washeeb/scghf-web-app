@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 /**
  * The palette.
@@ -31,6 +32,10 @@ class ThemeSettingResource extends Resource
     protected static ?string $model = ThemeSetting::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSwatch;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Website';
+
+    protected static ?int $navigationSort = 30;
 
     protected static ?string $recordTitleAttribute = 'label';
 

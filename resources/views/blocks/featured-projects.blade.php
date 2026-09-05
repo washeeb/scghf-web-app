@@ -9,7 +9,7 @@
                     @endif
 
                     <div class="p-5">
-                        <h3 class="font-semibold text-[var(--text)]">{{ $project->title }}</h3>
+                        <h3 class="font-semibold text-[var(--text-primary)]">{{ $project->title }}</h3>
 
                         @if ($project->summary)
                             <p class="mt-2 text-sm text-[var(--text-muted)]">{{ $project->summary }}</p>

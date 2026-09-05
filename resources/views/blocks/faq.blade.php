@@ -13,7 +13,7 @@
                 @foreach ($faqs as $faq)
                     <li>
                         <details class="group py-4">
-                            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">
                                 {{ $faq->question }}
 
                                 <svg class="size-5 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -26,6 +27,7 @@ use RuntimeException;
 class TaxApproval extends Model
 {
     use HasUlids;
+    use RecordsAuthor;
 
     public const TYPE_SECTION_97 = 'section_97';
 

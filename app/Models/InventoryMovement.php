@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,7 @@ use RuntimeException;
 class InventoryMovement extends Model
 {
     use HasFactory;
+    use RecordsAuthor;
 
     public const UPDATED_AT = null;
 

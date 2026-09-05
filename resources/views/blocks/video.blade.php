@@ -17,7 +17,7 @@
         href="{{ $section->field('video_url') }}"
         target="_blank"
         rel="noopener noreferrer"
-        class="group relative block overflow-hidden rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+        class="group relative block overflow-hidden rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
     >
         @if (($poster ?? null)?->isPublishable())
             <x-media.image :media="$poster" size="hero" class="w-full" />

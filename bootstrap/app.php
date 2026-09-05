@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CountVisit;
+use App\Http\Middleware\HandleRedirects;
 use App\Support\ErrorReporter;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -44,8 +45,17 @@ return Application::configure(basePath: dirname(__DIR__))
          * every failure: statistics are never worth a millisecond of a donor's
          * time on a 3G connection, and certainly never worth an error page.
          */
+        /*
+         * Redirects, and the 404 log.
+         *
+         * `HandleRedirects` runs on the way OUT and only when the response is
+         * already a 404, so the redirect table is never queried for a request
+         * that resolved. Appended after `CountVisit` for no reason beyond
+         * reading order — neither depends on the other.
+         */
         $middleware->appendToGroup('web', [
             CountVisit::class,
+            HandleRedirects::class,
         ]);
 
         /*

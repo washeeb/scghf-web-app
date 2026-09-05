@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class SeoMeta extends Model
 {
+    use RecordsAuthor;
+
     protected $table = 'seo_meta';
 
     protected $fillable = [

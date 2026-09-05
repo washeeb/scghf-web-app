@@ -8,6 +8,7 @@ use App\Casts\MoneyCast;
 use App\Enums\CauseStatus;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
+use App\Models\Concerns\RecordsAuthor;
 use App\Support\TaxDeductibility;
 use App\ValueObjects\Money;
 use DateTimeInterface;
@@ -44,6 +45,7 @@ class Cause extends Model
     use HasSeo;
     use HasUlids;
     use LogsActivity;
+    use RecordsAuthor;
     use SoftDeletes;
 
     protected $fillable = [

@@ -8,7 +8,7 @@
                         <x-media.image :media="$member->photo" size="card" class="mx-auto aspect-square w-32 rounded-full object-cover" />
                     @endif
 
-                    <h3 class="mt-4 font-semibold text-[var(--text)]">{{ $member->name }}</h3>
+                    <h3 class="mt-4 font-semibold text-[var(--text-primary)]">{{ $member->name }}</h3>
 
                     @if ($member->role_title)
                         <p class="text-sm text-[var(--text-muted)]">{{ $member->role_title }}</p>

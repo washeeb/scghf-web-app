@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -35,6 +36,7 @@ class ApiToken extends Model
 {
     use HasFactory;
     use HasUlids;
+    use RecordsAuthor;
 
     /** How many characters of the token are kept in clear, for identification. */
     private const PREFIX_LENGTH = 12;

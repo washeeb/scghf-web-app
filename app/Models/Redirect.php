@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,8 @@ use RuntimeException;
  */
 class Redirect extends Model
 {
+    use RecordsAuthor;
+
     protected $fillable = [
         'from_path', 'to_path', 'status_code', 'source',
         'is_active', 'preserve_query', 'notes',

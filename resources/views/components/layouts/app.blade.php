@@ -35,6 +35,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    {{-- Read by the one script on this site that makes a request of its own:
+         closing the announcement bar. Without it that POST is a 419 and the
+         bar comes back on every page, which reads as a broken close button. --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     {{-- The palette, from `theme_settings`. Both themes, always — a visitor
          whose system flips to dark must not need a round trip. --}}
     <style>{{ app(App\Support\ThemeTokens::class)->css() }}</style>
@@ -70,7 +75,7 @@
 
     @stack('head')
 </head>
-<body class="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
+<body class="min-h-screen bg-[var(--bg)] text-[var(--text-primary)] antialiased">
     {{--
         The skip link. First focusable element on the page, visually hidden
         until focused.

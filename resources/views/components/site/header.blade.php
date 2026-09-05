@@ -111,7 +111,7 @@
         class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3"
         aria-label="{{ __('Primary') }}"
     >
-        <a href="{{ url('/') }}" class="mr-auto flex items-center gap-2 font-semibold tracking-tight text-[var(--text)]">
+        <a href="{{ url('/') }}" class="mr-auto flex items-center gap-2 font-semibold tracking-tight text-[var(--text-primary)]">
             @if ($logoLight || $logoDark)
                 {{-- When only one file is uploaded it serves both themes. The
                      alternative — showing nothing in dark until somebody
@@ -176,7 +176,7 @@
             --}}
             <a
                 href="{{ $donateUrl }}"
-                class="rounded-md bg-[var(--brand-secondary)] px-4 py-2 text-sm font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                class="rounded-md bg-[var(--brand-secondary)] px-4 py-2 text-sm font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >
                 {{ $donateLabel }}
             </a>

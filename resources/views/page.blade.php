@@ -51,7 +51,7 @@
             case with a badge, which is where it gets fixed.
         --}}
         <div class="mx-auto max-w-3xl px-4 py-16">
-            <h1 class="text-3xl font-bold tracking-tight text-[var(--text)]">{{ $page->title }}</h1>
+            <h1 class="text-3xl font-bold tracking-tight text-[var(--text-primary)]">{{ $page->title }}</h1>
 
             @if ($page->excerpt)
                 <p class="mt-4 text-[var(--text-muted)]">{{ $page->excerpt }}</p>

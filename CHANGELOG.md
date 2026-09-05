@@ -8,6 +8,143 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 5 — The content modules — 2026-09-05
+
+Module 4 of 5. Fourteen admin screens over schema Phase 3 had already built,
+and a sweep of the things that turned out to be sitting behind it unreached.
+
+#### Added
+
+**The blog**
+- `PostResource`: headline, address, summary, body, category, tags, byline and
+  featured image, on the same `PageStatus` lifecycle as pages — so "scheduled"
+  means the same thing in both places and an editor learns it once
+- The slug stops following the title once a post is published. A published post
+  has been linked to, shared and indexed; renaming its address because somebody
+  fixed a typo in the headline turns every one of those links into a 404 of the
+  site's own making
+- **The byline is not "whoever is logged in".** Somebody in the office
+  frequently types up a piece written by the founder or a field officer, and a
+  post bylined to the administrator account is wrong in a way readers can see
+- Comment moderation, with approve and mark-spam in bulk. There is no way to
+  edit a comment: a moderator who rewords one and leaves it under its author's
+  name has published words that person did not write
+- The moderation screen is **hidden while `FEATURE_BLOG_COMMENTS` is off**. A
+  queue in the sidebar that can only ever say zero is the "on and empty" shape
+  this project has a rule against
+
+**The library, and the small content types**
+- Galleries with a reorderable list of photographs, documents with a
+  publication and a sign-in gate, FAQs and their categories, testimonials,
+  partners, team members and their departments
+- **Consent gates publication**, on testimonials and on galleries. The models
+  have refused a publication without it since Phase 3; the forms now refuse
+  first, and the list shows which records are waiting on it — a testimonial
+  waiting on consent looks exactly like a published one in every other respect,
+  and the difference is the whole legal position
+- The testimonial form's exemption matches the model's **exactly**. A partner or
+  a staff member quoted professionally speaks for themselves; a beneficiary, a
+  volunteer or a donor does not. A form stricter than the model makes a
+  legitimate testimonial unpublishable; a looser one produces a save that throws
+  with no field to point at
+- `MediaPicker`, one implementation of "only publishable files are offered",
+  shared by eight screens. Eight copies of a safeguarding gate is eight chances
+  for one of them to drift into offering a photograph that still carries the
+  coordinates it was taken at
+- A team member's **public email is not their account email**. Publishing a
+  trustee's private address on a page a scraper reads within the hour is a real
+  risk to a real person, and the usual way it happens is a form that helpfully
+  pre-fills "their" details from the account they sign in with
+
+**Announcements, banners and popups**
+- `AnnouncementResource` over the table that has had dismissal, path targeting,
+  three placements and impression counting since Phase 3 with nothing rendering
+  it
+- The list says **Live, Scheduled, Finished or Off**, and can filter to
+  "finished but still switched on" — the notice that has been quietly
+  advertising a closed appeal, invisible in a list sorted by anything else
+- Clicks are counted through a route that validates the destination first. An
+  open redirect is an open redirect whoever typed the URL
+- Dismissal writes an http-only cookie for `dismiss_days`, and a dismissed
+  notice is filtered out **before** it is rendered — so it is not counted as
+  seen again, and the click-through rate is not measured against a number that
+  grows for people being shown nothing
+- The close button is created by JavaScript rather than by Blade, so it cannot
+  exist without the code that makes it work
+
+**The contact inbox**
+- `ContactMessageResource`: statuses, assignment, internal notes, and a reply
+  action that sends the new `contact.reply` template through `MessageDispatcher`
+  — logged, suppression-checked and rate-limited like every other email rather
+  than a `Mail::raw` that bypasses all three
+- **Oldest first**, backwards from every other list in the panel and on purpose:
+  an inbox sorted newest-first buries the enquiry that has been waiting longest
+  under the ones that just arrived. Anything unanswered for a week is red
+- The enquiry itself is read-only. What somebody sent is a record of what they
+  sent, and for a safeguarding report it may be evidence
+- **Safeguarding messages are excluded from the list**, not merely from the
+  record. `ContactPolicy` refuses an individual confidential message, but a
+  table query returns rows without asking a policy about each — so without the
+  scope, the sender's name and the subject line of a report about a child would
+  appear in the general inbox for anybody with `contact.view`. The subject line
+  of a safeguarding report is frequently the whole disclosure
+
+**Redirects and the 404 log**
+- `RedirectResource` over one table serving both, because a captured 404 *is* a
+  redirect with no destination yet. Filling in the destination and switching it
+  on is the entire workflow — no import, no second screen, no copying a path
+  from one list into another and mistyping it
+- Sorted by hits, defaulting to the work queue. The question is "what is costing
+  us visitors?", and the answer is the path hit most, whenever it was recorded
+- The last referrer is shown on the record: an old newsletter or a printed flyer
+  is usually what tells an editor what the address was meant to be
+
+**Navigation groups**
+- Website, Content, Inbox and Library. Eighteen resources in one flat list is
+  unusable for the non-technical staff this panel exists for
+
+#### Fixed
+
+- **⚠ The dark theme rendered black text on a dark background.** The views
+  referenced `var(--text)` and `var(--focus)` in 114 places; the seeded palette
+  calls those tokens `text-primary` and `focus-ring`. With a real palette in the
+  database the custom properties resolved to nothing, the declarations fell back
+  to the initial colour, and every page of the public site lost its text colour
+  in dark mode. It survived two phases because of where the names *did* match:
+  `ThemeTokens::FALLBACK`, the emergency palette used when `theme_settings`
+  cannot be read — which is the path tests that do not seed the palette take. The
+  whole suite was green while the product was broken. An undefined custom
+  property is silent: no console error, no build failure, no missing file.
+  `ThemeTokenCoverageTest` now compares the views, the fallback and the seeded
+  palette against each other
+- **`created_by` and `updated_by` were written by nothing, on thirty tables.**
+  The columns existed, the foreign keys constrained, the relationships resolved,
+  and every answer was null — the worst shape an audit field can take, because a
+  present column that always says "nobody" gets believed. `RecordsAuthor` stamps
+  them on the model, for a real person only: a seeder has no user, and
+  attributing its work to whoever last logged in would be a lie
+- **Nothing served a redirect.** `Redirect::resolve()`, `record404()` and
+  `unresolved404s()` were written in Phase 3 and called from nowhere, so the
+  foundation could have entered fifty redirects before launch and every one of
+  them would have 404ed — the failure that looks least like a bug, because the
+  page was already missing. `HandleRedirects` runs on the way out and only on a
+  404, so the table is never queried for a request that resolved
+- **There were two announcement bars.** Module 3 seeded an `announcement.*`
+  settings group and rendered a bar from it while this table sat unused, so the
+  settings version looked like the only one there was. The foundation would have
+  edited one and wondered why the site showed the other. The table wins — it
+  does everything the settings did and five things they could not — and a data
+  migration removes the orphaned rows
+- `contact_departments.is_confidential` had been read by nothing since Phase 3,
+  so the routing decision it encodes had no effect on who could see what
+
+#### Removed
+
+- `App\Support\Announcement` and the `announcement.*` settings group, superseded
+  by the `announcements` table. `settings_history` keeps what they used to say —
+  deleting a setting does not un-say it
+
+
 ### Phase 5 — Menus, theme and the settings screen — 2026-09-05
 
 Module 3 of 5. The parts of the site that are not pages: the navigation, the

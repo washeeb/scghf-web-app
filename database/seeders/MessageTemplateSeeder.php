@@ -349,6 +349,55 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
 
+            /*
+             * The reply a member of staff actually writes.
+             *
+             * Separate from the acknowledgement above, which is automatic. This
+             * one carries `{{reply}}` — whatever was typed in the inbox — and
+             * quotes the original message underneath, because a sender reading
+             * it three weeks later has no idea what "as discussed" refers to.
+             *
+             * Not locked: the greeting and the sign-off are the foundation's to
+             * write. `{{reply}}` is required, so an editor cannot produce a
+             * template that sends an empty answer.
+             */
+            [
+                'key' => 'contact.reply',
+                'name' => 'Reply to a contact enquiry',
+                'description' => 'Sent from the contact inbox when somebody answers an enquiry. '
+                    .'{{reply}} is what they typed.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'reference', 'reply', 'original_message', 'replied_by'],
+                'required' => ['reply'],
+                'subject' => 'Re: your message to {{site_name}} — {{reference}}',
+                'preheader' => 'A reply to your enquiry.',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    {{reply}}
+                    <p>If you need anything else, reply to this email and quote
+                    <strong>{{reference}}</strong>.</p>
+                    <p>{{replied_by}}<br>{{site_name}}</p>
+                    <hr>
+                    <p><em>Your original message:</em></p>
+                    <blockquote>{{original_message}}</blockquote>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    {{reply}}
+
+                    If you need anything else, reply to this email and quote {{reference}}.
+
+                    {{replied_by}}
+                    {{site_name}}
+
+                    ---
+                    Your original message:
+
+                    {{original_message}}
+                    TEXT,
+            ],
+
             // ── Public accounts ─────────────────────────────────────────────
             //
             // All four are transactional and all four are LOCKED. Not because

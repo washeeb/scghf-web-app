@@ -13,7 +13,7 @@
     <span class="sr-only">{{ __('Colour theme') }}</span>
     <select
         data-theme-toggle
-        class="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+        class="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
     >
         <option value="system">{{ __('System') }}</option>
         <option value="light">{{ __('Light') }}</option>

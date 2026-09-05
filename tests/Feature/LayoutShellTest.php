@@ -203,8 +203,17 @@ it('still renders a legible page when the tokens cannot be read', function () {
 
     $css = (string) app(ThemeTokens::class)->css();
 
+    /*
+     * `--text-primary`, not `--text`.
+     *
+     * The fallback used to call it `--text` while the seeded palette called it
+     * `--text-primary`, and the views followed the fallback — so the site was
+     * correct only when the database could NOT be read, and rendered black text
+     * on a dark background the rest of the time. `ThemeTokenCoverageTest` keeps
+     * the two lists in step now; this assertion is the other end of it.
+     */
     expect($css)->toContain('--bg:')
-        ->and($css)->toContain('--text:');
+        ->and($css)->toContain('--text-primary:');
 });
 
 // ── Accessibility ───────────────────────────────────────────────────────────

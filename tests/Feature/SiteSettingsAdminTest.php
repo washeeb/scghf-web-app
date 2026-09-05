@@ -7,7 +7,6 @@ use App\Models\Setting;
 use App\Models\SettingHistoryEntry;
 use App\Models\User;
 use App\Policies\BasePolicy;
-use App\Support\Announcement;
 use App\Support\Settings;
 use App\Support\ThemeTokens;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -34,9 +33,9 @@ uses(RefreshDatabase::class);
 | setting unfillable; `updated_by` existed on both settings tables, resolved a
 | relationship, and was always null.
 |
-| SETTINGS NOBODY COULD SEE. The header, announcement and footer settings were
-| seeded in this module. A setting no view reads is the gap CLAUDE.md's standing
-| rule is about, so each one is asserted here against the page it changes.
+| SETTINGS NOBODY COULD SEE. The header and footer settings were seeded in this
+| module. A setting no view reads is the gap CLAUDE.md's standing rule is about,
+| so each one is asserted here against the page it changes.
 |
 */
 
@@ -204,67 +203,24 @@ it('gives the one Select setting something to select', function () {
         ->not->toBeNull();
 });
 
-// ── The announcement bar ────────────────────────────────────────────────────
-
-it('shows no announcement bar when there is nothing to announce', function () {
-    expect(app(Announcement::class)->isShowing())->toBeFalse();
-
-    $this->get('/')->assertDontSee('aria-label="Announcement"', escape: false);
-});
-
-it('shows the announcement bar when there is', function () {
-    app(Settings::class)->set('announcement.message', 'Harvest appeal closes on Sunday.');
-
-    $this->get('/')
-        ->assertOk()
-        ->assertSee('Harvest appeal closes on Sunday.');
-});
-
-it('does not show an announcement before the day it starts', function () {
-    app(Settings::class)->set('announcement.message', 'Not yet.');
-    app(Settings::class)->set('announcement.starts_at', now()->addWeek()->toDateString());
-
-    $this->get('/')->assertDontSee('Not yet.');
-});
-
-it('takes an announcement down after the day it ends', function () {
-    /*
-     * ⚠ The reason the dates exist. An announcement with no expiry is one
-     * somebody has to remember to remove, and nobody ever does — which is how a
-     * foundation ends up advertising last December's carol service in March.
-     */
-    app(Settings::class)->set('announcement.message', 'Last year’s carol service.');
-    app(Settings::class)->set('announcement.ends_at', now()->subDay()->toDateString());
-
-    $this->get('/')->assertDontSee('Last year’s carol service.', escape: false);
-});
-
-it('keeps an announcement up for the whole of its last day', function () {
-    // "Hide after the 25th" means it is still up on the 25th. Off by one here
-    // is a Christmas appeal that vanishes on Christmas morning.
-    app(Settings::class)->set('announcement.message', 'Today only.');
-    app(Settings::class)->set('announcement.ends_at', now()->toDateString());
-
-    $this->get('/')->assertSee('Today only.');
-});
-
-it('ignores a mistyped date rather than taking the site down', function () {
-    // The dates are typed by hand. The failure mode of a bad one is a bar that
-    // stays up too long, which somebody notices — not a 500 on every page.
-    app(Settings::class)->set('announcement.message', 'Still fine.');
-    app(Settings::class)->set('announcement.ends_at', 'next Fridayish');
-
-    $this->get('/')->assertOk()->assertSee('Still fine.');
-});
-
-it('will not render a link with no text to click', function () {
-    // A URL with no label is a link with nothing to click on; a label with no
-    // URL is text pretending to be one. Both halves or neither.
-    app(Settings::class)->set('announcement.message', 'Something.');
-    app(Settings::class)->set('announcement.link_url', 'https://example.test');
-
-    expect(app(Announcement::class)->url())->toBeNull();
-});
+/*
+|--------------------------------------------------------------------------
+| The announcement bar moved
+|--------------------------------------------------------------------------
+|
+| Seven tests stood here, over an `announcement.*` settings group this module
+| added. They are gone, and so is the group.
+|
+| The `announcements` table had been in the schema since Phase 3 doing the same
+| job — with dismissal, path targeting, three placements, impression counting
+| and a scheduling window — and nothing rendered it, so the settings version
+| looked like the only one there was. Two mechanisms for one bar is worse than
+| either alone: the foundation edits one and the site shows the other.
+|
+| The table won. The bar, its dates, its targeting and its counters are tested
+| in `ContentModulesTest`.
+|
+*/
 
 // ── The header and footer settings ──────────────────────────────────────────
 

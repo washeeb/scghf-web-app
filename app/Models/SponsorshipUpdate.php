@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -34,6 +35,7 @@ class SponsorshipUpdate extends Model
 {
     use HasFactory;
     use HasUlids;
+    use RecordsAuthor;
     use SoftDeletes;
 
     protected $fillable = [

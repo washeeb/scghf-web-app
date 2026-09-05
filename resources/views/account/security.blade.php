@@ -14,7 +14,7 @@
 <x-site.account-layout :title="__('Security')" :user="$user">
 
     <section class="space-y-5" aria-labelledby="change-password">
-        <h2 id="change-password" class="font-semibold text-[var(--text)]">{{ __('Change your password') }}</h2>
+        <h2 id="change-password" class="font-semibold text-[var(--text-primary)]">{{ __('Change your password') }}</h2>
 
         <form method="POST" action="{{ route('account.password.update') }}" class="max-w-md space-y-5">
             @csrf
@@ -48,7 +48,7 @@
 
             <button
                 type="submit"
-                class="rounded-md bg-[var(--brand-primary)] px-5 py-2.5 font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                class="rounded-md bg-[var(--brand-primary)] px-5 py-2.5 font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >{{ __('Change password') }}</button>
 
             <p class="text-xs text-[var(--text-muted)]">
@@ -67,13 +67,13 @@
     --}}
     @if ($codes = session('recoveryCodes'))
         <section class="space-y-3 rounded-lg border border-[var(--brand-secondary)] bg-[var(--surface)] p-5" aria-labelledby="recovery-codes">
-            <h2 id="recovery-codes" class="font-semibold text-[var(--text)]">{{ __('Your recovery codes') }}</h2>
+            <h2 id="recovery-codes" class="font-semibold text-[var(--text-primary)]">{{ __('Your recovery codes') }}</h2>
 
             <p class="text-sm text-[var(--text-muted)]">
                 {{ __('Write these down and keep them somewhere that is not your phone. Each one works once, and they are the only way back in if you lose the device. They will not be shown again.') }}
             </p>
 
-            <ul class="grid grid-cols-1 gap-1 font-mono text-sm text-[var(--text)] sm:grid-cols-2">
+            <ul class="grid grid-cols-1 gap-1 font-mono text-sm text-[var(--text-primary)] sm:grid-cols-2">
                 @foreach ($codes as $code)
                     <li class="select-all rounded bg-[var(--bg)] px-3 py-1.5">{{ $code }}</li>
                 @endforeach
@@ -82,7 +82,7 @@
     @endif
 
     <section class="space-y-4 border-t border-[var(--border)] pt-8" aria-labelledby="two-factor">
-        <h2 id="two-factor" class="font-semibold text-[var(--text)]">{{ __('Two-factor authentication') }}</h2>
+        <h2 id="two-factor" class="font-semibold text-[var(--text-primary)]">{{ __('Two-factor authentication') }}</h2>
 
         @if ($user->hasTwoFactorEnabled())
             <p class="text-sm text-[var(--text-muted)]">
@@ -121,7 +121,7 @@
 
                     <button
                         type="submit"
-                        class="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                        class="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                     >{{ __('New recovery codes') }}</button>
                 </form>
 
@@ -140,7 +140,7 @@
 
                     <button
                         type="submit"
-                        class="rounded-md border border-[var(--brand-secondary)] px-4 py-2 text-sm font-semibold text-[var(--brand-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                        class="rounded-md border border-[var(--brand-secondary)] px-4 py-2 text-sm font-semibold text-[var(--brand-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                     >{{ __('Turn it off') }}</button>
                 </form>
             </div>
@@ -151,13 +151,13 @@
 
             <a
                 href="{{ route('account.two-factor.create') }}"
-                class="inline-block rounded-md bg-[var(--brand-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                class="inline-block rounded-md bg-[var(--brand-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >{{ __('Set it up') }}</a>
         @endif
     </section>
 
     <section class="space-y-3 border-t border-[var(--border)] pt-8" aria-labelledby="sign-in-history">
-        <h2 id="sign-in-history" class="font-semibold text-[var(--text)]">{{ __('Recent sign-ins') }}</h2>
+        <h2 id="sign-in-history" class="font-semibold text-[var(--text-primary)]">{{ __('Recent sign-ins') }}</h2>
 
         <p class="text-sm text-[var(--text-muted)]">
             {{ __('Anything here you do not recognise — especially a failed attempt followed by a successful one — means you should change your password now.') }}
@@ -180,7 +180,7 @@
                     <tbody class="divide-y divide-[var(--border)]">
                         @foreach ($history as $entry)
                             <tr>
-                                <td class="whitespace-nowrap px-4 py-3 text-[var(--text)]">
+                                <td class="whitespace-nowrap px-4 py-3 text-[var(--text-primary)]">
                                     {{ $entry->created_at?->format('j M Y, H:i') }}
                                 </td>
                                 <td class="px-4 py-3">

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
+use App\Models\Concerns\RecordsAuthor;
 use App\Shop\RegulatoryScreener;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -40,6 +41,7 @@ class Product extends Model
     use HasSeo;
     use HasUlids;
     use LogsActivity;
+    use RecordsAuthor;
     use SoftDeletes;
 
     public const TYPE_PHYSICAL = 'physical';

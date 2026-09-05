@@ -149,20 +149,6 @@ class SettingsSeeder extends Seeder
         ['header', 'show_top_bar', '0', SettingType::Boolean, 'Show the top bar', true,
             'A thin strip above the header carrying the phone number and social links.'],
 
-        // ── The announcement bar ─────────────────────────────────────────────
-        // Dated on purpose. An announcement with no end date is one somebody
-        // has to remember to take down, and nobody ever does — which is how a
-        // site ends up advertising last year's fundraiser in March.
-        ['announcement', 'message', null, SettingType::Text, 'Announcement', true,
-            'Shown across the top of every page. Leave empty for none.'],
-        ['announcement', 'link_url', null, SettingType::Url, 'Announcement link', true],
-        ['announcement', 'link_label', null, SettingType::String, 'Announcement link text', true],
-        ['announcement', 'starts_at', null, SettingType::String, 'Show from', false,
-            'YYYY-MM-DD. Leave empty to show immediately.'],
-        ['announcement', 'ends_at', null, SettingType::String, 'Hide after', false,
-            'YYYY-MM-DD. Leave empty and it stays up until somebody removes it — which is how a '
-            .'site ends up advertising last year\'s fundraiser.'],
-
         // ── The footer ───────────────────────────────────────────────────────
         // Read by the footer since Phase 4 with no row behind them, so the
         // headings could not be changed without a deploy.

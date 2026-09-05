@@ -18,7 +18,7 @@
             @foreach ($testimonials as $testimonial)
                 <li>
                     <figure class="flex h-full flex-col rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-                        <blockquote class="flex-1 text-[var(--text)]">
+                        <blockquote class="flex-1 text-[var(--text-primary)]">
                             <p>{{ $testimonial->quote }}</p>
                         </blockquote>
 
@@ -28,7 +28,7 @@
                             @endif
 
                             <span>
-                                <span class="block font-semibold text-[var(--text)]">{{ $testimonial->author_name }}</span>
+                                <span class="block font-semibold text-[var(--text-primary)]">{{ $testimonial->author_name }}</span>
 
                                 @if ($testimonial->author_role)
                                     <span class="block text-sm text-[var(--text-muted)]">{{ $testimonial->author_role }}</span>

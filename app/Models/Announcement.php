@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,6 +25,7 @@ class Announcement extends Model
 {
     use BelongsToDivision;
     use HasUlids;
+    use RecordsAuthor;
 
     protected $fillable = [
         'division_id', 'placement', 'title', 'body', 'cta_label', 'cta_url', 'image_id',
@@ -105,6 +108,51 @@ class Announcement extends Model
         }
 
         return false;
+    }
+
+    /**
+     * The one notice to draw for this request, or none.
+     *
+     * ── Dismissal is checked here, not in the view ──────────────────────────
+     *
+     * A visitor who has closed a notice should not have it counted as seen
+     * again on every page they visit afterwards. Filtering in the view would
+     * mean the impression was already recorded by then, and the click-through
+     * rate the admin screen reports would be measured against a number that
+     * grows for people who are not being shown anything.
+     *
+     * ── Lowest sort order wins ──────────────────────────────────────────────
+     *
+     * Two live notices with the same placement is an ordinary situation — a
+     * standing appeal and an office-closure notice — and the bar can only draw
+     * one. `sort_order` is how the foundation says which, and `live()` already
+     * orders by it.
+     */
+    public static function forRequest(string $placement, Request $request): ?self
+    {
+        return static::query()
+            ->live()
+            ->placement($placement)
+            ->get()
+            ->first(fn (self $announcement): bool => $announcement->appliesTo($request->path())
+                && ! $announcement->wasDismissedBy($request));
+    }
+
+    /**
+     * Whether this visitor has already closed this notice.
+     *
+     * One cookie per notice, keyed by ulid rather than id: the cookie name is
+     * visible in the browser, and a sequential id there tells anybody looking
+     * how many notices the foundation has ever published.
+     */
+    public function wasDismissedBy(Request $request): bool
+    {
+        return $this->is_dismissible && $request->cookie($this->dismissalCookieName()) !== null;
+    }
+
+    public function dismissalCookieName(): string
+    {
+        return 'scghf_dismissed_'.$this->ulid;
     }
 
     public function recordImpression(): void

@@ -35,7 +35,7 @@
     class="group/panel md:hidden"
 >
     <summary
-        class="flex cursor-pointer list-none items-center rounded-md p-2 text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+        class="flex cursor-pointer list-none items-center rounded-md p-2 text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
         aria-label="{{ __('Menu') }}"
     >
         {{-- Two icons, one shown at a time, so the control says what it will do
@@ -72,7 +72,7 @@
                                  unreachable — /about exists and is published. --}}
                             <details class="group/section">
                                 <summary
-                                    class="flex cursor-pointer list-none items-center justify-between py-2 text-base font-medium text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                                    class="flex cursor-pointer list-none items-center justify-between py-2 text-base font-medium text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                                 >
                                     {{ $item->label }}
 
@@ -86,7 +86,7 @@
                                         <li>
                                             <a
                                                 href="{{ $url }}"
-                                                class="block py-2 text-sm text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                                                class="block py-2 text-sm text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                                             >{{ $item->label }}</a>
                                         </li>
                                     @endif

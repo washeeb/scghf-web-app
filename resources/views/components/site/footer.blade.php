@@ -40,7 +40,7 @@
 
             {{-- Who we are, and how to reach us. --}}
             <div class="space-y-3">
-                <p class="font-semibold text-[var(--text)]">
+                <p class="font-semibold text-[var(--text-primary)]">
                     {{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}
                 </p>
 
@@ -75,7 +75,7 @@
 
                 @if ($items->isNotEmpty())
                     <nav aria-label="{{ $column['heading'] }}">
-                        <h2 class="mb-3 text-sm font-semibold text-[var(--text)]">{{ $column['heading'] }}</h2>
+                        <h2 class="mb-3 text-sm font-semibold text-[var(--text-primary)]">{{ $column['heading'] }}</h2>
                         <ul class="space-y-1">
                             @foreach ($items as $item)
                                 <li><x-site.menu-link :item="$item" /></li>
@@ -87,7 +87,7 @@
 
             {{-- Newsletter and social. --}}
             <div class="space-y-4">
-                <h2 class="text-sm font-semibold text-[var(--text)]">
+                <h2 class="text-sm font-semibold text-[var(--text-primary)]">
                     {{ setting('site.footer_newsletter_heading', __('Stay in touch')) }}
                 </h2>
 
@@ -108,7 +108,7 @@
                             required
                             autocomplete="email"
                             placeholder="{{ __('you@example.com') }}"
-                            class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]"
+                            class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text-primary)]"
                         >
                         <button
                             type="submit"

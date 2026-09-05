@@ -7,7 +7,6 @@ namespace App\Filament\Pages;
 use App\Enums\SettingType;
 use App\Models\Media;
 use App\Models\Setting;
-use App\Support\Announcement;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
@@ -24,12 +23,12 @@ use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use UnitEnum;
 
 /**
  * Everything the site says about itself, in one screen.
@@ -72,6 +71,8 @@ class ManageSettings extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
+    protected static string|UnitEnum|null $navigationGroup = 'Website';
+
     protected static ?int $navigationSort = 90;
 
     protected string $view = 'filament.pages.manage-settings';
@@ -100,7 +101,6 @@ class ManageSettings extends Page
         'donations' => 'Donations',
         'banking' => 'Offline giving',
         'header' => 'Header',
-        'announcement' => 'Announcement bar',
         'site' => 'Site & footer',
         'seo' => 'Search engines',
     ];
@@ -282,31 +282,9 @@ class ManageSettings extends Page
             ->groupBy('group')
             ->sortBy(fn (Collection $settings, string $group): int => $order[$group] ?? PHP_INT_MAX)
             ->map(fn (Collection $settings, string $group): Tab => Tab::make(__(self::GROUPS[$group] ?? ucfirst($group)))
-                ->schema($this->fieldsFor($group, $settings)))
+                ->schema($settings->map(fn (Setting $setting): Field => $this->field($setting))->all()))
             ->values()
             ->all();
-    }
-
-    /**
-     * The fields for one tab.
-     *
-     * @param  Collection<int, Setting>  $settings
-     * @return array<int, mixed>
-     */
-    private function fieldsFor(string $group, Collection $settings): array
-    {
-        $fields = $settings->map(fn (Setting $setting): Field => $this->field($setting))->all();
-
-        /*
-         * The announcement tab opens with a sentence saying whether the bar is
-         * actually on the site right now. Two hand-typed date fields do not
-         * answer that, and it is the only question the person editing them has.
-         */
-        if ($group === 'announcement') {
-            array_unshift($fields, Text::make(fn (): string => app(Announcement::class)->status()));
-        }
-
-        return $fields;
     }
 
     private function field(Setting $setting): Field

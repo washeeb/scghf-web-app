@@ -21,7 +21,7 @@
         @if ($presets->isNotEmpty())
             <ul class="flex flex-wrap gap-2">
                 @foreach ($presets as $amount)
-                    <li class="rounded-md border border-[var(--border)] px-4 py-2 font-semibold text-[var(--text)]">
+                    <li class="rounded-md border border-[var(--border)] px-4 py-2 font-semibold text-[var(--text-primary)]">
                         {{ App\ValueObjects\Money::ofMinor((int) $amount, setting('donations.currency_code', 'GHS')) }}
                     </li>
                 @endforeach
@@ -30,7 +30,7 @@
 
         <a
             href="{{ url('/donate') }}"
-            class="mt-6 inline-block rounded-md bg-[var(--brand-secondary)] px-6 py-3 font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+            class="mt-6 inline-block rounded-md bg-[var(--brand-secondary)] px-6 py-3 font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
         >{{ __('Give now') }}</a>
     </div>
 </x-blocks.section>

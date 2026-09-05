@@ -12,7 +12,7 @@
         @if (filled($section->field('cta_label')) && filled($section->field('cta_url')))
             <a
                 href="{{ $section->field('cta_url') }}"
-                class="shrink-0 rounded-md bg-[var(--brand-secondary)] px-6 py-3 font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                class="shrink-0 rounded-md bg-[var(--brand-secondary)] px-6 py-3 font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >{{ $section->field('cta_label') }}</a>
         @endif
     </div>

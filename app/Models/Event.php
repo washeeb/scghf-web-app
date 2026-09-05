@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Casts\MoneyCast;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -39,6 +40,7 @@ class Event extends Model
     use HasSeo;
     use HasUlids;
     use LogsActivity;
+    use RecordsAuthor;
     use SoftDeletes;
 
     public const STATUS_SCHEDULED = 'scheduled';

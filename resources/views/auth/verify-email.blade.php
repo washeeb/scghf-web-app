@@ -22,7 +22,7 @@
             @csrf
             <button
                 type="submit"
-                class="rounded-md bg-[var(--brand-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                class="rounded-md bg-[var(--brand-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >{{ __('Send another link') }}</button>
         </form>
 
@@ -30,7 +30,7 @@
             @csrf
             <button
                 type="submit"
-                class="rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                class="rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >{{ __('Sign out') }}</button>
         </form>
     </div>

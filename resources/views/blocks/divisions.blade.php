@@ -16,7 +16,7 @@
                         aria-hidden="true"
                     ></span>
 
-                    <h3 class="mt-4 font-semibold text-[var(--text)]">{{ $division->name }}</h3>
+                    <h3 class="mt-4 font-semibold text-[var(--text-primary)]">{{ $division->name }}</h3>
 
                     @if ($division->tagline)
                         <p class="mt-1 text-sm font-medium text-[var(--text-muted)]">{{ $division->tagline }}</p>

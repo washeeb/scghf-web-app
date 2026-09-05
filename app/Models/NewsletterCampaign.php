@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -48,6 +49,7 @@ class NewsletterCampaign extends Model
     use BelongsToDivision;
     use HasFactory;
     use HasUlids;
+    use RecordsAuthor;
 
     public const STATUS_DRAFT = 'draft';
 

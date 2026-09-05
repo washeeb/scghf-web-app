@@ -9,7 +9,7 @@
 --}}
 <x-blocks.section :section="$section" :heading="$section->field('heading')">
     <address class="not-italic">
-        <ul class="space-y-3 text-[var(--text)]">
+        <ul class="space-y-3 text-[var(--text-primary)]">
             @if ($address = setting('contact.address'))
                 <li>{{ $address }}</li>
             @endif

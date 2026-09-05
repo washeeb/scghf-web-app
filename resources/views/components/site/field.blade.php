@@ -42,7 +42,7 @@
 @endphp
 
 <div class="space-y-1.5">
-    <label for="{{ $id }}" class="block text-sm font-medium text-[var(--text)]">
+    <label for="{{ $id }}" class="block text-sm font-medium text-[var(--text-primary)]">
         {{ $label }}
         @if ($required)
             <span class="text-[var(--brand-secondary)]" aria-hidden="true">*</span>
@@ -64,8 +64,8 @@
         @if ($hasError) aria-invalid="true" @endif
         value="{{ old($name, $value) }}"
         {{ $attributes->class([
-            'w-full rounded-md border bg-[var(--bg)] px-3 py-2 text-[var(--text)]',
-            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]',
+            'w-full rounded-md border bg-[var(--bg)] px-3 py-2 text-[var(--text-primary)]',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]',
             'border-[var(--border)]' => ! $hasError,
             'border-[var(--brand-secondary)]' => $hasError,
         ]) }}

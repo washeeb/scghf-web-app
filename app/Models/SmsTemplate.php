@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Communications\SmsSegmenter;
 use App\Communications\TemplateRenderer;
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -36,6 +37,7 @@ class SmsTemplate extends Model
 {
     use HasFactory;
     use HasUlids;
+    use RecordsAuthor;
     use SoftDeletes;
 
     public const CATEGORY_TRANSACTIONAL = 'transactional';

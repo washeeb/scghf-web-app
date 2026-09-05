@@ -17,7 +17,7 @@
 @if ($message)
     <div
         role="status"
-        class="rounded-md border border-[var(--brand-primary)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text)]"
+        class="rounded-md border border-[var(--brand-primary)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-primary)]"
     >
         {{ $message }}
     </div>

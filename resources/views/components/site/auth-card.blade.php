@@ -19,7 +19,7 @@
 
 <x-layouts.app :title="$title.setting('seo.title_suffix', '')">
     <div class="mx-auto w-full max-w-md px-4 py-12 sm:py-16">
-        <h1 class="text-2xl font-semibold tracking-tight text-[var(--text)]">{{ $title }}</h1>
+        <h1 class="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">{{ $title }}</h1>
 
         @if ($subtitle)
             <p class="mt-2 text-sm text-[var(--text-muted)]">{{ $subtitle }}</p>
@@ -34,7 +34,7 @@
                     tabindex="-1"
                     class="rounded-md border border-[var(--brand-secondary)] bg-[var(--surface)] px-4 py-3"
                 >
-                    <p class="text-sm font-semibold text-[var(--text)]">
+                    <p class="text-sm font-semibold text-[var(--text-primary)]">
                         {{ trans_choice(
                             'There is one problem with the form below.|There are :count problems with the form below.',
                             $errors->count(),

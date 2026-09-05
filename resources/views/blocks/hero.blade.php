@@ -69,7 +69,7 @@
                     <a
                         href="{{ $cta['url'] }}"
                         @class([
-                            'rounded-md px-5 py-3 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]',
+                            'rounded-md px-5 py-3 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]',
                             'bg-[var(--brand-secondary)] text-[var(--text-on-secondary)]' => $cta['primary'],
                             'border border-current' => ! $cta['primary'],
                         ])

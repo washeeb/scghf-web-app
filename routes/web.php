@@ -7,6 +7,7 @@ use App\Http\Controllers\Account\EmailController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\TwoFactorController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -215,6 +216,27 @@ Route::get('account/email/confirm/{ulid}/{hash}', [EmailController::class, 'conf
 Route::get('account/email/cancel/{ulid}/{hash}', [EmailController::class, 'cancel'])
     ->middleware('signed')
     ->name('account.email.cancel');
+
+/*
+|--------------------------------------------------------------------------
+| The announcement bar
+|--------------------------------------------------------------------------
+|
+| A click goes through the application so it can be counted — `clicks` has been
+| on the table since Phase 3 and incremented by nothing, which left the
+| foundation unable to answer whether a bar across every page is worth the strip
+| of a phone screen it costs.
+|
+| Dismissal is a POST, not a GET. It changes state (a cookie that lasts a
+| month), and a GET that changes state is one a link prefetcher can fire on
+| somebody's behalf — which would close the notice for a visitor who never
+| touched it.
+*/
+Route::get('announcements/{announcement:ulid}/go', [AnnouncementController::class, 'click'])
+    ->name('announcements.click');
+
+Route::post('announcements/{announcement:ulid}/dismiss', [AnnouncementController::class, 'dismiss'])
+    ->name('announcements.dismiss');
 
 /*
 |--------------------------------------------------------------------------

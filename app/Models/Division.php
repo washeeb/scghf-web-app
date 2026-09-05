@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\HasSeo;
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -36,6 +37,7 @@ class Division extends Model
     use HasSeo;
     use HasUlids;
     use LogsActivity;
+    use RecordsAuthor;
     use SoftDeletes;
 
     protected $fillable = [

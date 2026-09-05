@@ -32,10 +32,10 @@
             @if ($required) required @endif
             @if ($hint) aria-describedby="{{ $id }}-hint" @endif
             @error($name) aria-invalid="true" @enderror
-            class="mt-0.5 size-4 shrink-0 rounded border-[var(--border)] accent-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+            class="mt-0.5 size-4 shrink-0 rounded border-[var(--border)] accent-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
         >
 
-        <label for="{{ $id }}" class="text-sm text-[var(--text)]">
+        <label for="{{ $id }}" class="text-sm text-[var(--text-primary)]">
             {{ $label }}
             @if ($required)
                 <span class="text-[var(--brand-secondary)]" aria-hidden="true">*</span>

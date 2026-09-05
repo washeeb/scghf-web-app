@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Media\Concerns\HasLibraryMedia;
+use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,7 +34,9 @@ class MediaFolder extends Model implements HasMedia
      * importantly, the rule that an unsanitised image gets none of them.
      */
     use HasLibraryMedia;
+
     use HasUlids;
+    use RecordsAuthor;
 
     protected $fillable = ['parent_id', 'name', 'slug', 'description', 'sort_order'];
 

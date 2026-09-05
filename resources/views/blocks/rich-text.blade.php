@@ -12,7 +12,7 @@
     measurably harder to read, and it is the commonest thing a CMS gets wrong.
 --}}
 <x-blocks.section :section="$section" :heading="$section->field('heading')">
-    <div class="prose prose-lg max-w-none text-[var(--text)] {{ $section->field('width') === 'prose' ? 'lg:max-w-3xl' : '' }}">
+    <div class="prose prose-lg max-w-none text-[var(--text-primary)] {{ $section->field('width') === 'prose' ? 'lg:max-w-3xl' : '' }}">
         {!! $section->field('body') !!}
     </div>
 </x-blocks.section>

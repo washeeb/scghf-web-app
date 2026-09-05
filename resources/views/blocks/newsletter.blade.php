@@ -18,7 +18,7 @@
                 required
                 autocomplete="email"
                 placeholder="{{ __('you@example.com') }}"
-                class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-[var(--text)]"
+                class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-[var(--text-primary)]"
             >
 
             <button
