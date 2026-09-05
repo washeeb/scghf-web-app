@@ -86,6 +86,12 @@
         {{ __('Skip to content') }}
     </a>
 
+    {{-- Above the header, because the announcement is about the whole site
+         rather than about the navigation, and a bar below the header reads as
+         part of whatever page it happens to sit on. Renders nothing at all when
+         there is no announcement or the window has passed. --}}
+    <x-site.announcement />
+
     <x-site.header />
 
     <main id="main-content" tabindex="-1">

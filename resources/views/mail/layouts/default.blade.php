@@ -36,7 +36,7 @@
                 <tr>
                     <td style="padding:0 24px 24px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#71717a;">
                         <hr style="border:none;border-top:1px solid #e4e4e7;margin:0 0 16px;">
-                        {{ setting('organisation.legal_name', setting('general.site_name', '')) }}<br>
+                        {{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}<br>
                         {{ setting('contact.address', '') }}<br>
                         @if ($unsubscribeUrl)
                             <a href="{{ $unsubscribeUrl }}" style="color:#71717a;">Unsubscribe</a>

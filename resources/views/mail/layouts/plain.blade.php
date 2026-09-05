@@ -4,7 +4,7 @@
 {!! $bodyText !!}
 
 --
-{{ setting('organisation.legal_name', setting('general.site_name', '')) }}
+{{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}
 {{ setting('contact.address', '') }}
 @if ($unsubscribeUrl)
 

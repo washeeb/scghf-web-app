@@ -26,9 +26,13 @@ use Illuminate\Database\Seeder;
 class SettingsSeeder extends Seeder
 {
     /**
-     * [group, key, value, type, label, is_public, description]
+     * [group, key, value, type, label, is_public, description, options]
      *
-     * @var array<int, array{0:string,1:string,2:?string,3:SettingType,4:string,5:bool,6?:string}>
+     * `options` is only meaningful for `SettingType::Select` — it is the list
+     * the admin screen offers. A Select with no options is a field nobody can
+     * fill, which is how `site.default_theme` shipped.
+     *
+     * @var array<int, array{0:string,1:string,2:?string,3:SettingType,4:string,5:bool,6?:?string,7?:array<string, string>}>
      */
     private const SETTINGS = [
         // ── Identity ─────────────────────────────────────────────────────────
@@ -125,10 +129,47 @@ class SettingsSeeder extends Seeder
 
         // ── Site behaviour ───────────────────────────────────────────────────
         ['site', 'maintenance_message', 'We will be back shortly.', SettingType::Text, 'Maintenance message', true],
-        ['site', 'default_theme', 'system', SettingType::Select, 'Default theme', true],
+        ['site', 'default_theme', 'system', SettingType::Select, 'Default theme', true,
+            'What a first-time visitor sees before they choose. "Match their device" respects the '
+            .'setting they already made in their phone.',
+            ['light' => 'Light', 'dark' => 'Dark', 'system' => 'Match their device']],
         ['site', 'show_donor_wall', '1', SettingType::Boolean, 'Show the donor wall', true],
         ['site', 'newsletter_double_optin', '1', SettingType::Boolean, 'Require newsletter confirmation', false,
             'Single opt-in is the fastest way to destroy the sending domain reputation. Leave on.'],
+
+        // ── The header ───────────────────────────────────────────────────────
+        // Logo variants are separate files, not one file recoloured by CSS: a
+        // logo that reads on white rarely reads on the dark palette, and a
+        // filter that inverts it produces a colour the brand does not own.
+        ['header', 'logo_light', null, SettingType::Media, 'Logo — for light backgrounds', true],
+        ['header', 'logo_dark', null, SettingType::Media, 'Logo — for dark backgrounds', true,
+            'A separate file. Inverting the light one with CSS produces a colour the brand does not own.'],
+        ['header', 'is_sticky', '1', SettingType::Boolean, 'Keep the header visible when scrolling', true,
+            'Keeps the Donate button reachable the whole way down a long page.'],
+        ['header', 'show_top_bar', '0', SettingType::Boolean, 'Show the top bar', true,
+            'A thin strip above the header carrying the phone number and social links.'],
+
+        // ── The announcement bar ─────────────────────────────────────────────
+        // Dated on purpose. An announcement with no end date is one somebody
+        // has to remember to take down, and nobody ever does — which is how a
+        // site ends up advertising last year's fundraiser in March.
+        ['announcement', 'message', null, SettingType::Text, 'Announcement', true,
+            'Shown across the top of every page. Leave empty for none.'],
+        ['announcement', 'link_url', null, SettingType::Url, 'Announcement link', true],
+        ['announcement', 'link_label', null, SettingType::String, 'Announcement link text', true],
+        ['announcement', 'starts_at', null, SettingType::String, 'Show from', false,
+            'YYYY-MM-DD. Leave empty to show immediately.'],
+        ['announcement', 'ends_at', null, SettingType::String, 'Hide after', false,
+            'YYYY-MM-DD. Leave empty and it stays up until somebody removes it — which is how a '
+            .'site ends up advertising last year\'s fundraiser.'],
+
+        // ── The footer ───────────────────────────────────────────────────────
+        // Read by the footer since Phase 4 with no row behind them, so the
+        // headings could not be changed without a deploy.
+        ['site', 'footer_primary_heading', 'Our work', SettingType::String, 'Footer column 1 heading', true],
+        ['site', 'footer_support_heading', 'Support us', SettingType::String, 'Footer column 2 heading', true],
+        ['site', 'footer_newsletter_heading', 'Stay in touch', SettingType::String, 'Footer newsletter heading', true],
+        ['site', 'show_back_to_top', '1', SettingType::Boolean, 'Show a back-to-top link', true],
     ];
 
     public function run(): void
@@ -140,6 +181,7 @@ class SettingsSeeder extends Seeder
         foreach (self::SETTINGS as $row) {
             [$group, $key, $value, $type, $label, $isPublic] = $row;
             $description = $row[6] ?? null;
+            $options = $row[7] ?? null;
             $order++;
 
             $setting = Setting::firstOrNew(['group' => $group, 'key' => $key]);
@@ -152,6 +194,7 @@ class SettingsSeeder extends Seeder
                 'description' => $description,
                 'is_public' => $isPublic,
                 'validation' => $type->validationRule(),
+                'options' => $options,
                 'sort_order' => $order,
             ]);
 

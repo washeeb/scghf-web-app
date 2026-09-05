@@ -87,7 +87,9 @@
 
             {{-- Newsletter and social. --}}
             <div class="space-y-4">
-                <h2 class="text-sm font-semibold text-[var(--text)]">{{ __('Stay in touch') }}</h2>
+                <h2 class="text-sm font-semibold text-[var(--text)]">
+                    {{ setting('site.footer_newsletter_heading', __('Stay in touch')) }}
+                </h2>
 
                 {{--
                     The signup form posts to a route that arrives with the
@@ -155,15 +157,35 @@
                 @endif
             </div>
 
-            @if ($legal->isNotEmpty())
-                <nav aria-label="{{ __('Legal') }}">
-                    <ul class="flex flex-wrap gap-x-4 gap-y-1">
-                        @foreach ($legal as $item)
-                            <li><x-site.menu-link :item="$item" /></li>
-                        @endforeach
-                    </ul>
-                </nav>
-            @endif
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+                @if ($legal->isNotEmpty())
+                    <nav aria-label="{{ __('Legal') }}">
+                        <ul class="flex flex-wrap gap-x-4 gap-y-1">
+                            @foreach ($legal as $item)
+                                <li><x-site.menu-link :item="$item" /></li>
+                            @endforeach
+                        </ul>
+                    </nav>
+                @endif
+
+                {{--
+                    Back to top.
+
+                    A plain in-page link to the skip-link's own target, not a
+                    floating button and not a script. Pointing it at
+                    `#main-content` rather than at the document top means it
+                    MOVES FOCUS as well as scrolling — a JavaScript scroll
+                    leaves a keyboard user's focus stranded at the bottom of the
+                    page they just left, which is the usual way this control is
+                    built and the usual way it is broken.
+                --}}
+                @if (setting('site.show_back_to_top', true))
+                    <a
+                        href="#main-content"
+                        class="shrink-0 hover:text-[var(--brand-primary)] hover:underline"
+                    >{{ __('Back to top') }}</a>
+                @endif
+            </div>
         </div>
     </div>
 </footer>

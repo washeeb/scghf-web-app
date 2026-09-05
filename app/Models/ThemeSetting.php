@@ -21,7 +21,7 @@ class ThemeSetting extends Model
 {
     protected $fillable = [
         'theme', 'token', 'category', 'value', 'label', 'description',
-        'contrast_against', 'min_contrast', 'is_locked', 'sort_order',
+        'contrast_against', 'min_contrast', 'is_locked', 'sort_order', 'updated_by',
     ];
 
     /** @return array<string, string> */
@@ -47,6 +47,24 @@ class ThemeSetting extends Model
          */
         static::saved(fn () => ThemeTokens::flush());
         static::deleted(fn () => ThemeTokens::flush());
+
+        /*
+         * Who last changed this colour.
+         *
+         * `updated_by` has been on the table since the migration and was
+         * written by nothing, so `updatedBy()` resolved to null for every token
+         * and the panel could have shown "changed by nobody" as though it were
+         * a fact. A palette is a shared document — nine people can touch it and
+         * only one remembers why.
+         *
+         * Only for a real person: the seeder runs without one, and attributing
+         * its defaults to whoever last logged in would be a lie.
+         */
+        static::saving(function (self $token): void {
+            if ($token->isDirty('value') && auth()->hasUser()) {
+                $token->updated_by = auth()->id();
+            }
+        });
     }
 
     public function isColour(): bool

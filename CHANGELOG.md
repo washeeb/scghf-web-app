@@ -8,6 +8,142 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 5 — Menus, theme and the settings screen — 2026-09-05
+
+Module 3 of 5. The parts of the site that are not pages: the navigation, the
+palette, and the settings table that has been driving the layout since Phase 3
+with nothing in front of it.
+
+#### Added
+
+**The menu builder**
+- `MenuResource`, with items and their children as nested repeaters — two
+  levels, because `Menu::max_depth` is one and the model enforces it on save. A
+  generic tree widget would let somebody build a third level the layout cannot
+  draw, and the model would then refuse the save with an error they could not
+  have anticipated
+- **No create action.** The templates ask for a menu by key. One nobody draws is
+  a menu nothing shows; one that goes missing is a part of every page rendering
+  empty. The layout decides which menus exist
+- A locked menu's key is not editable, for the same reason
+- **A link is a relationship.** Choosing a page stores `page_id`, so the item
+  follows that page when its address changes. The route picker offers only GET
+  routes with no parameters — a menu item cannot supply a `{slug}`, and offering
+  `causes.show` would produce a link that cannot be built
+- Menus are addressed in the panel by their key, so the URL reads
+  `/menus/footer_legal/edit` rather than `/menus/4/edit`
+
+**The theme editor**
+- `ThemeSettingResource`, with the contrast ratio as a **column**.
+  `ThemeSetting::contrastRatio()` and `meetsContrast()` have existed since Phase
+  3 with nothing showing them, which meant a palette could fail WCAG AA and the
+  panel would never say so. Every failure it reports is text somebody cannot
+  read
+- Both themes in one grouped table. The commonest way a themed site fails
+  accessibility is a palette checked in light and never in dark, and splitting
+  them across two screens makes that the default outcome
+- A **navigation badge** counting failing tokens, and no badge at all while the
+  palette is legible — a permanent badge is one people stop reading
+- "Fix contrast" suggests black or white on the failing background, changing the
+  **foreground**: the background is usually a brand colour somebody chose
+  deliberately, and the text on it is the part with no opinion of its own
+- "Reset to brand defaults", because the palette is the one part of the CMS
+  where an afternoon of small adjustments leaves something nobody can unpick —
+  nobody remembers what nine hex codes used to be
+- The ratio under the colour field is computed from the value being **typed**,
+  not the one stored. A checker reporting on the colour you are replacing is
+  reporting the one number that is certainly not useful
+
+**The site settings screen**
+- `ManageSettings`: every setting in the table, in tabs matching the groups the
+  seeder already uses. The legal name, registration number, phone numbers, bank
+  details, donation limits and receipt wording have been read by the layout, the
+  footer, every email template and the donation form since Phase 3 — and were
+  editable only by somebody with database access, which is the exact opposite of
+  CLAUDE.md's CMS rule
+- **The field follows the declared type.** A phone number gets a tel keypad and
+  the Ghanaian mobile pattern; an amount gets pesewas with the cedi conversion
+  spelled out live underneath, because a foundation that types "50" meaning
+  fifty cedis and gets fifty pesewas has set its minimum donation to half a cedi
+  and will not find out until a donor does
+- **A value still holding its seeded `{{PLACEHOLDER}}` is exempt from its own
+  rule.** The strict reading would refuse to save the Contact tab until every
+  field on it was filled in, including the ones somebody came to the screen to
+  avoid. Unfilled is reported by `Settings::unfilled()` and by the preflight
+  command, which is where "this is not real yet" belongs
+- The subheading says how many settings are still placeholder. That count has
+  been computable since Phase 3 and only a console command ever asked
+- An encrypted setting is never sent to the browser, and an empty field on save
+  means "unchanged" rather than "cleared" — otherwise somebody could wipe a
+  credential by saving an unrelated tab
+
+**The announcement bar**
+- `App\Support\Announcement`, and a bar above the header driven from the
+  settings layer. **Dated on purpose**: an announcement with no end date is one
+  somebody has to remember to take down, and nobody ever does — which is how a
+  foundation ends up advertising last December's carol service in March
+- `ends_at` is inclusive of the day it names. Off by one here is a Christmas
+  appeal that vanishes on Christmas morning
+- A mistyped date is treated as no bound rather than thrown. The failure mode of
+  a bad end date is a bar that stays up too long, which somebody notices; the
+  failure mode of throwing is a 500 on every page of the site
+- A link needs both a URL and a label. A URL alone is a link with nothing to
+  click; a label alone is text pretending to be one
+
+**Header and footer settings that now do something**
+- Two logo files, light and dark, rather than one recoloured — a logo that reads
+  on white rarely reads on the dark palette, and a CSS filter that inverts it
+  produces a colour the brand does not own
+- A sticky header, switchable: it keeps the Donate button reachable the whole
+  way down a long appeal page, and it also permanently spends a strip of a short
+  phone screen, so it is the foundation's call rather than the template's
+- An optional top bar carrying the office hours, phone and email
+- The footer's newsletter heading, and a back-to-top link pointed at the skip
+  link's own target so it **moves focus** as well as scrolling. A JavaScript
+  scroll leaves a keyboard user's focus at the bottom of the page they just
+  left, which is the usual way this control is built and the usual way it is
+  broken
+
+#### Fixed
+
+- **Every email this application sent had a blank line where the foundation's
+  name belongs.** Both mail layouts read `organisation.legal_name` falling back
+  to `general.site_name`, and neither key existed in the settings table. Now
+  `general.legal_name` falling back to `general.short_name`
+- **`ThemeSettingsSeeder` overwrote the palette on every run.** It used
+  `updateOrCreate`, while `SettingsSeeder` two lines above it in
+  `DatabaseSeeder` is explicit that re-running must never undo the foundation's
+  work. Nothing runs `db:seed` on deploy today, but the runbook's advice for
+  picking up newly added settings is to re-run the seeders — and following it
+  would have thrown away every colour the foundation had chosen while leaving
+  their address and phone number intact, which is exactly the kind of surprise
+  nobody connects to the command they just ran. Metadata is still refreshed;
+  only the value is now write-once
+- **`updated_by` was written by nothing** on either the settings or the theme
+  table, so the column existed, the relationship resolved, and the answer was
+  always "nobody" — the worst shape for an audit field, because it reads as a
+  fact. Now stamped on the model, for a real person only: a seeder has no user,
+  and attributing its work to whoever last logged in would be a lie
+- **`Setting::validation` was decoration.** Seeded from
+  `SettingType::validationRule()` since Phase 3 and read by nothing. The settings
+  screen is its first consumer, and it is what now refuses a mistyped office
+  email address — the setting every receipt in the system is sent from
+- **`Setting::options` was never written**, leaving `site.default_theme` a
+  Select with an empty list: a setting on the screen that nobody could change
+- The settings cache is a single array of the whole table, busted only inside
+  `Settings::set()`. The admin screen saves models directly, so the flush moved
+  onto the model — a settings change that does not appear until a cache expires
+  is indistinguishable, to the person who made it, from one that did not save
+- `SettingType::Email` validated with `email:rfc,dns`. A DNS lookup inside a
+  form submission makes saving depend on the web server's resolver, and shared
+  hosting is exactly where that goes wrong: "save the office address" becomes a
+  request that times out with no explanation an editor could act on.
+  Deliverability is a preflight question
+- Fourteen settings the header, announcement bar and footer needed were missing
+  entirely, so the footer's own column headings could not be changed without a
+  deploy
+
+
 ### Phase 5 — Block rendering and preview — 2026-09-05
 
 Module 2 of 5. The page builder from this morning can now be seen: twenty block

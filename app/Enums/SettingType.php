@@ -101,7 +101,19 @@ enum SettingType: string
             self::Boolean => 'boolean',
             self::Json => 'json',
             self::Money => 'integer|min:0',
-            self::Email => 'email:rfc,dns',
+            /*
+             * `rfc` and not `dns`.
+             *
+             * A DNS lookup inside a form submission makes saving the settings
+             * screen depend on the web server's resolver, and shared hosting is
+             * exactly where that goes wrong — a slow resolver turns "save the
+             * office address" into a request that times out, with no
+             * explanation an editor could act on. Whether the domain actually
+             * receives mail is a deliverability question, and it belongs in
+             * `scghf:preflight` where a failure is a report rather than a
+             * blocked save.
+             */
+            self::Email => 'email:rfc',
             self::Url => 'url',
             // Ghanaian mobile in any of the shapes donors actually type.
             self::Phone => 'regex:/^(\+?233|0)[2345][0-9]{8}$/',

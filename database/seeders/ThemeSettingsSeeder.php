@@ -133,20 +133,48 @@ class ThemeSettingsSeeder extends Seeder
             $order++;
 
             foreach (['light' => $light, 'dark' => $dark] as $theme => $value) {
-                ThemeSetting::updateOrCreate(
-                    ['theme' => $theme, 'token' => $token],
-                    [
-                        'category' => $category,
-                        'value' => $value,
-                        'label' => $label,
-                        'contrast_against' => $against,
-                        'min_contrast' => $minContrast,
-                        // Colours are locked: the brand is not something to
-                        // delete by accident. Spacing and motion are safe to edit.
-                        'is_locked' => $category === 'colour',
-                        'sort_order' => $order,
-                    ],
-                );
+                $setting = ThemeSetting::firstOrNew(['theme' => $theme, 'token' => $token]);
+
+                /*
+                 * Metadata is always refreshed. A corrected label, or a
+                 * contrast obligation the design added later, should reach an
+                 * existing install.
+                 */
+                $setting->fill([
+                    'category' => $category,
+                    'label' => $label,
+                    'contrast_against' => $against,
+                    'min_contrast' => $minContrast,
+                    // Colours are locked: the brand is not something to delete
+                    // by accident. Spacing and motion are safe to edit.
+                    'is_locked' => $category === 'colour',
+                    'sort_order' => $order,
+                ]);
+
+                /*
+                 * ⚠ The VALUE is only written on first creation.
+                 *
+                 * This used to be an `updateOrCreate` that overwrote it, which
+                 * made this seeder the opposite of `SettingsSeeder` sitting two
+                 * lines above it in `DatabaseSeeder` — that one is explicit
+                 * that re-running must never undo the foundation's work.
+                 *
+                 * Nothing runs `db:seed` on deploy today, so the palette has
+                 * never actually been reset by one. But the runbook's advice
+                 * for picking up newly added settings is to re-run the seeders,
+                 * and following it would have silently thrown away every colour
+                 * the foundation had chosen while leaving their address and
+                 * phone number intact — which is exactly the kind of surprise
+                 * nobody connects to the command they just ran.
+                 *
+                 * "Reset to brand defaults" in the admin panel deletes the rows
+                 * first, so it still gets the seeded values.
+                 */
+                if (! $setting->exists) {
+                    $setting->value = $value;
+                }
+
+                $setting->save();
             }
         }
 

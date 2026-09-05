@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\SettingType;
+use App\Support\Settings;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,7 @@ class Setting extends Model
     protected $fillable = [
         'group', 'key', 'value', 'type', 'label', 'description',
         'is_public', 'is_encrypted', 'is_locked', 'validation', 'options', 'sort_order',
+        'updated_by',
     ];
 
     /** @return array<string, string> */
@@ -40,6 +42,35 @@ class Setting extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $setting): void {
+            /*
+             * Who last changed this.
+             *
+             * `updated_by` has been on the table since the settings migration
+             * and was written by nothing, so the column existed and the
+             * relationship resolved and the answer was always "nobody" — the
+             * worst shape for an audit field, because it reads as a fact.
+             *
+             * Only stamped when the VALUE changes, and only for a real person:
+             * a seeder or a scheduled command has no user, and attributing its
+             * work to whoever happened to be logged in would be a lie.
+             */
+            if ($setting->isDirty('value') && auth()->hasUser()) {
+                $setting->updated_by = auth()->id();
+            }
+        });
+
+        /*
+         * The cache is a single array of the whole table, so any write to any
+         * row invalidates it. On the model rather than only in
+         * `Settings::set()`, because the admin screen saves models directly —
+         * and a settings change that does not appear on the site until a cache
+         * expires is indistinguishable, to the person who made it, from one
+         * that did not save.
+         */
+        static::saved(fn () => app(Settings::class)->flush());
+        static::deleted(fn () => app(Settings::class)->flush());
+
         static::updating(function (self $setting): void {
             /*
              * Record what it used to be, before it stops being that.
