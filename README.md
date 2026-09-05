@@ -87,6 +87,12 @@ These are in `CLAUDE.md` in full. The short version, because getting them wrong 
 
 **Verification is what earns the giving history.** `donors` is matched on email address, so an account that has not proved the address sees nothing. Attaching the record at registration would let anybody who types a known donor's address read what that person has given.
 
+**A file in use cannot be deleted.** Thirty-two of the thirty-four foreign keys pointing at `media` are `ON DELETE SET NULL`, so deleting an in-use file does not fail and does not warn — a donation receipt loses its PDF, a beneficiary loses their ID document, a consent record loses the evidence it is evidence of, and each still reads as intact. `MediaUsage` discovers those columns from the schema rather than a hand-written list, and `Media::deleting()` refuses. There is no override: detach it, or use `MediaLibrary::replace()`, which keeps the id so every reference follows.
+
+**An upload is judged by its bytes.** The filename, the extension and the `Content-Type` header are all supplied by whatever did the uploading. The type is sniffed and cross-checked against the extension in both directions, filenames collapse to a single dot so nothing lands as `x.php.jpg`, and SVG is refused outright — it is XML that can carry `<script>` from the same origin as the admin panel.
+
+**An unsanitised image gets no conversions.** `isPublishable()` already refuses the original, but conversions sit at derivable paths on a public disk — generating them would be three more copies of a photograph still carrying a child's home coordinates. `scghf:regenerate-media-conversions` builds them once the file is clean.
+
 ---
 
 ## Branches and deployment
@@ -130,23 +136,23 @@ Run `vendor/bin/pint` before pushing.
 **Phase 2 complete** — environment, repository, deployment pipeline.
 **Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system, plus a gap sweep. ~131 tables.
 
-**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, the layout shell (theme system, header and footer from the seeded menus, branded error pages), and public donor accounts (register, sign in, verify, reset, account area). Still to come: the media library UI and the mobile navigation menu. See `CHANGELOG.md`.
+**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, the layout shell (theme system, header and footer from the seeded menus, branded error pages), public donor accounts (register, sign in, verify, reset, account area), and the media library engine (upload validation that sniffs bytes, conversions, toolchain detection, and a delete guard over the 34 foreign keys pointing at `media`). Still to come: the media library's Filament UI and the mobile navigation menu. See `CHANGELOG.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 > Donors sign in at **`/login`**. Staff cannot: see below.
 
-**Hosting is not yet chosen — Hostinger is under consideration.** The project does not launch on the shared cPanel account it was scaffolded against, and everything runs locally without a host. The pipeline is host-agnostic by design, so most of a move is values: `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`.
+**Hosting: InMotion shared cPanel**, as originally scoped. Everything runs locally without a host, and the pipeline is host-agnostic, so the account details are values rather than code: `SSH_HOST`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`.
 
-Four things to confirm on any candidate host **before** committing, because each one is load-bearing rather than a preference:
+Four things to confirm on the account itself before the first deploy, because each one is load-bearing rather than a preference:
 
 | Check | Why it is load-bearing |
 |---|---|
-| **Cron at one-minute resolution** | `schedule:run` must run every minute. The outbox drains on that tick, and it drains *frequently and small* on purpose because the mail cap is per hour — a five- or fifteen-minute floor turns an even trickle into bursts, which is what trips shared-hosting rate limiters. Verify the smallest interval the plan's cron UI actually allows. |
-| **SSH, on the plan being bought** | The deploy pipeline builds `vendor/` and the Vite assets on the GitHub runner and rsyncs a release directory over SSH. Without SSH the fallback is the host's own Git integration, which means Composer on the server. Note Hostinger uses hPanel and a non-standard SSH port, so `deploy/cpanel/.cpanel.yml` does not apply there. |
-| **PHP 8.4** | Not negotiable — Pest 5 needs PHPUnit 13 needs PHP ≥ 8.4.1. See the Phase 2 stack amendment in `CLAUDE.md`. |
-| **The document root can point at a subdirectory** | Laravel's `public/` must be the web root with the application above it. If the root is fixed at `public_html`, the app has to be arranged around that. |
+| **PHP 8.4 selected in MultiPHP Manager** | Not negotiable — Pest 5 needs PHPUnit 13 needs PHP ≥ 8.4.1. See the Phase 2 stack amendment in `CLAUDE.md`. The account already has `ea-php84`; it has to be the *selected* version. |
+| **Cron at one-minute resolution** | `schedule:run` must run every minute. The outbox drains on that tick, *frequently and small*, because the mail cap is per hour — a coarser schedule turns an even trickle into bursts, which is what trips shared-hosting rate limiters. |
+| **Which image tools the account actually has** | Conversions degrade to whatever is present. `php artisan scghf:media-doctor` reports it against the live account — run it on the server, not locally, because the answer is different there. |
+| **Inode headroom** | A media library is the thing that exhausts an inode quota. Each image costs the original plus its conversions; `scghf:media-doctor` prints the current count and what the library is projected to add. |
 
-Runbook steps 7–11 are deferred until the host is decided.
+Runbook steps 7–11 run against this account.
 
 Placeholders are tracked in `docs/PHASE-1-BLUEPRINT.md` §0. Paystack credentials and the SMS sender ID are deliberately placeholdered: the payments module is built and fully tested against a fake gateway, and SMS runs on the `log` driver, until the real accounts exist.
 

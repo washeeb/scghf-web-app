@@ -7,6 +7,10 @@ namespace App\Providers;
 use App\Listeners\RecordAuthenticationEvent;
 use App\Listeners\RecordBackupOutcome;
 use App\Listeners\SanitiseUploadedImage;
+use App\Media\ImageToolchain;
+use App\Media\MediaLibrary;
+use App\Media\MediaUsage;
+use App\Media\UploadPolicy;
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
 use App\Models\EmailLog;
@@ -84,6 +88,21 @@ class AppServiceProvider extends ServiceProvider
         // Stateless, but a singleton so the GD/EXIF capability checks are not
         // repeated for every file in a bulk upload.
         $this->app->singleton(ImageSanitiser::class);
+
+        /*
+         * Media. All four are singletons for the same reason: they each answer
+         * a question by asking the SERVER rather than by reading a value, and
+         * the answer does not change during a request.
+         *
+         * ImageToolchain shells out once per optimiser binary; MediaUsage reads
+         * the foreign keys out of information_schema. Neither is expensive
+         * once and both are silly thirty times, which is what a page of a media
+         * grid would otherwise cost.
+         */
+        $this->app->singleton(ImageToolchain::class);
+        $this->app->singleton(UploadPolicy::class);
+        $this->app->singleton(MediaUsage::class);
+        $this->app->singleton(MediaLibrary::class);
     }
 
     public function boot(): void
@@ -138,7 +157,31 @@ class AppServiceProvider extends ServiceProvider
 
         $this->recordAuthenticationEvents();
         $this->registerRateLimiters();
+        $this->resolveImageDriver();
         $this->forceHttpsWhereConfigured();
+    }
+
+    /**
+     * Tell spatie which image driver this particular server actually has.
+     *
+     * The master prompt asks for image handling that works without ImageMagick
+     * and degrades gracefully. Degrading gracefully requires knowing, and on
+     * shared hosting nobody does: the account is provisioned by somebody else
+     * and the PHP build changes when the host upgrades a server.
+     *
+     * A config value saying "we have Imagick" is a belief; ImageToolchain asks.
+     * Setting IMAGE_DRIVER explicitly overrules the detection, which is worth
+     * doing only to reproduce a production problem locally.
+     */
+    private function resolveImageDriver(): void
+    {
+        if (config('media.driver', 'auto') !== 'auto') {
+            config(['media-library.image_driver' => config('media.driver')]);
+
+            return;
+        }
+
+        config(['media-library.image_driver' => $this->app->make(ImageToolchain::class)->preferredDriver()]);
     }
 
     /**

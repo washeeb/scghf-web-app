@@ -8,6 +8,124 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — The media library engine — 2026-09-05
+
+The upload path, the conversions, and the guard that stops a file being deleted
+out from under the thirty things using it. The Filament UI sits on top of this
+and lands separately.
+
+#### Added
+
+**Uploads are judged by their bytes**
+- `UploadPolicy` sniffs the type with finfo and cross-checks it against the
+  extension **in both directions**. A `.jpg` whose contents are PHP is refused;
+  so is a genuine JPEG named `.php`, because the extension is what a
+  misconfigured server dispatches on
+- The browser's `Content-Type` is never consulted anywhere. It is a claim made
+  by whatever did the uploading, and whatever did the uploading is not always a
+  browser
+- **SVG is refused outright.** It is XML that can contain `<script>`, served
+  from the same origin as the admin panel — an uploaded one is stored XSS
+  holding the session of whoever opens it. Sanitising SVG reliably is a game
+  played forever against new parser quirks
+- Filenames are transliterated, stripped, and **collapsed to a single dot**:
+  `invoice.php.jpg` lands as `invoice-php.jpg`, because mod_mime can dispatch on
+  any extension in the chain and this deploys to hosting whose configuration is
+  not ours to audit. The extension comes from the sniffed type, never the upload
+- Decompression bombs refused: a 64,000² PNG of one flat colour is a few
+  kilobytes on disk and 16GB as a bitmap, so it passes a size limit and then
+  takes the PHP process down
+- `AcceptableUpload` exposes the same policy as a validation rule, so a form
+  cannot get a different answer from the library
+
+**Conversions, sized against the layout and the inode quota**
+- thumb 320 / card 800 / hero 1600, WebP, queued
+- **Three widths and no more.** Each conversion is a *file*, and files are the
+  scarce resource here — the inode quota is what a media library exhausts first,
+  long before the disk quota. Four files per image; a second output format would
+  make it seven
+- Never upscaled. A 500px original gets a thumb and nothing else — an 1600px
+  "hero" cut from it is a bigger file that looks worse
+- Animated GIFs keep their original only, rather than being silently converted
+  into a picture of their first frame
+- AVIF is **built and off**. Encoding costs seconds rather than milliseconds per
+  image on a shared CPU, which on a bulk upload is a request that times out
+  halfway through
+
+**An unsanitised image gets no derivatives at all**
+- The safeguarding rule, and the reason `HasLibraryMedia` exists. `isPublishable()`
+  already refuses the original — but conversions live at derivable paths on a
+  public disk, so generating them would put three more copies of a photograph
+  still carrying a child's home coordinates where a URL can reach them
+- Spatie fires `MediaHasBeenAddedEvent` *before* `createDerivedFiles()`, so in
+  the normal case conversions are already cut from a cleaned original. This
+  covers the case where the cleaning failed
+- `scghf:regenerate-media-conversions` rebuilds them once the cause is fixed;
+  dry by default, because rebuilding two thousand images is hours of CPU on an
+  account that is sharing it
+
+**Usage tracking, as a refusal rather than a display**
+- `MediaUsage` reads the foreign keys pointing at `media` out of
+  `information_schema` — **34 of them across 30 tables**, under a dozen column
+  names (`media_id`, `image_id`, `photo_id`, `logo_id`, `cover_id`,
+  `featured_image_id`, `og_image_id`, `photograph_id`, `evidence_media_id`,
+  `pdf_media_id`, `cv_media_id`, `id_document_id`, `signature_id`, `document_id`)
+- Discovered rather than declared, and this is the one registry in the project
+  where that is the safer choice: **32 of the 34 are ON DELETE SET NULL**, so
+  deleting an in-use file today does not fail and does not warn. A donation
+  receipt loses its PDF. A beneficiary loses their ID document. A consent record
+  loses the evidence it is evidence of — and still reads, to anybody auditing it
+  later, as a consent that has evidence
+- `Media::deleting()` refuses, in the model, so it holds for a console command
+  and a cleanup script as well as for a button. There is deliberately no override
+- A failure to answer counts as "in use". A wrong *no* silently detaches a
+  receipt from its PDF; a wrong *yes* tells somebody to try again
+- Confidential uses (beneficiaries, consents, safeguarding, volunteer
+  applications) are counted but not named unless the asker holds
+  `beneficiaries.view` — "this file is the evidence for Ama Mensah's consent"
+  names a beneficiary to whoever is browsing a photo library
+
+**Replace, keeping the id**
+- `MediaLibrary::replace()` swaps the file behind a row. Delete-and-re-upload
+  would leave thirty references pointing at the old row, and — those keys being
+  SET NULL — some of them pointing at nothing
+- Refuses to replace an image with a document, because thirty places expect an
+  `<img>`
+- Clears `metadata_stripped_at`, so the new file cannot inherit a clean bill of
+  health issued for a different image
+- Audited as `media.replaced`: nothing else records it, because every reference
+  is unchanged while what a consent's evidence *shows* is now different
+
+**Detect and degrade gracefully, for real**
+- `ImageToolchain` asks the server rather than reading a belief out of config:
+  Imagick or GD, WebP, AVIF, which optimiser binaries exist, and the PHP limits
+  that are the actual ceiling
+- Catches the quiet one: **`exec()` disabled**, which is common on shared
+  hosting and makes spatie's optimisers fail *silently* — the chain runs, every
+  binary fails to launch, and the library reports success having optimised
+  nothing
+- `IMAGE_DRIVER=auto` picks Imagick where the account has it. Imagick does not
+  hold the decompressed bitmap inside PHP's `memory_limit` the way GD does,
+  which on a 128MB shared account is the difference between a 6000px photograph
+  converting and a white screen
+- `scghf:media-doctor` reports all of it plus the inode budget, and exits
+  non-zero when something needs attention. **Run it on the server** — every
+  answer differs from the laptop's
+
+**`x-media.image`**
+- Renders `<picture>`-quality output from one tag: srcset across the generated
+  widths only, `width`/`height` so the page does not reflow as images land (a
+  Core Web Vitals budget this project has committed to), `loading="lazy"` for
+  everything but the one image above the fold
+- Refuses to render an unpublishable file at all, rather than trusting the page
+  template that called it
+
+#### Fixed
+
+- **`MEDIA_MAX_UPLOAD_MB` was documented since Phase 2 and read by nothing.**
+  Replaced by `MEDIA_MAX_IMAGE_MB` and `MEDIA_MAX_DOCUMENT_MB`, which are read —
+  a photograph and a policy PDF are not the same size
+
 ### Phase 4 — Public donor accounts — 2026-09-04
 
 Registration, sign-in, verification and password reset for donors — as full page

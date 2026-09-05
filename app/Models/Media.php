@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Media\Exceptions\MediaInUse;
+use App\Media\MediaUsage;
 use App\Support\ImageSanitiser;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,10 +33,136 @@ class Media extends BaseMedia
         ]);
     }
 
+    /**
+     * A file in use cannot be deleted.
+     *
+     * ── Why this is in the model and not in a controller ────────────────────
+     *
+     * Because of what the schema does when it is not here. Thirty-four foreign
+     * keys point at this table and thirty-two of them are ON DELETE SET NULL:
+     * deleting a file that is in use does not fail, does not warn, and leaves
+     * no trace. A donation receipt loses its PDF. A beneficiary loses their ID
+     * document. A consent record loses the evidence it is evidence of, and
+     * still reads to anybody auditing it later as a consent that has evidence.
+     *
+     * The other two keys are ON DELETE CASCADE and take the row with them.
+     *
+     * A guard in a Filament action would cover the Filament action. This covers
+     * every path — a console command, a seeder, a bulk cleanup, an owner model
+     * being deleted underneath it — because those are the paths nobody thinks
+     * about when they write the cleanup script at eleven at night.
+     *
+     * ── There is deliberately no override ───────────────────────────────────
+     *
+     * Not a flag, not a `force` argument. The two things somebody actually
+     * wants are to detach the file where it is used, or to REPLACE it and keep
+     * every reference pointing at the same row — and `MediaLibrary::replace()`
+     * exists for the second. An override would become the thing every caller
+     * reaches for, and then this guard would protect nothing.
+     *
+     * The consequence worth knowing: deleting a folder full of in-use files
+     * fails too, and that is the intended behaviour rather than an oversight.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (self $media): void {
+            if ($media->isInUse()) {
+                throw new MediaInUse(app(MediaUsage::class)->explain($media));
+            }
+        });
+    }
+
     /** @return BelongsTo<MediaFolder, $this> */
     public function folder(): BelongsTo
     {
         return $this->belongsTo(MediaFolder::class, 'folder_id');
+    }
+
+    // ── Use, and the refusal that depends on it ──────────────────────────────
+
+    /**
+     * Everywhere this file is referenced.
+     *
+     * @return array<int, array{table: string, column: string, label: string, id: int|string, title: ?string, confidential: bool}>
+     */
+    public function usages(): array
+    {
+        return app(MediaUsage::class)->for($this);
+    }
+
+    public function isInUse(): bool
+    {
+        return app(MediaUsage::class)->isInUse($this);
+    }
+
+    /**
+     * Why this file cannot be deleted, or null if it can.
+     *
+     * @param  bool  $maySeeConfidential  whether the asker holds `beneficiaries.view`
+     */
+    public function deletionRejectionReason(bool $maySeeConfidential = false): ?string
+    {
+        if (! $this->isInUse()) {
+            return null;
+        }
+
+        return app(MediaUsage::class)->explain($this, $maySeeConfidential)
+            .' Remove it from those places first, or replace the file instead — replacing keeps '
+            .'every reference pointing at it and updates them all at once.';
+    }
+
+    // ── Conversions ──────────────────────────────────────────────────────────
+
+    /**
+     * The URL for a conversion, falling back to the original.
+     *
+     * Spatie's own `getUrl('card')` throws `InvalidConversion` when the
+     * conversion was never registered, and returns a URL to a file that is not
+     * there when it was registered but has not been generated yet — which on
+     * this host is the whole first minute after an upload, because conversions
+     * run on the cron queue.
+     *
+     * Both cases are ordinary, and neither should be a broken image on a
+     * donor's page. The original always exists, so it is the fallback.
+     */
+    public function conversionUrl(string $conversion): string
+    {
+        return $this->hasGeneratedConversion($conversion)
+            ? $this->getUrl($conversion)
+            : $this->getUrl();
+    }
+
+    public function hasGeneratedConversion(string $conversion): bool
+    {
+        return (bool) ($this->generated_conversions[$conversion] ?? false);
+    }
+
+    /** Recorded at upload; null for anything added before that, and for documents. */
+    public function width(): ?int
+    {
+        $width = $this->getCustomProperty('width');
+
+        return is_int($width) && $width > 0 ? $width : null;
+    }
+
+    public function height(): ?int
+    {
+        $height = $this->getCustomProperty('height');
+
+        return is_int($height) && $height > 0 ? $height : null;
+    }
+
+    /**
+     * How many files this row actually owns on disk.
+     *
+     * The original plus whatever conversions exist. Inodes are the scarce
+     * resource on shared hosting and this is what `scghf:media-doctor` counts —
+     * a library is the thing that exhausts an inode quota, and it does it
+     * quietly, one upload at a time.
+     */
+    public function inodeCost(): int
+    {
+        return 1 + count(array_filter($this->generated_conversions ?? []));
     }
 
     // ── Publication ──────────────────────────────────────────────────────────

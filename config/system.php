@@ -98,6 +98,18 @@ return [
             'safeguarding.record_viewed' => ['category' => 'safeguarding', 'severity' => 'warning'],
             'prayer_request.viewed' => ['category' => 'data_access', 'severity' => 'notice'],
 
+            /*
+             * Replacing the file behind a media row.
+             *
+             * Audited because nothing else records it. The row keeps its id, so
+             * every one of the thirty-odd references to it keeps pointing at
+             * the same place and none of those records changes — yet what a
+             * consent's evidence, or a beneficiary's ID document, actually SHOWS
+             * is now a different image. That is precisely the shape of change
+             * the audit trail exists to catch: real, invisible everywhere else.
+             */
+            'media.replaced' => ['category' => 'data_access', 'severity' => 'notice'],
+
             // --- Taking personal data out of the system --------------------
             // Always at least a warning. An export leaves the application's
             // protections behind and lands in somebody's Downloads folder.

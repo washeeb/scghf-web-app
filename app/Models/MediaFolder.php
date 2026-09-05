@@ -4,20 +4,35 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Media\Concerns\HasLibraryMedia;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Spatie\MediaLibrary\HasMedia;
 
 /**
  * A folder in the media library.
  *
  * @property string $path
  */
-class MediaFolder extends Model
+class MediaFolder extends Model implements HasMedia
 {
+    /*
+     * A folder OWNS the files filed under it, in spatie's sense of the word.
+     *
+     * That is not a modelling flourish — spatie resolves which conversions to
+     * generate by asking `media.model_type` for them, so a file with no owner
+     * gets no thumbnail and no card. A central library whose files belong to
+     * nothing would be a library with no conversions at all, and the folder is
+     * the thing every library file already belongs to.
+     *
+     * `HasLibraryMedia` carries the three standard conversions and, more
+     * importantly, the rule that an unsanitised image gets none of them.
+     */
+    use HasLibraryMedia;
     use HasUlids;
 
     protected $fillable = ['parent_id', 'name', 'slug', 'description', 'sort_order'];

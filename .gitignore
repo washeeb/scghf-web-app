@@ -42,6 +42,15 @@ auth.json
 !/storage/framework/views/.gitignore
 /storage/logs/*
 !/storage/logs/.gitignore
+
+# spatie/laravel-medialibrary's scratch space. It writes the original and each
+# conversion here before moving them onto the disk, and a crashed run leaves
+# them behind — so without this, a developer's `git add -A` commits somebody's
+# photograph into the repository. On the server they are also pure inode cost
+# with nothing referencing them.
+/storage/media-library/*
+!/storage/media-library/.gitignore
+
 /storage/debugbar/
 /storage/clockwork/
 /bootstrap/cache/*
