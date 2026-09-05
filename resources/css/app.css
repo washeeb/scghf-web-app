@@ -48,3 +48,25 @@
         scroll-behavior: auto !important;
     }
 }
+
+/*
+ * The navigation disclosures.
+ *
+ * `<details>` is the whole mobile menu and every dropdown, chosen because the
+ * browser implements the disclosure pattern correctly — announced state,
+ * keyboard operation, and no JavaScript required. What it also brings is a
+ * default triangle marker, which has to go before the element can look like a
+ * navigation control rather than a file tree.
+ *
+ * Two selectors because they are not the same thing: `list-style` covers
+ * Firefox and modern Chrome, and the `::-webkit-details-marker` pseudo-element
+ * is still what older WebKit — which is Safari on the iOS versions this
+ * foundation's donors are actually running — reads.
+ */
+summary {
+    list-style: none;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}

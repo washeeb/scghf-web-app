@@ -8,6 +8,74 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — The navigation, at both widths — 2026-09-05
+
+The mobile menu, and the desktop dropdowns it turned out could not be built
+without. Phase 4 is complete.
+
+#### Added
+
+**The mobile menu**
+- An **expanding panel below the header, not a full-screen overlay.** A
+  slide-over covering the page is a modal, and a modal owes the visitor a focus
+  trap, `inert` on everything behind it, a scroll lock and a way out that is not
+  the back button — four things to get wrong, each of which strands a keyboard
+  or screen-reader user inside a menu. An in-flow disclosure owes none of them.
+  With seven top-level items that is not a compromise; it is the simpler thing
+  that is also the more correct one
+- Built from **`<details>`, so it works with JavaScript switched off**. The
+  browser already implements disclosure: click and Enter open it, expanded state
+  is announced with no ARIA from us, and no script is needed. That matters
+  specifically here — these visitors are on low-end Android phones, sometimes
+  behind data-saver proxies that rewrite or drop scripts, and a navigation that
+  needs JavaScript is a site they cannot move around
+- `navigation.js` adds Escape (returning focus to the control that opened it),
+  click-away, focus-away, and closing when the viewport crosses the breakpoint.
+  Every one of those is a **convenience that is absent rather than broken** if
+  the file never arrives — which is the test to apply to anything added to it
+- The donate button stays in the header at every width, never inside the
+  hamburger. It is the most important control on the site and hiding it behind a
+  tap on a phone is hiding it from most of this foundation's donors
+- Signing in moves into the panel below `md`, so the corner a thumb reaches
+  first belongs to donating
+
+**Desktop dropdowns**
+- Top-level items with children now render as dropdowns, **click-activated, not
+  hover**. A hover menu is unusable with a finger, hostile to anybody whose
+  hands are not steady, and invisible to a keyboard without a pile of ARIA to
+  compensate
+- The parent's own page is the first entry inside its dropdown, so a parent that
+  is both a page and a group does not become a pure toggle — `/about` exists and
+  is published, and it was about to be reachable from nowhere
+
+#### Fixed
+
+- **Ten seeded menu items rendered nowhere, at any width.** The header menu has
+  children under "About" and "Get Involved", `max_depth 1`, and a description
+  that promises "one level of dropdown" — and the header rendered only the top
+  level. Published pages, linked from the navigation table, reachable from
+  neither the desktop row nor a phone. This is why the mobile menu could not be
+  built on its own: rendering children on a phone and not on a laptop would have
+  been worse than rendering them nowhere
+- `x-site.menu-link` now merges classes passed to it instead of discarding them,
+  which is what let one component serve both renderings
+
+#### Changed
+
+- **axios is gone, and with it 96% of the site's JavaScript.** Nothing
+  referenced it — it was Laravel's default scaffolding putting a HTTP client on
+  `window` for a site that makes no requests of its own. It was also the bulk of
+  what every visitor downloaded before anything they came for. **52.41 kB →
+  1.76 kB** (19.87 → 0.72 kB gzipped). Livewire and Filament carry their own
+  request layer; `fetch` is in every browser this site supports
+- The footer's duplicate account link is removed. It existed because the header
+  hid signing-in below `sm` while the mobile menu was outstanding, and the
+  comment saying so would now be describing something that is no longer true
+- `summary` markers are hidden in `app.css` — two selectors, because
+  `list-style` covers Firefox and modern Chrome while
+  `::-webkit-details-marker` is what older WebKit still reads, which is Safari
+  on the iOS versions this foundation's donors are actually running
+
 ### Phase 4 — The media library UI — 2026-09-05
 
 The first Filament resource in the project, sitting on the engine from earlier

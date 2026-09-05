@@ -93,6 +93,8 @@ These are in `CLAUDE.md` in full. The short version, because getting them wrong 
 
 **An unsanitised image gets no conversions.** `isPublishable()` already refuses the original, but conversions sit at derivable paths on a public disk — generating them would be three more copies of a photograph still carrying a child's home coordinates. `scghf:regenerate-media-conversions` builds them once the file is clean.
 
+**The navigation works with JavaScript switched off.** Every menu is a `<details>` element, because the browser already implements disclosure — announced state, keyboard operation, no script. `resources/js/navigation.js` adds Escape, click-away and closing on resize, and every one of those is *absent rather than broken* if the file never loads. That is the test to apply to anything added to it. These visitors are on low-end Android phones, sometimes behind data-saver proxies that rewrite scripts, and a navigation that needs JavaScript is a site they cannot move around.
+
 ---
 
 ## Branches and deployment
@@ -135,8 +137,7 @@ Run `vendor/bin/pint` before pushing.
 
 **Phase 2 complete** — environment, repository, deployment pipeline.
 **Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system, plus a gap sweep. ~131 tables.
-
-**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, the layout shell (theme system, header and footer from the seeded menus, branded error pages), public donor accounts (register, sign in, verify, reset, account area), and the media library — engine and admin screen both. Still to come: the mobile navigation menu. See `CHANGELOG.md`.
+**Phase 4 complete** — application foundation. The admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording); a policy for every model with a test that keeps it that way; the layout shell (theme system, header and footer from the seeded menus, branded error pages); public donor accounts (register, sign in, verify, reset, account area); the media library, engine and admin screen both; and the navigation, as dropdowns on a laptop and an expanding panel on a phone. See `CHANGELOG.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 > Donors sign in at **`/login`**. Staff cannot: see below.

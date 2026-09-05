@@ -4,6 +4,19 @@
     Nothing here is typed content. The wordmark, the nav, the donate label and
     the destination all come from the database, so the foundation can change any
     of them without a deploy.
+
+    ── One menu, two renderings ────────────────────────────────────────────────
+
+    The same items are rendered twice: as a row of dropdowns at `md` and above,
+    and as an expanding panel below it. Only ever one of the two is displayed,
+    so a screen reader is never offered the navigation twice.
+
+    Duplicated markup rather than one tree fought into both shapes, because a
+    `<details>` behaving as a disclosure on a phone and as a static row on a
+    laptop means overriding the browser's own handling of `<details>` — which
+    works until a browser changes how it hides the contents. Two small correct
+    renderings beat one clever fragile one, and the DATA behind them is single
+    sourced, which is the part that would actually rot.
 --}}
 @php
     $nav = App\Models\Menu::renderable('header', auth()->check());
@@ -24,51 +37,50 @@
     $nav = $nav->reject(fn ($item) => $item->is_highlighted)->values();
 @endphp
 
-<header class="border-b border-[var(--border)] bg-[var(--bg)]">
+{{-- `relative`, because the mobile panel is positioned against the header
+     rather than against the button it hangs off — a panel the width of a
+     hamburger is not a menu. --}}
+<header class="relative border-b border-[var(--border)] bg-[var(--bg)]">
     <nav
-        class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3"
+        class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3"
         aria-label="{{ __('Primary') }}"
     >
-        <a href="{{ url('/') }}" class="font-semibold tracking-tight text-[var(--text)]">
+        <a href="{{ url('/') }}" class="mr-auto font-semibold tracking-tight text-[var(--text)]">
             {{ $wordmark }}
         </a>
 
-        {{--
-            The nav itself.
-
-            Hidden below `md` rather than collapsed into a JavaScript menu at
-            this stage: a disclosure widget that half-works is worse than none,
-            and the mobile menu belongs with the component work in Phase 5. The
-            links remain reachable from the footer, which renders the same
-            menus — so nothing is unreachable on a phone in the meantime.
-        --}}
-        <ul class="ml-auto hidden items-center gap-1 md:flex">
+        {{-- Wide screens: a row, with a dropdown for anything that has
+             children. `max_depth 1` on the seeded menu means one level, and
+             this is the level. --}}
+        <ul class="hidden items-center gap-1 md:flex">
             @foreach ($nav as $item)
                 <li>
-                    <x-site.menu-link :item="$item" />
+                    @if ($item->children->isNotEmpty())
+                        <x-site.nav-dropdown :item="$item" />
+                    @else
+                        <x-site.menu-link :item="$item" />
+                    @endif
                 </li>
             @endforeach
         </ul>
 
-        <div class="ml-auto flex items-center gap-2 md:ml-0">
+        <div class="flex items-center gap-2">
             <x-site.theme-toggle />
 
-            {{-- Sign in, or the account. Session state rather than content, so
-                 it is a component rather than a menu item — see the component
-                 for why. Hidden below `sm` so the donate button keeps the
-                 thumb-reachable corner of a phone to itself. --}}
-            <div class="hidden sm:block">
+            {{-- Signing in. Below `md` this lives inside the mobile panel
+                 instead, so the corner a thumb reaches first belongs to the
+                 donate button. --}}
+            <div class="hidden md:block">
                 <x-site.account-nav />
             </div>
 
             {{--
                 The donate call to action.
 
-                Always present and always last, so it is the final thing in the
-                tab order of the header and the first thing a thumb reaches on a
-                phone. Its destination comes from the menu if one is marked as
-                the highlighted item, so the foundation can point it at a
-                specific appeal during a campaign.
+                Always present, at every width, and never inside the menu. It is
+                the single most important control on the site, and putting it
+                behind a hamburger would hide it behind a tap on exactly the
+                device most of this foundation's donors use.
             --}}
             <a
                 href="{{ $donateUrl }}"
@@ -76,6 +88,11 @@
             >
                 {{ $donateLabel }}
             </a>
+
+            {{-- Last in the DOM, so the tab order reaches the donate button
+                 before the menu toggle — and drawn last, so on a phone it sits
+                 in the corner. --}}
+            <x-site.mobile-nav :items="$nav" />
         </div>
     </nav>
 </header>

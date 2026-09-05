@@ -132,16 +132,6 @@
             </div>
         </div>
 
-        {{-- The account control, again.
-
-             The header hides it below `sm` so the donate button keeps the
-             thumb-reachable corner of a phone. This is where a phone user finds
-             it instead — the same reasoning that keeps the navigation reachable
-             here while the mobile menu is still outstanding. --}}
-        <div class="mt-10 border-t border-[var(--border)] pt-6 sm:hidden">
-            <x-site.account-nav />
-        </div>
-
         {{-- Legal strip. --}}
         <div class="mt-10 flex flex-col gap-4 border-t border-[var(--border)] pt-6 text-sm text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
             <div class="space-y-1">
