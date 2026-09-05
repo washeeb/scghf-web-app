@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Testimonials\Tables;
 
 use App\Filament\Resources\Testimonials\Schemas\TestimonialForm;
+use App\Filament\Support\ExportAction;
 use App\Models\Testimonial;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -91,6 +92,14 @@ class TestimonialsTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('testimonials'), [
+                    'Name' => 'author_name',
+                    'Who they are' => 'author_type',
+                    'Quote' => 'quote',
+                    'Consent recorded' => 'has_consent',
+                    'Consent date' => 'consent_date',
+                    'Shown' => 'is_published',
+                ]),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

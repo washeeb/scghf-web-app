@@ -6,6 +6,7 @@ namespace App\Filament\Resources\ContactMessages\Tables;
 
 use App\Communications\MessageDispatcher;
 use App\Filament\Resources\ContactMessages\Schemas\ContactMessageForm;
+use App\Filament\Support\ExportAction;
 use App\Models\ContactMessage;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -126,6 +127,19 @@ class ContactMessagesTable
                 EditAction::make()->label(__('Open')),
             ])
             ->toolbarActions([
+                ExportAction::make('contact_messages.exported', __('contact enquiries'), [
+                    'Reference' => 'reference',
+                    'Received' => 'created_at',
+                    'From' => 'name',
+                    'Email' => 'email',
+                    'Phone' => 'phone',
+                    'Department' => fn ($record) => $record->department?->name,
+                    'Subject' => 'subject',
+                    'Message' => 'message',
+                    'Status' => 'status',
+                    'Owner' => fn ($record) => $record->assignee?->name,
+                    'Replied' => 'replied_at',
+                ], ['department', 'assignee']),
                 BulkActionGroup::make([
                     static::assignBulkAction(),
                     static::markResolvedBulkAction(),

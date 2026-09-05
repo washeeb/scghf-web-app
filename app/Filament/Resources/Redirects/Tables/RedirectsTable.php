@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Redirects\Tables;
 
+use App\Filament\Support\ExportAction;
 use App\Models\Redirect;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -101,6 +102,15 @@ class RedirectsTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('redirects'), [
+                    'Old address' => 'from_path',
+                    'Goes to' => 'to_path',
+                    'Kind' => 'status_code',
+                    'Times hit' => 'hits',
+                    'Last hit' => 'last_hit_at',
+                    'Where it came from' => 'source',
+                    'On' => 'is_active',
+                ]),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

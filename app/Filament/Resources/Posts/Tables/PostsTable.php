@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Posts\Tables;
 
 use App\Enums\PageStatus;
+use App\Filament\Support\ExportAction;
 use App\Models\Post;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -96,6 +97,15 @@ class PostsTable
                 EditAction::make(),
             ])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('news posts'), [
+                    'Headline' => 'title',
+                    'Address' => 'slug',
+                    'Status' => 'status',
+                    'Published' => 'published_at',
+                    'Category' => fn ($record) => $record->category?->name,
+                    'Author' => fn ($record) => $record->author?->name,
+                    'Views' => 'view_count',
+                ], ['category', 'author']),
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     ForceDeleteBulkAction::make(),

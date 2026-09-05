@@ -8,6 +8,123 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 5 — The admin experience — 2026-09-05
+
+Module 5 of 5, and the end of the CMS phase. A dashboard, global search, CSV
+export, and a Site Health page — plus three things this module could only be
+built by first making true.
+
+#### Added
+
+**Site Health**
+- One screen answering "is this site actually working?", over the things that
+  fail *silently* on shared hosting: a missing cron line, a queue nothing is
+  working, unwritable storage, a backup that stopped three weeks ago, test
+  Paystack keys on a live site, pre-paid SMS credits running out. None of those
+  produce a log line; all of them are one query
+- **An empty queue reports "cannot tell", not green.** An empty queue is exactly
+  what a working worker and an absent cron line both look like, and a health
+  page that reports fine because it could not find a problem is worse than no
+  health page at all
+- The scheduler check reads a **heartbeat the scheduler writes itself**, so a
+  missing cron line shows as a stale timestamp rather than as silence
+- Every check carries a sentence saying what to do — usually which cron line to
+  add. A foundation administrator told "Queue: warning" and nothing else has
+  been told nothing
+- Every check is wrapped. This page is opened when something is already wrong,
+  and a check that throws would take down the one screen somebody came to for an
+  explanation
+
+**`scghf:preflight`**
+- The same checks from the command line, exiting non-zero on anything critical
+  so a deploy script can refuse to finish — plus the list of settings still
+  holding a `{{PLACEHOLDER}}`, which `Settings::unfilled()` has been able to
+  produce since Phase 3 and only ever produced for nobody
+- A placeholder is a **warning, not a failure**. A registration number arriving
+  a week after launch is normal for a Ghanaian non-profit, and a command that
+  fails the deploy over it is one somebody adds `|| true` to — after which it
+  reports nothing at all, including what should have stopped the deploy
+
+**The dashboard**
+- Raised this month with a 30-day sparkline, today's giving, recurring donors,
+  and a queue of the things somebody has to act on: donations the webhook could
+  not reconcile, unanswered enquiries, orders to send, low stock
+- **Compared to the same point last month**, not to the whole of it. On the 3rd,
+  "down 89%" is true and useless — three days are not thirty
+- **Only completed donations are counted.** A pending donation is somebody who
+  opened the Paystack page; counting those gives a fundraising figure that goes
+  up when nobody pays
+- Every widget is gated on the permission for the data it shows. The dashboard
+  is the first screen every staff account lands on, so a widget that ignores
+  permissions shows the foundation's income to the volunteer coordinator
+- Zero is shown in grey rather than hidden: a tile that disappears when empty
+  makes "nothing to do" and "the tile is broken" look identical
+- A Site Health summary line, because nobody opens a health page — they open the
+  dashboard. It names the **worst** problem rather than counting them: "3
+  problems" gets deferred, "the scheduler has stopped" gets acted on
+
+**Global search and CSV export**
+- Global search across pages, news, FAQs, testimonials, partners, team,
+  galleries, documents, announcements, redirects, the inbox and the media
+  library, each searching inside its body as well as its title — a search that
+  only matches headings is one people stop using
+- A shared streaming CSV export on ten tables. It **streams**, which is not an
+  optimisation: building a four-thousand-row CSV in memory on a host with a
+  40MB limit is a 500 that only appears once the foundation has real data
+- It exports **what the filters show**, not the whole table — the commonest way
+  an export quietly hands over more than somebody meant to share
+- It writes a UTF-8 byte-order mark, without which Excel on Windows turns `GH₵`
+  into mojibake and mangles every accented Ghanaian name
+- Relations the export reaches through are eager-loaded. Without that, one
+  column of `$record->category?->name` is one query per row inside a streaming
+  response
+
+**Navigation groups**
+- Website, Content, Inbox, Library, System — in the order somebody works rather
+  than alphabetically, with System last because it is where you go when
+  something is wrong
+
+#### Fixed
+
+- **⚠ Backups had never run, on any environment, since Phase 2.**
+  `spatie/laravel-backup` was installed, `RecordBackupOutcome` was registered as
+  a listener in Phase 3, and `backup_log` had a model, a policy and a
+  `nextRestoreTestDue()` — but `config/backup.php` did not exist and nothing
+  scheduled `backup:run`, so the listener waited for events nobody fired and the
+  table stayed empty. The config now exists, shaped for shared hosting: local
+  disk **outside the web root**, the backup directory excluded from itself (or
+  each archive contains every previous one), and a retention chosen against
+  cPanel's inode quota rather than disk space
+- **⚠ The dashboard had nowhere to render.** The panel never registered a
+  Dashboard page, so `/scghf-office` redirected to whichever resource sorted
+  first and every widget in `app/Filament/Widgets` was discovered, registered
+  and drawn nowhere
+- **Six `.env.example` backup keys were documented and read by nothing** —
+  `BACKUP_ENABLED`, `BACKUP_DISK`, `BACKUP_NOTIFICATION_EMAIL` and the retention
+  trio. The config reads them now rather than inventing a parallel set
+- `BACKUP_NOTIFICATION_EMAIL=` is **present and empty** in the shipped
+  `.env.example`, so `env('...', $fallback)` returned the empty string and never
+  reached the fallback — and the package rejects an empty address by throwing,
+  which took down every artisan command including `schedule:run`. An unset key
+  and a key set to nothing are not the same thing
+- **`AuditLogger::recordExport()` had no callers.** It was written in Phase 3
+  for exactly this and reachable from nowhere, so an export left the
+  application's protections behind with no record that it happened. Every export
+  now records who ran it, how many rows, and which filters were applied — the
+  difference between "exported 4,000 rows" and "exported 4,000 rows with no
+  filter", which is the difference between a job and an incident
+- `MnotifyGateway::balance()` was written in Phase 3 and read by nothing, so
+  pre-paid SMS credits could reach zero and the first sign would be a week of
+  receipts that never went
+
+#### Changed
+
+- `config/system.php` gains `contact_messages.exported`. The contact inbox holds
+  names, phone numbers and whatever somebody chose to write — which for a
+  foundation is sometimes a disclosure — so it is a `warning` like the donor
+  exports rather than the `info` used for content
+
+
 ### Phase 5 — The content modules — 2026-09-05
 
 Module 4 of 5. Fourteen admin screens over schema Phase 3 had already built,

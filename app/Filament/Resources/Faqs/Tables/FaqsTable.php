@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Faqs\Tables;
 
+use App\Filament\Support\ExportAction;
 use App\Models\Faq;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -69,6 +70,13 @@ class FaqsTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('FAQs'), [
+                    'Question' => 'question',
+                    'Answer' => fn ($record) => strip_tags((string) $record->answer),
+                    'Category' => fn ($record) => $record->category?->name,
+                    'Shown' => 'is_published',
+                    'Times opened' => 'view_count',
+                ], ['category']),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

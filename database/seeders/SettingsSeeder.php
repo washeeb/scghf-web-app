@@ -119,6 +119,13 @@ class SettingsSeeder extends Seeder
         ['banking', 'momo_name', '{{MOMO_MERCHANT_NAME}}', SettingType::String, 'Mobile Money name', true],
         ['banking', 'momo_number', '{{MOMO_MERCHANT_NUMBER}}', SettingType::Phone, 'Mobile Money number', true],
 
+        // ── The shop ─────────────────────────────────────────────────────────
+        // A threshold rather than a hardcoded number, because "low" depends on
+        // how fast a thing sells. Ten tote bags is plenty; ten of a bracelet
+        // that shifts thirty a week is a stockout on Thursday.
+        ['shop', 'low_stock_threshold', '5', SettingType::Integer, 'Warn when stock falls to', false,
+            'The dashboard flags any item with this many or fewer left to sell.'],
+
         // ── SEO ──────────────────────────────────────────────────────────────
         ['seo', 'default_title', "St. Cecilia's Greater Hope Foundations", SettingType::String, 'Default page title', true],
         ['seo', 'title_suffix', ' | Greater Hope Foundations', SettingType::String, 'Title suffix', true],

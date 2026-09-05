@@ -47,6 +47,28 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Backup archives.
+         *
+         * A local disk, deliberately, and deliberately OUTSIDE public/. A
+         * backup reachable over the web is a complete copy of the donor
+         * database available to anybody who guesses the filename — which is the
+         * worst possible outcome of a control that exists to protect data.
+         *
+         * Local rather than S3 because there is no bucket in scope for this
+         * deployment. It protects against the two things that actually happen
+         * — a bad deploy and a bad migration — and NOT against losing the
+         * hosting account, which is why the runbook has a step for pulling a
+         * copy off the server.
+         */
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

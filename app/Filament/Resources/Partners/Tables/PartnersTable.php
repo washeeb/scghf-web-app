@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Partners\Tables;
 
 use App\Filament\Resources\Partners\Schemas\PartnerForm;
+use App\Filament\Support\ExportAction;
 use App\Models\Partner;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -58,6 +59,14 @@ class PartnersTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('partners'), [
+                    'Name' => 'name',
+                    'Kind' => 'partner_type',
+                    'Website' => 'website_url',
+                    'Since' => 'partnership_started_on',
+                    'Until' => 'partnership_ended_on',
+                    'Shown' => 'is_published',
+                ]),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

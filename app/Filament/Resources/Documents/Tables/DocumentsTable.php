@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Documents\Tables;
 
 use App\Filament\Resources\Documents\Schemas\DocumentForm;
+use App\Filament\Support\ExportAction;
 use App\Models\Document;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -59,6 +60,14 @@ class DocumentsTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('documents'), [
+                    'Title' => 'title',
+                    'Kind' => 'document_type',
+                    'Year' => 'year',
+                    'Downloads' => 'download_count',
+                    'Sign-in required' => 'requires_auth',
+                    'Shown' => 'is_published',
+                ]),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

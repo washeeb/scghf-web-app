@@ -11,6 +11,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -106,6 +107,35 @@ class AdminPanelProvider extends PanelProvider
              * is a fair price for not paying that cost on every request.
              */
             ->colors($this->colours())
+
+            /*
+             * The dashboard, registered explicitly.
+             *
+             * Without this line the panel has no dashboard at all and
+             * `/scghf-office` redirects to whichever resource happens to be
+             * first — so every widget in `app/Filament/Widgets` is discovered,
+             * registered, and rendered nowhere. Which was the case until
+             * Phase 5.
+             */
+            ->pages([
+                Dashboard::class,
+            ])
+
+            /*
+             * The order the sidebar groups appear in, and it is the order
+             * somebody works rather than alphabetical.
+             *
+             * Website first because that is what the foundation edits daily.
+             * System last because it is where somebody goes when something has
+             * gone wrong, which is rarely, and it should not sit above the work.
+             */
+            ->navigationGroups([
+                'Website',
+                'Content',
+                'Inbox',
+                'Library',
+                'System',
+            ])
 
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

@@ -100,6 +100,7 @@ class ManageSettings extends Page
         'social' => 'Social',
         'donations' => 'Donations',
         'banking' => 'Offline giving',
+        'shop' => 'Shop',
         'header' => 'Header',
         'site' => 'Site & footer',
         'seo' => 'Search engines',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Announcements\Tables;
 
 use App\Filament\Resources\Announcements\Schemas\AnnouncementForm;
+use App\Filament\Support\ExportAction;
 use App\Models\Announcement;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -102,6 +103,15 @@ class AnnouncementsTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('announcements'), [
+                    'Notice' => 'title',
+                    'Placement' => 'placement',
+                    'From' => 'starts_at',
+                    'Until' => 'ends_at',
+                    'Switched on' => 'is_active',
+                    'Seen' => 'impressions',
+                    'Clicked' => 'clicks',
+                ]),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

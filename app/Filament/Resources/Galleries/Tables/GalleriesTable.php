@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Galleries\Tables;
 
+use App\Filament\Support\ExportAction;
 use App\Models\Gallery;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -68,6 +69,13 @@ class GalleriesTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('galleries'), [
+                    'Album' => 'title',
+                    'Where' => 'location',
+                    'Taken' => 'taken_on',
+                    'Consent recorded' => 'has_consent',
+                    'Shown' => 'is_published',
+                ]),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

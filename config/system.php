@@ -142,6 +142,24 @@ return [
             'beneficiaries.exported' => ['category' => 'data_export', 'severity' => 'critical'],
             'volunteers.exported' => ['category' => 'data_export', 'severity' => 'warning'],
             'subscribers.exported' => ['category' => 'data_export', 'severity' => 'warning'],
+
+            /*
+             * The contact inbox holds names, email addresses, phone numbers and
+             * whatever somebody chose to write — which, for a foundation, is
+             * sometimes a disclosure. A warning like the rest, and not `info`:
+             * an export of it is an export of personal data even though the
+             * table is not called "donors".
+             */
+            'contact_messages.exported' => ['category' => 'data_export', 'severity' => 'warning'],
+
+            /*
+             * `report.generated` covers exports of CONTENT — the FAQ list, the
+             * redirect table, the news index. Recorded, because a complete
+             * export is still worth being able to see in the trail, but `info`
+             * rather than `warning`: nothing in them is personal data, and
+             * flagging them at the same level as a donor export is how a log
+             * stops being read.
+             */
             'report.generated' => ['category' => 'data_export', 'severity' => 'info'],
 
             // --- Money -----------------------------------------------------

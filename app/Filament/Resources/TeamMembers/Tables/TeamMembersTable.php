@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\TeamMembers\Tables;
 
 use App\Filament\Resources\TeamMembers\Schemas\TeamMemberForm;
+use App\Filament\Support\ExportAction;
 use App\Models\TeamMember;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -70,6 +71,15 @@ class TeamMembersTable
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
+                ExportAction::make('report.generated', __('team members'), [
+                    'Name' => 'name',
+                    'Role' => 'role_title',
+                    'Group' => 'member_type',
+                    'Trustee' => 'is_trustee',
+                    'Joined' => 'joined_on',
+                    'Left' => 'left_on',
+                    'Shown' => 'is_published',
+                ], ['department']),
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ]);
     }

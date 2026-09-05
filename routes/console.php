@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Models\ErrorReport;
+use App\Support\SiteHealth;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -147,3 +149,65 @@ Schedule::command('scghf:strip-media-metadata --execute --verify')
 Schedule::command('scghf:archive-audit-log')
     ->yearlyOn(2, 1, '03:00')
     ->onOneServer();
+
+/*
+|--------------------------------------------------------------------------
+| Backups
+|--------------------------------------------------------------------------
+|
+| ⚠ These lines are why `backup_log` was always empty.
+|
+| `spatie/laravel-backup` was installed in Phase 2 and `RecordBackupOutcome` was
+| registered as a listener in Phase 3, so the table, the model, the policy and
+| the listener all existed — waiting for events that nothing ever fired. Site
+| Health asks when a backup last succeeded, and that is a question worth asking
+| only if something is answering it.
+|
+| Early, and before the account wakes up. The archive is written to local disk
+| on the same quota as the website, and a foundation's staff arriving to a site
+| that is briefly slow is better than one that is briefly slow at midday.
+*/
+Schedule::command('backup:run')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    /*
+     * `BACKUP_ENABLED` was documented in `.env.example` from Phase 2 and read
+     * by nothing. It is read here — the one switch that turns the whole thing
+     * off, for a local machine where a nightly zip of the whole application is
+     * pointless.
+     */
+    ->when(fn (): bool => (bool) env('BACKUP_ENABLED', true));
+
+/*
+ * Prune old archives an hour later, not in the same tick.
+ *
+ * Cleanup deletes by age and by total size, and running it immediately after a
+ * backup that is still being written is how a fresh archive gets counted, found
+ * to breach the size ceiling, and removed. The gap is deliberate.
+ */
+Schedule::command('backup:clean')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->when(fn (): bool => (bool) env('BACKUP_ENABLED', true));
+
+/*
+|--------------------------------------------------------------------------
+| The scheduler's own heartbeat
+|--------------------------------------------------------------------------
+|
+| One cache write a minute, and the only way to answer "is cron running?".
+|
+| Everything above fails SILENTLY when the cron line is missing: no error is
+| logged, because nothing tried and failed — nothing tried at all. Recurring
+| gifts are not charged, the outbox does not drain, receipts are never sent, and
+| the application looks completely healthy from the inside.
+|
+| A stale timestamp is the difference between that and a working site, and Site
+| Health reads it.
+*/
+Schedule::call(fn () => Cache::forever(SiteHealth::HEARTBEAT_KEY, now()->toIso8601String()))
+    ->everyMinute()
+    ->name('scheduler-heartbeat')
+    ->withoutOverlapping();
