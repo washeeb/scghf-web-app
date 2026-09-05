@@ -82,6 +82,30 @@ return [
             'auth.password_changed' => ['category' => 'auth', 'severity' => 'notice'],
 
             /*
+             * Changing the address on an account, in three parts.
+             *
+             * Audited separately from one another because they answer different
+             * questions. A REQUEST that was never confirmed is the trace an
+             * attempted takeover leaves; a CANCELLATION is somebody saying it
+             * was not them, which is a security incident rather than a tidy-up;
+             * and the CHANGE itself is the moment password resets started going
+             * somewhere else.
+             *
+             * `warning` on the cancellation because it is only ever reached by
+             * an account holder who has just found out somebody else is inside.
+             */
+            'auth.email_change_requested' => ['category' => 'auth', 'severity' => 'notice'],
+            'auth.email_changed' => ['category' => 'security', 'severity' => 'warning'],
+            'auth.email_change_cancelled' => ['category' => 'security', 'severity' => 'warning'],
+
+            /*
+             * `auth.two_factor_disabled` already existed here, declared since
+             * Module 8 with nothing recording it. This is what records it, and
+             * the ON direction is added beside it so the pair reads as a pair.
+             */
+            'auth.two_factor_enabled' => ['category' => 'security', 'severity' => 'notice'],
+
+            /*
              * Impersonation. Always at least a warning, never info: an
              * administrator acting as somebody else is a serious capability
              * even when the reason is good.

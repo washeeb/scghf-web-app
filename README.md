@@ -95,6 +95,10 @@ These are in `CLAUDE.md` in full. The short version, because getting them wrong 
 
 **The navigation works with JavaScript switched off.** Every menu is a `<details>` element, because the browser already implements disclosure — announced state, keyboard operation, no script. `resources/js/navigation.js` adds Escape, click-away and closing on resize, and every one of those is *absent rather than broken* if the file never loads. That is the test to apply to anything added to it. These visitors are on low-end Android phones, sometimes behind data-saver proxies that rewrite scripts, and a navigation that needs JavaScript is a site they cannot move around.
 
+**Changing an email address takes three steps, and one of them is a warning.** The current password, a link the *new* address must open, and an alert to the *old* one carrying a cancel link that ends every session. Until the second step, `email` is untouched — so an attacker with a stolen session who gets that far has changed nothing and has left a message in the owner's inbox. The giving history is deliberately *not* re-matched on a change: an inbox is not a claim on somebody else's donations.
+
+**The second factor is a step, not a page.** The account is never authenticated while the challenge is on screen — what exists is an id in the session, re-read from the database each time. A factor somebody can skip by closing the tab is a suggestion. The secret waits in the session until a code proves it, so a populated `two_factor_secret` always means a factor the person can actually produce.
+
 ---
 
 ## Branches and deployment

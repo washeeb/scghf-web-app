@@ -6,6 +6,7 @@ namespace App\Listeners;
 
 use App\Communications\AccountNotifier;
 use App\Enums\LoginOutcome;
+use App\Events\TwoFactorChallengeFailed;
 use App\Models\LoginHistory;
 use App\Models\User;
 use App\Support\AuditLogger;
@@ -126,6 +127,27 @@ class RecordAuthenticationEvent
         } catch (Throwable) {
             return false;
         }
+    }
+
+    /**
+     * The right password, then the wrong second factor.
+     *
+     * Recorded under its own outcome rather than as a plain failure, because it
+     * means something different and more urgent: somebody got the password
+     * right. `LoginOutcome::TwoFactorFailed` has existed since Module 1 with
+     * nothing writing it.
+     */
+    public function handleTwoFactorFailed(TwoFactorChallengeFailed $event): void
+    {
+        $this->write(LoginOutcome::TwoFactorFailed, (string) $event->user->email, $event->user, [
+            'was_two_factor_used' => true,
+        ]);
+
+        $this->audit(
+            'auth.login_failed',
+            'A sign-in got past the password and failed the second factor.',
+            $event->user,
+        );
     }
 
     /**

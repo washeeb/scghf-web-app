@@ -129,6 +129,92 @@ class AccountNotifier
     }
 
     /**
+     * The link that proves somebody owns the address they are moving to.
+     *
+     * Sent to the NEW address, and it is the only thing that actually performs
+     * the change. Everything up to this point has written `pending_email` and
+     * left the account alone.
+     */
+    public function sendEmailChangeConfirmation(User $user): EmailLog
+    {
+        $pending = (string) $user->pending_email;
+
+        $url = URL::temporarySignedRoute(
+            'account.email.confirm',
+            now()->addMinutes($user->emailChangeLifetime()),
+            ['ulid' => $user->ulid, 'hash' => sha1($pending)],
+        );
+
+        return $this->dispatcher->sendEmailNow('account.email_change_confirm', $pending, [
+            'name' => $user->name,
+            'confirm_url' => $url,
+            'new_email' => $pending,
+            'expires_in' => $this->linkLifetimeInWords(),
+        ], ['to_name' => $user->name, 'user_id' => $user->getKey()]);
+    }
+
+    /**
+     * The warning to the address the account is moving AWAY from.
+     *
+     * ── This is the control, not a courtesy ─────────────────────────────────
+     *
+     * Changing the address is how a stolen session becomes permanent: password
+     * resets follow the address, so once it moves, the real owner has no way
+     * back that does not involve a person. This email is the one moment they
+     * can stop it, and it goes to the inbox they still control — so it is sent
+     * on the REQUEST, not on the completion, and it carries a cancel link that
+     * needs nothing but the click.
+     *
+     * Sent even when the request came from the account holder themselves, who
+     * will ignore it. An alert nobody ever receives in the innocent case is one
+     * that looks like a phishing attempt on the day it matters.
+     */
+    public function sendEmailChangeAlert(User $user): EmailLog
+    {
+        $url = URL::temporarySignedRoute(
+            'account.email.cancel',
+            now()->addMinutes($user->emailChangeLifetime()),
+            ['ulid' => $user->ulid, 'hash' => sha1((string) $user->pending_email)],
+        );
+
+        return $this->dispatcher->sendEmailNow('account.email_change_alert', (string) $user->email, [
+            'name' => $user->name,
+            'new_email' => (string) $user->pending_email,
+            'cancel_url' => $url,
+            'expires_in' => $this->linkLifetimeInWords(),
+        ], ['to_name' => $user->name, 'user_id' => $user->getKey()]);
+    }
+
+    /**
+     * "Two-factor authentication is now on" — or off.
+     *
+     * Both directions, and the OFF one matters more: switching the second
+     * factor off is what an attacker does once they are in, and it is silent
+     * everywhere else. Sent to the address on the account, which after a change
+     * is the new one — so an attacker who has taken both steps has still left a
+     * message somewhere.
+     */
+    public function sendTwoFactorChanged(User $user, bool $enabled): ?EmailLog
+    {
+        try {
+            return $this->dispatcher->sendEmailNow(
+                $enabled ? 'account.two_factor_enabled' : 'account.two_factor_disabled',
+                (string) $user->email,
+                [
+                    'name' => $user->name,
+                    'changed_at' => now()->format('j F Y \a\t H:i'),
+                    'security_url' => route('account.security'),
+                ],
+                ['to_name' => $user->name, 'user_id' => $user->getKey()],
+            );
+        } catch (Throwable) {
+            // Advisory. It must not be the reason a person cannot finish
+            // turning their own second factor on.
+            return null;
+        }
+    }
+
+    /**
      * "Chrome on Android (mobile)" — enough for somebody to recognise
      * themselves, and nothing that identifies the machine.
      *

@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Account\DashboardController;
+use App\Http\Controllers\Account\EmailController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\SecurityController;
+use App\Http\Controllers\Account\TwoFactorController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -156,4 +159,58 @@ Route::middleware(['auth', 'auth.session'])
 
         Route::get('security', [SecurityController::class, 'show'])->name('security');
         Route::put('security/password', [SecurityController::class, 'updatePassword'])->name('password.update');
+
+        /*
+         * Changing the address. Rate limited on the same bucket as password
+         * resets, because it is the same kind of thing: an email this server
+         * sends on demand to an address somebody typed.
+         */
+        Route::post('email', [EmailController::class, 'request'])
+            ->middleware('throttle:password-reset')
+            ->name('email.request');
+
+        // Two-factor. Every write here also asks for the current password —
+        // adding a factor to somebody else's account locks them out of it just
+        // as effectively as removing one lets an attacker in.
+        Route::get('security/two-factor', [TwoFactorController::class, 'create'])->name('two-factor.create');
+        Route::post('security/two-factor', [TwoFactorController::class, 'store'])->name('two-factor.store');
+        Route::delete('security/two-factor', [TwoFactorController::class, 'destroy'])->name('two-factor.destroy');
+        Route::post('security/two-factor/recovery-codes', [TwoFactorController::class, 'regenerate'])
+            ->name('two-factor.recovery');
     });
+
+/*
+|--------------------------------------------------------------------------
+| The second step, for a donor who has turned it on
+|--------------------------------------------------------------------------
+|
+| `guest`, because nobody is signed in while this page is open. The password
+| has been checked and the account has deliberately NOT been authenticated —
+| all that exists is an id in the session saying who is halfway through. A
+| factor somebody can skip by closing the tab is not a factor.
+*/
+Route::middleware('guest')->group(function (): void {
+    Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'show'])
+        ->name('two-factor.challenge');
+
+    Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store']);
+});
+
+/*
+| Confirming or cancelling a change of email address.
+|
+| Neither is behind `auth`, and for different reasons. The CONFIRM link is
+| opened from the new inbox, possibly on a different device from the one that
+| asked. The CANCEL link is opened by somebody who may be locked out of their
+| own session — which is the entire situation it exists for.
+|
+| Both are `signed`, and both check a hash of the pending address, so a link
+| issued for one requested change cannot confirm a different one.
+*/
+Route::get('account/email/confirm/{ulid}/{hash}', [EmailController::class, 'confirm'])
+    ->middleware('signed')
+    ->name('account.email.confirm');
+
+Route::get('account/email/cancel/{ulid}/{hash}', [EmailController::class, 'cancel'])
+    ->middleware('signed')
+    ->name('account.email.cancel');

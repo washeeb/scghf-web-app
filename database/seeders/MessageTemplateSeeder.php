@@ -495,6 +495,156 @@ class MessageTemplateSeeder extends Seeder
                     {{security_url}}
                     TEXT,
             ],
+
+            // ── Changing the address, and the second factor ─────────────────
+            //
+            // The two ALERTS here are the ones nobody asks for, and they are
+            // the reason the pair exists: a change of address and a second
+            // factor switched off are exactly what an attacker does once they
+            // are inside, and both are silent everywhere else in the system.
+            [
+                'key' => 'account.email_change_confirm',
+                'name' => 'Confirm a new email address',
+                'description' => 'Sent to the NEW address when somebody asks to move their account '
+                    .'to it. Opening the link is what actually performs the change — until then '
+                    .'the account keeps its old address.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'confirm_url', 'new_email', 'expires_in'],
+                'required' => ['name', 'confirm_url'],
+                'subject' => 'Confirm your new email address for {{site_name}}',
+                'preheader' => 'The change does not happen until you open this.',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Somebody asked to move a {{site_name}} account to this address. If that was
+                    you, confirm it here:</p>
+                    <p><a href="{{confirm_url}}">Confirm {{new_email}}</a></p>
+                    <p>This link expires {{expires_in}}. Until it is opened the account keeps its
+                    old address and nothing has changed.</p>
+                    <p>If you were not expecting this, ignore it — nothing will happen, and the
+                    person who holds the account has been told about the request as well.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Somebody asked to move a {{site_name}} account to this address. If that was
+                    you, confirm it here:
+
+                    {{confirm_url}}
+
+                    This link expires {{expires_in}}. Until it is opened the account keeps its old
+                    address and nothing has changed.
+
+                    If you were not expecting this, ignore it — nothing will happen, and the person
+                    who holds the account has been told about the request as well.
+                    TEXT,
+            ],
+            [
+                'key' => 'account.email_change_alert',
+                'name' => 'Somebody asked to change your email address',
+                'description' => 'Sent to the OLD address the moment a change is requested. This is '
+                    .'the security control, not a courtesy: it is the one moment the account '
+                    .'holder can stop a takeover, and it goes to the inbox they still control.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'new_email', 'cancel_url', 'expires_in'],
+                'required' => ['name', 'cancel_url'],
+                'subject' => 'Did you ask to change your {{site_name}} email address?',
+                'preheader' => 'If not, stop it here.',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Somebody asked to move your {{site_name}} account to
+                    <strong>{{new_email}}</strong>. Your address has not changed yet.</p>
+                    <p>If that was you, open the link we sent to the new address and it will take
+                    effect. There is nothing to do here.</p>
+                    <p><strong>If it was not you, stop it now:</strong></p>
+                    <p><a href="{{cancel_url}}">Cancel this change</a></p>
+                    <p>Then change your password, because somebody who can request this is somebody
+                    who is already signed in to your account. If you need help, contact us on
+                    {{contact_phone}} or at {{contact_email}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Somebody asked to move your {{site_name}} account to {{new_email}}. Your address
+                    has not changed yet.
+
+                    If that was you, open the link we sent to the new address and it will take
+                    effect. There is nothing to do here.
+
+                    If it was NOT you, stop it now:
+
+                    {{cancel_url}}
+
+                    Then change your password, because somebody who can request this is somebody who
+                    is already signed in to your account. If you need help, contact us on
+                    {{contact_phone}} or at {{contact_email}}.
+                    TEXT,
+            ],
+            [
+                'key' => 'account.two_factor_enabled',
+                'name' => 'Two-factor authentication was turned on',
+                'description' => 'Sent when somebody adds a second step to their sign-in.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'changed_at', 'security_url'],
+                'required' => ['name'],
+                'subject' => 'Two-factor authentication is on for your {{site_name}} account',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Signing in to your {{site_name}} account now needs a code from your
+                    authenticator app as well as your password. This was set up on
+                    {{changed_at}}.</p>
+                    <p>Keep your recovery codes somewhere safe and away from your phone. They are
+                    the only way back in if you lose it.</p>
+                    <p>If this was not you, contact us immediately on {{contact_phone}} or at
+                    {{contact_email}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Signing in to your {{site_name}} account now needs a code from your
+                    authenticator app as well as your password. This was set up on {{changed_at}}.
+
+                    Keep your recovery codes somewhere safe and away from your phone. They are the
+                    only way back in if you lose it.
+
+                    If this was not you, contact us immediately on {{contact_phone}} or at
+                    {{contact_email}}.
+                    TEXT,
+            ],
+            [
+                'key' => 'account.two_factor_disabled',
+                'name' => 'Two-factor authentication was turned off',
+                'description' => 'Sent when the second step is removed. Nobody asks for this email, '
+                    .'and switching the factor off is precisely what an attacker does once they '
+                    .'are inside — so it is the only thing that makes it visible.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'locked' => true,
+                'variables' => ['name', 'changed_at', 'security_url'],
+                'required' => ['name'],
+                'subject' => 'Two-factor authentication was turned OFF for your {{site_name}} account',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>The second step has been removed from your {{site_name}} account on
+                    {{changed_at}}. Signing in now needs only your password.</p>
+                    <p><strong>If that was not you, somebody else is in your account.</strong>
+                    Change your password now — {{security_url}} — and contact us on
+                    {{contact_phone}} or at {{contact_email}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    The second step has been removed from your {{site_name}} account on
+                    {{changed_at}}. Signing in now needs only your password.
+
+                    If that was not you, somebody else is in your account. Change your password now:
+
+                    {{security_url}}
+
+                    Then contact us on {{contact_phone}} or at {{contact_email}}.
+                    TEXT,
+            ],
         ];
     }
 

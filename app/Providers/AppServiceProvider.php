@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Events\TwoFactorChallengeFailed;
 use App\Listeners\RecordAuthenticationEvent;
 use App\Listeners\RecordBackupOutcome;
 use App\Listeners\SanitiseUploadedImage;
@@ -239,6 +240,10 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Lockout::class, [RecordAuthenticationEvent::class, 'handleLockout']);
         Event::listen(Logout::class, [RecordAuthenticationEvent::class, 'handleLogout']);
         Event::listen(PasswordReset::class, [RecordAuthenticationEvent::class, 'handlePasswordReset']);
+
+        // The right password followed by the wrong second factor. Laravel has
+        // no event for it, and it is the most interesting failure in the table.
+        Event::listen(TwoFactorChallengeFailed::class, [RecordAuthenticationEvent::class, 'handleTwoFactorFailed']);
     }
 
     /**

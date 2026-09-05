@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Communications\AccountNotifier;
 use App\Enums\UserType;
+use App\Support\TwoFactor;
 use Database\Factories\UserFactory;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
@@ -91,6 +92,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     {
         return [
             'email_verified_at' => 'datetime',
+            'pending_email_requested_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
             'suspended_at' => 'datetime',
@@ -472,6 +474,166 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function mustEnrolInTwoFactor(): bool
     {
         return $this->type->requiresTwoFactor() && ! $this->hasTwoFactorEnabled();
+    }
+
+    // ── Changing the email address ───────────────────────────────────────────
+
+    /**
+     * Ask to move the account to a new address.
+     *
+     * Writes `pending_email` and nothing else. `email` is untouched until the
+     * new address proves itself, so an attacker holding a stolen session has
+     * changed nothing at the point the account's real owner gets told about it.
+     */
+    public function requestEmailChange(string $newEmail): void
+    {
+        $this->forceFill([
+            'pending_email' => mb_strtolower(trim($newEmail)),
+            'pending_email_requested_at' => now(),
+        ])->save();
+    }
+
+    /** Whether a request is outstanding and still inside its window. */
+    public function hasPendingEmailChange(): bool
+    {
+        if (blank($this->pending_email) || $this->pending_email_requested_at === null) {
+            return false;
+        }
+
+        return $this->pending_email_requested_at->addMinutes($this->emailChangeLifetime())->isFuture();
+    }
+
+    /**
+     * Move the account to the address that has just proved itself.
+     *
+     * ── The giving history is deliberately NOT re-matched ───────────────────
+     *
+     * `claimDonorRecord()` matches an unclaimed donor by email, and it is not
+     * called here. Somebody who changed their account address to one that
+     * happens to belong to an existing donor record would otherwise inherit
+     * that person's entire giving history — and while they must control the new
+     * inbox to get this far, an inbox is not a claim on somebody else's
+     * donations. The link between account and donor is made once, at first
+     * verification, and moved after that only by a person.
+     *
+     * `donors.email` is left alone for a different reason: it is the address
+     * given at the time of a gift, attached to financial records with a
+     * six-year statutory life. It records what happened, not where to write
+     * today.
+     *
+     * @return bool false when the address was taken while the link sat in an inbox
+     */
+    public function completeEmailChange(): bool
+    {
+        if (! $this->hasPendingEmailChange()) {
+            return false;
+        }
+
+        $newEmail = (string) $this->pending_email;
+
+        /*
+         * Re-checked at the last possible moment. Between the request and the
+         * click somebody else may have registered the address, and the unique
+         * index would turn that into a 500 on a link somebody was told to
+         * trust.
+         */
+        if (static::where('email', $newEmail)->whereKeyNot($this->getKey())->exists()) {
+            $this->cancelEmailChange();
+
+            return false;
+        }
+
+        $this->forceFill([
+            'email' => $newEmail,
+            // Proved by opening the link. Making them verify a second time
+            // would be asking for the same evidence twice.
+            'email_verified_at' => now(),
+            'pending_email' => null,
+            'pending_email_requested_at' => null,
+        ])->save();
+
+        return true;
+    }
+
+    public function cancelEmailChange(): void
+    {
+        $this->forceFill([
+            'pending_email' => null,
+            'pending_email_requested_at' => null,
+        ])->save();
+    }
+
+    public function emailChangeLifetime(): int
+    {
+        return (int) config('security.accounts.link_lifetime_minutes', 60);
+    }
+
+    // ── Two-factor, for the public account ───────────────────────────────────
+
+    /**
+     * Turn it on, with the secret and the recovery codes together.
+     *
+     * One method rather than two calls, because an account with a confirmed
+     * secret and no recovery codes is an account one lost phone away from
+     * needing a person — and that person's only tool would be switching the
+     * factor off for whoever telephoned.
+     *
+     * @param  array<int, string>  $recoveryCodes
+     */
+    public function enableTwoFactor(#[SensitiveParameter] string $secret, #[SensitiveParameter] array $recoveryCodes): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => $secret,
+            'two_factor_recovery_codes' => $recoveryCodes,
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+    }
+
+    /**
+     * Turn it off, clearing everything.
+     *
+     * Leaving the recovery codes behind would mean a factor that reads as
+     * disabled and can still be used to get past a challenge if one is ever
+     * re-enabled from stale state.
+     */
+    public function disableTwoFactor(): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+        ])->save();
+    }
+
+    /**
+     * Spend a recovery code, if it is one of this account's.
+     *
+     * SINGLE USE. The code is removed on success and the remaining set saved
+     * back — a recovery code that still works after it has been used is a
+     * password that was written on a piece of paper.
+     */
+    public function consumeRecoveryCode(#[SensitiveParameter] string $candidate): bool
+    {
+        $codes = $this->getAppAuthenticationRecoveryCodes() ?? [];
+        $twoFactor = app(TwoFactor::class);
+
+        foreach ($codes as $index => $code) {
+            if ($twoFactor->matchesRecoveryCode($candidate, (string) $code)) {
+                unset($codes[$index]);
+
+                $this->saveAppAuthenticationRecoveryCodes(array_values($codes));
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** How many are left, for the warning on the security page. */
+    public function remainingRecoveryCodes(): int
+    {
+        return count($this->getAppAuthenticationRecoveryCodes() ?? []);
     }
 
     /**

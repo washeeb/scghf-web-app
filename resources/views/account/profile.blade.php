@@ -1,14 +1,17 @@
 {{--
     Your details, and what we are allowed to send you.
 
-    ── The email address is shown and not editable ─────────────────────────────
+    ── The address is changed by its own form, not by this one ─────────────────
 
     Changing the address on an account is how a stolen session becomes a
     permanent takeover — password resets then go to an inbox the attacker
-    controls. Doing it safely needs the current password, a confirmation link to
-    the new address and a warning to the old one, which is a security flow and
-    not a profile field. Until that exists, staff change it on request; that is
-    a smaller feature than an unsafe self-service one.
+    controls. So it is a separate form with the current password on it, the new
+    address has to prove itself by opening a link, and the OLD address is warned
+    and given a link to stop it. Until all of that happens, `email` is untouched.
+
+    A separate `<form>` rather than a field in this one, because forms cannot
+    nest and because the two have genuinely different requirements: saving a
+    phone number should not ask for a password, and changing an address must.
 
     ── Unticking a box does something, not just displays something ─────────────
 
@@ -39,8 +42,18 @@
                     aria-labelledby="email-label"
                     class="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-muted)]"
                 >{{ $user->email }}</p>
+
+                @if ($user->hasPendingEmailChange())
+                    {{-- Shown so nobody wonders why the address above has not
+                         moved. The change is not applied until the new address
+                         opens its link. --}}
+                    <p class="text-xs text-[var(--brand-secondary)]">
+                        {{ __('Waiting for :email to confirm. Your address stays as it is until then.', ['email' => $user->pending_email]) }}
+                    </p>
+                @endif
+
                 <p class="text-xs text-[var(--text-muted)]">
-                    {{ __('To change this, write to us — changing it is how a stolen account becomes a permanent one, so we do it by hand.') }}
+                    {{ __('Changing it is done below, and takes three steps on purpose.') }}
                 </p>
             </div>
 
@@ -86,4 +99,41 @@
             class="rounded-md bg-[var(--brand-primary)] px-5 py-2.5 font-semibold text-[var(--text-on-brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
         >{{ __('Save changes') }}</button>
     </form>
+
+    <section class="mt-10 max-w-md space-y-5 border-t border-[var(--border)] pt-8" aria-labelledby="change-email">
+        <h2 id="change-email" class="font-semibold text-[var(--text)]">{{ __('Change your email address') }}</h2>
+
+        <p class="text-sm text-[var(--text-muted)]">
+            {{ __('Three steps, on purpose. We ask for your password, we send a link to the new address, and we tell the old one what is happening so you can stop it if it was not you.') }}
+        </p>
+
+        <form method="POST" action="{{ route('account.email.request') }}" class="space-y-5">
+            @csrf
+
+            <x-site.field
+                name="email"
+                id="new_email"
+                type="email"
+                :label="__('New email address')"
+                autocomplete="email"
+                inputmode="email"
+                required
+            />
+
+            <x-site.field
+                name="current_password"
+                id="email_password"
+                type="password"
+                :label="__('Your password')"
+                :hint="__('So that a session left open on a shared computer cannot be used to take the account.')"
+                autocomplete="current-password"
+                required
+            />
+
+            <button
+                type="submit"
+                class="rounded-md border border-[var(--border)] px-5 py-2.5 font-semibold text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+            >{{ __('Send the confirmation link') }}</button>
+        </form>
+    </section>
 </x-site.account-layout>

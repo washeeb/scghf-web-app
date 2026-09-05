@@ -75,6 +75,27 @@ class LoginController extends Controller
                     ->withInput($request->only('email'))
                     ->withErrors(['email' => __('This account is closed. Please contact us if you think that is a mistake.')]);
             }
+
+            /*
+             * Two-factor is on, so the password alone is not a sign-in.
+             *
+             * Deliberately BEFORE `authenticate()`: the account is never put in
+             * the guard, so there is no authenticated session for somebody to
+             * navigate away from the challenge with. What exists is an id in
+             * the session saying who is halfway through, which the challenge
+             * re-reads from the database — a factor that can be skipped by
+             * closing a tab is not a factor.
+             *
+             * Nothing is recorded in the login history yet either. A success
+             * row written here would say somebody signed in when they had
+             * produced one of the two things required.
+             */
+            if ($account->hasTwoFactorEnabled()) {
+                $request->session()->put(TwoFactorChallengeController::PENDING, $account->getKey());
+                $request->session()->put(TwoFactorChallengeController::REMEMBER, $request->boolean('remember'));
+
+                return redirect()->route('two-factor.challenge');
+            }
         }
 
         $request->authenticate();

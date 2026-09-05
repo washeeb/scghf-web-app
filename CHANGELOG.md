@@ -8,6 +8,83 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — Open questions 16 and 17, answered — 2026-09-05
+
+Both were left open because in each case the convenient version is the dangerous
+one. Both are now built.
+
+#### Added
+
+**Changing an email address, in three steps**
+- The **current password**, because a session left open on a shared computer is
+  not consent
+- A confirmation link the **new address** must open — and until it does, `email`
+  is untouched. An attacker with a stolen session who gets this far has changed
+  nothing
+- A warning to the **old address**, sent on the *request* rather than on the
+  completion, carrying a cancel link. This is the control rather than a
+  courtesy: it is the one moment the account holder can stop a takeover, and it
+  reaches the inbox they still control
+- Cancelling **ends every session**, because somebody had to be signed in to ask
+  — if the owner says it was not them, whoever did it is still there and would
+  simply ask again
+- Neither link needs a sign-in. The confirmation is opened from a different
+  device as often as not; the cancellation is for somebody who may be locked out
+  of their own session, which is the entire situation it exists for
+- The **giving history is deliberately not re-matched**. `claimDonorRecord()`
+  matches an unclaimed donor by email and is not called on a change — otherwise
+  moving your account to an address that happens to belong to an existing donor
+  record would hand you that person's whole giving history
+- `donors.email` is left alone too: it is the address given at the time of a
+  gift, attached to financial records with a six-year statutory life. It records
+  what happened, not where to write today
+
+**Two-factor authentication for donors — optional, and offered**
+- Enrolment on the security page: QR code plus a typed key, because the
+  commonest way to do this is on the phone you are reading the page on, and you
+  cannot scan your own screen
+- **The secret never reaches the database unproved.** It waits in the session
+  until a code generated from it verifies, so a populated `two_factor_secret`
+  always means a factor the person can actually produce — there is no
+  half-enrolled row that would lock an account out of itself
+- **The account is never authenticated while the challenge is on screen.** What
+  exists is an id in the session saying who is halfway through, re-read from the
+  database each time so a suspension mid-challenge is not bypassed. A factor
+  somebody can skip by closing the tab is a suggestion
+- Rate limited on **account + IP**, the same pair the login form uses. Six digits
+  is a million guesses to somebody who already has the password
+- Single-use recovery codes, shown exactly once, with the remaining count on the
+  security page — nobody notices they are down to their last one until the day
+  they need the second
+- The current password is required to turn it on *as well as* off. Adding a
+  factor to somebody else's account locks them out of it just as effectively as
+  removing one lets an attacker in
+- `UserType::requiresTwoFactor()` is unchanged: mandatory for staff, optional
+  for donors, per Blueprint §7.1
+
+**Four new emails, and two of them nobody asks for**
+- `account.email_change_confirm`, `account.email_change_alert`,
+  `account.two_factor_enabled`, `account.two_factor_disabled`
+- The two **alerts** are the point. A change of address and a second factor
+  switched off are exactly what an attacker does once inside, and both are
+  silent everywhere else in the system
+
+#### Fixed
+
+- **`LoginOutcome::TwoFactorFailed` had existed since Module 1 with nothing
+  writing it.** A new `TwoFactorChallengeFailed` event now records it — Laravel
+  has no event for "right password, wrong second factor", and filing it under
+  `Failed` would say the credentials did not match, which is a different and far
+  less interesting fact
+- `auth.two_factor_disabled` had been declared in `config/system.php` since
+  Module 8 with nothing recording it. It is recorded now, and
+  `auth.two_factor_enabled` is added beside it
+- The two-factor throttle was first keyed on the **session id**, which is wrong
+  for a reason worth keeping: a session id is not stable, and authentication
+  regenerates it deliberately — so a limit keyed on it resets whenever the thing
+  it protects makes progress. A control that can be shed by discarding a cookie
+  is not a control
+
 ### Phase 4 — The navigation, at both widths — 2026-09-05
 
 The mobile menu, and the desktop dropdowns it turned out could not be built
