@@ -293,11 +293,86 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
      */
     public function hasPermissionTo($permission, ?string $guardName = null): bool
     {
-        if (! $this->is_active || $this->isSuspended()) {
+        if (! $this->isInGoodStanding()) {
             return false;
         }
 
         return $this->spatieHasPermissionTo($permission, $guardName);
+    }
+
+    /**
+     * Whether this account may hold permissions at all.
+     *
+     * The single expression of "active and not suspended", used by
+     * `hasPermissionTo()` here and by the `Gate::before` in AuthServiceProvider
+     * — which needs the same answer and was reading the two columns raw, with
+     * the same fragility this method exists to remove.
+     */
+    public function isInGoodStanding(): bool
+    {
+        $this->ensureAccountStandingIsLoaded();
+
+        return (bool) $this->is_active && ! $this->isSuspended();
+    }
+
+    /**
+     * Make sure `is_active` and `suspended_at` are actually in memory before
+     * anything decides an authorisation question on them.
+     *
+     * ── Why this is not a guess in either direction ─────────────────────────
+     *
+     * Strict mode turns reading an unloaded attribute into an exception, so a
+     * `User::select('id', 'name')` anywhere followed by any permission check —
+     * a `@can` in a Blade template, a Filament resource asking `canViewAny` —
+     * is a 500 rather than an answer. In production, where strict mode is off,
+     * the same code silently reads null instead, and `! null` is true: the
+     * account reads as INACTIVE and quietly holds no permissions. One
+     * environment throws and the other silently denies, which is the worst
+     * pair of behaviours to have to debug.
+     *
+     * `hasTwoFactorEnabled()` met the same problem and answered it with
+     * `loaded()`, guessing in the safe direction. That works there because
+     * there IS a safe direction — "no evidence of 2FA" means ask them to
+     * enrol, which costs nothing.
+     *
+     * Here both guesses are wrong. Assuming the account is in good standing
+     * lets a suspended administrator keep their permissions, which is the exact
+     * thing this override exists to prevent. Assuming it is not silently denies
+     * a legitimate person with no explanation anybody could find.
+     *
+     * So it stops guessing and reads the two columns. One query, only when they
+     * are genuinely absent, and never in production — the session guard loads
+     * the whole row, so this does not fire on a real request. It fires for a
+     * partially selected model, which is precisely the case that was broken.
+     */
+    private function ensureAccountStandingIsLoaded(): void
+    {
+        if (array_key_exists('is_active', $this->attributes)
+            && array_key_exists('suspended_at', $this->attributes)) {
+            return;
+        }
+
+        if (! $this->exists) {
+            /*
+             * An unsaved model has nothing to read. Treated as not in good
+             * standing, because an account that does not exist yet cannot have
+             * been granted anything — and the `$attributes` defaults below keep
+             * the subsequent checks from throwing.
+             */
+            $this->attributes['is_active'] ??= false;
+            $this->attributes['suspended_at'] ??= null;
+
+            return;
+        }
+
+        $standing = static::query()
+            ->withoutGlobalScopes()
+            ->whereKey($this->getKey())
+            ->first(['is_active', 'suspended_at']);
+
+        // A row that has since been deleted is not in good standing either.
+        $this->attributes['is_active'] = $standing?->getRawOriginal('is_active') ?? false;
+        $this->attributes['suspended_at'] = $standing?->getRawOriginal('suspended_at');
     }
 
     public function hasTwoFactorEnabled(): bool

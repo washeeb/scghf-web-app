@@ -27,7 +27,7 @@ class AuthServiceProvider extends ServiceProvider
         //    remain attached to it. Revoking access must not require unpicking
         //    a permission matrix first.
         Gate::before(function (User $user): ?bool {
-            return (! $user->is_active || $user->isSuspended()) ? false : null;
+            return $user->isInGoodStanding() ? null : false;
         });
 
         // 2. Super Admin passes everything else.

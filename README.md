@@ -136,7 +136,7 @@ Run `vendor/bin/pint` before pushing.
 **Phase 2 complete** — environment, repository, deployment pipeline.
 **Phase 3 complete** — all eight modules landed: core identity · settings & CMS · programmes · fundraising · shop · engagement · communications · system, plus a gap sweep. ~131 tables.
 
-**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, the layout shell (theme system, header and footer from the seeded menus, branded error pages), public donor accounts (register, sign in, verify, reset, account area), and the media library engine (upload validation that sniffs bytes, conversions, toolchain detection, and a delete guard over the 34 foreign keys pointing at `media`). Still to come: the media library's Filament UI and the mobile navigation menu. See `CHANGELOG.md`.
+**Phase 4 in progress** — application foundation. Landed: the admin panel and its front door (Filament at a configurable path, mandatory TOTP, sign-in recording), a policy for every model with a test that keeps it that way, the layout shell (theme system, header and footer from the seeded menus, branded error pages), public donor accounts (register, sign in, verify, reset, account area), and the media library — engine and admin screen both. Still to come: the mobile navigation menu. See `CHANGELOG.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 > Donors sign in at **`/login`**. Staff cannot: see below.

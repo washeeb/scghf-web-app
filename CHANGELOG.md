@@ -8,6 +8,72 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 4 — The media library UI — 2026-09-05
+
+The first Filament resource in the project, sitting on the engine from earlier
+today. Phase 4's media library is now complete.
+
+#### Added
+
+- **The library screen**: thumbnail grid, folder filter, search, and a **"Cannot
+  be published" filter** — because the job that brings somebody here is "why
+  will this image not go on the page", and a library that makes you open forty
+  files to find the blocked one is a library people work around
+- The navigation badge counts blocked files, not total files. It is the only
+  part of the screen visible without opening it, so it carries the thing that
+  needs a person. Zero shows nothing — a permanent badge is one people stop
+  reading
+- **No Create page.** You do not create a media row; you upload a file and a row
+  is what happens next. A create form would let somebody produce a `media`
+  record pointing at nothing on disk, bypassing the only door in. Uploading is a
+  header action that hands files to `MediaLibrary::add()`
+- Alt text is **required unless the image is marked decorative**, enforced in
+  the form rather than discovered later. `isPublishable()` already refuses a
+  file without it, so a form that allowed it would produce files nobody can use
+  and the person would find out on a different screen with no explanation
+- A read-only status panel: publishable or why not, when metadata was removed,
+  whether the file arrived carrying a location, which sizes exist, and how many
+  files it costs on disk. None of it editable — whether an image has been
+  sanitised is a fact about the bytes, and a form field would invite somebody to
+  assert it instead
+- **Replace file**, as a first-class action, with the count of affected records
+  in the confirmation. Delete-and-re-upload leaves thirty references pointing at
+  a row that no longer exists
+- Deleting shows what is using the file *before* asking, and turns the model's
+  refusal into a sentence rather than a 500 — a red error page would teach
+  people the library is broken rather than careful
+
+#### Fixed
+
+- **`media.upload` granted nothing.** `BasePolicy` resolves `create` through
+  create → update → manage and `update` through update → manage; the seeded
+  permission is `media.upload`, which appears in neither chain. Three roles held
+  it, the policy denied every one of them, and the library was unusable by
+  everybody while looking correctly permissioned in the seeder. `MediaPolicy`
+  now maps both onto `media.upload`
+- **`User::hasPermissionTo()` threw on a partially loaded model.** It read
+  `is_active` and `suspended_at` directly, so any `User::select('id', 'name')`
+  followed by any permission check — a `@can` in a template, a Filament resource
+  asking `canViewAny` — was a 500 with strict mode on, and *silently denied* in
+  production where strict mode is off and `! null` is true. Two different wrong
+  behaviours from one line. It now loads the two columns when they are absent
+  rather than guessing in either direction: assuming good standing would let a
+  suspended administrator keep their permissions, and assuming the opposite
+  would deny a legitimate person with no explanation anybody could find. One
+  query, only when needed, never on a real request
+- `isInGoodStanding()` is now the single expression of "active and not
+  suspended". The `Gate::before` in `AuthServiceProvider` was reading the same
+  two columns raw and had the same fragility
+- The test suite's memory limit is raised to 512M, with the reason recorded: the
+  whole suite runs in one process and accumulates twelve hundred tests before it
+  reaches the image conversions, which is not the application's shape. The
+  production ceiling is enforced by `UploadPolicy`, which refuses an image whose
+  bitmap would need more than 60% of the server's real `memory_limit`
+- Conversions skip the optimiser chain when the server cannot launch external
+  binaries. With `exec` disabled — common on shared hosting — spatie's
+  optimisers read every file into memory, shell out to a binary that cannot
+  start, and report success having done nothing
+
 ### Phase 4 — The media library engine — 2026-09-05
 
 The upload path, the conversions, and the guard that stops a file being deleted
