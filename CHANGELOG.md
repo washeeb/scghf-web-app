@@ -8,6 +8,91 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 5 — The page builder — 2026-09-05
+
+The first of five modules in the CMS phase. Phase 3 had already built the
+schema — `pages`, `page_sections`, `page_revisions` and a curated
+`BlockRegistry` of twenty block types — so this is the screen the foundation
+runs the website from, on top of it.
+
+#### Added
+
+**The builder**
+- `PageResource`: title, address, summary, status and scheduling, parent page,
+  sitemap and search inclusion, and the SEO fields on their own tab. Three tabs
+  in the order somebody works — content first, search last, because search is
+  the part nobody opens until launch
+- Blocks as a drag-orderable, collapsible, duplicable list mapped to
+  `page_sections` rows. Rows rather than a JSON column, because a row has an id
+  and an id is what lets a revision restore put the right content back in the
+  right place
+- **The block fields are generated, not written.** `BlockFieldFactory` turns a
+  `BlockDefinition`'s field list into Filament components — the same list that
+  already generates the block's validation rules. A block added to the registry
+  appears in the panel with no admin work, and the form and the validator cannot
+  disagree
+- The collapsed label says which block it is. A page of eight rows all reading
+  "Section" is a page somebody opens eight times to find anything
+- The image picker offers **only publishable media**, with helper text
+  explaining why one might be missing. `Media::isPublishable()` refuses anything
+  without alt text or with its camera metadata still on it, and the image
+  component refuses it too — so blocking it at the point of choosing is the only
+  place with room to say why
+
+**Per-block presentation, as a closed vocabulary**
+- `settings` on `page_sections`, and `SectionSettings` to read it: background,
+  padding, width, alignment, a dark variant, and which screen sizes it shows on
+- Every option is a fixed list resolving to a theme token or a spacing step.
+  There is no colour picker and no pixel field — a colour picker produces pages
+  that fail WCAG contrast the moment somebody chooses a light green, and a pixel
+  field produces a site with fourteen different spacings
+- **Nothing stored reaches a class attribute.** `SectionSettings` *looks up* the
+  stored value in a map and returns the class from the map, so a `settings`
+  column edited by hand can only ever produce a class the file already contains
+- The admin's options are generated from the same constants the renderer reads,
+  so a background offered in the panel is by construction one the renderer knows
+  how to draw
+- Hiding a block on phones is documented, in the field's own helper text, as
+  visual emphasis only — it is `display: none`, still read by screen readers and
+  still indexed, and must never be used to give different people different
+  information
+
+**Revisions with restore**
+- A snapshot is taken **before every save**, not after. One taken after records
+  a change that already happened — useful for an audit, useless for undoing
+  anything
+- Restoring is itself snapshotted, so restoring the wrong version is recoverable
+- A "History" action lists the last twenty versions with who saved each and when
+
+**Visible at a glance**
+- The navigation badge counts **published pages with no blocks** — a heading
+  over white space, the commonest way a CMS goes live looking broken, and
+  invisible in a list that only shows a status. There is a filter for them too
+- "View" appears only on a page that is actually live, because a view button
+  leading to a 404 teaches people the button is broken rather than that the page
+  is a draft
+
+#### Fixed
+
+- **`Page::snapshot()` omitted three columns an editor can set** — `settings`,
+  `visible_from` and `visible_until`. A snapshot that omits a column is a
+  restore that silently clears it: the page comes back looking restored and the
+  missing part is noticed only by whoever set it. The presentation settings
+  would have been reset to site defaults on the first restore anybody performed
+- The block-type selector was disabled after the first save, to stop `data` from
+  being left shaped for the wrong block. The reasoning was right and the
+  mechanism was wrong: Filament omits disabled fields from the submitted state,
+  so **no block could be added from the edit screen at all** — every new row
+  arrived with no type and failed on insert. The mismatch is now prevented in
+  `PageSection` itself, which resets `data` to the new block's defaults when the
+  type changes, so it also holds for a seeder or an import
+- `PageResource` resolves records by ULID. `Page::getRouteKeyName()` is `path`,
+  so that a public URL is one lookup — and a path contains slashes, which cannot
+  be a single admin route segment
+- Added `PageFactory`, which did not exist. Draft by default, because that is
+  the state a page is really created in — a factory handing out published pages
+  lets `isLive()` and everything gated on it rot untested
+
 ### Phase 4 — Open questions 16 and 17, answered — 2026-09-05
 
 Both were left open because in each case the convenient version is the dangerous

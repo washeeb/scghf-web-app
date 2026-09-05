@@ -259,9 +259,24 @@ class Page extends Model
                     'title', 'slug', 'excerpt', 'template', 'status',
                     'published_at', 'parent_id', 'sort_order',
                 ]),
+                /*
+                 * ⚠ EVERY column a restore has to put back.
+                 *
+                 * A snapshot that omits a column is a restore that silently
+                 * clears it — the page comes back looking restored, and the
+                 * missing part is only noticed by whoever set it. `settings`,
+                 * `visible_from` and `visible_until` were absent when the
+                 * presentation and scheduling columns were added, which would
+                 * have reset every block on a page to the site defaults on the
+                 * first restore anybody performed.
+                 *
+                 * Anything added to `page_sections` that an editor can set
+                 * belongs in this list on the same day it is added.
+                 */
                 'sections' => $this->sections()->get()
                     ->map(fn (PageSection $s): array => $s->only([
-                        'block_type', 'name', 'data', 'sort_order', 'is_visible',
+                        'block_type', 'name', 'data', 'settings', 'sort_order',
+                        'is_visible', 'visible_from', 'visible_until',
                     ]))
                     ->all(),
             ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),

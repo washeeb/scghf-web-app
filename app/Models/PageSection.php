@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Blocks\BlockDefinition;
 use App\Blocks\BlockRegistry;
+use App\Blocks\SectionSettings;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -25,7 +26,7 @@ class PageSection extends Model
     use HasUlids;
 
     protected $fillable = [
-        'page_id', 'block_type', 'name', 'data',
+        'page_id', 'block_type', 'name', 'data', 'settings',
         'sort_order', 'is_visible', 'visible_from', 'visible_until',
     ];
 
@@ -45,10 +46,40 @@ class PageSection extends Model
     {
         return [
             'data' => 'array',
+            'settings' => 'array',
             'is_visible' => 'boolean',
             'visible_from' => 'datetime',
             'visible_until' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        /*
+         * A block that changes type does not keep the old block's fields.
+         *
+         * `data` is shaped by whichever block definition the row carries, so a
+         * row whose type moved from `hero` to `rich-text` while keeping its
+         * data holds `overlay_opacity` and no `body` — every field silently
+         * wrong, and nothing anywhere reporting it. The view would render an
+         * empty block and the editor would see a bug rather than a mistake.
+         *
+         * Enforced in the model rather than by disabling the admin field,
+         * because disabling it turned out to make adding a block impossible —
+         * Filament omits disabled fields from the submitted state — and because
+         * a guard here also holds for a seeder, an import and a console
+         * command.
+         *
+         * Not destructive in practice: `EditPage` snapshots the page before
+         * every save, so an editor who changes a type by accident restores it.
+         */
+        static::updating(function (self $section): void {
+            if (! $section->isDirty('block_type')) {
+                return;
+            }
+
+            $section->data = $section->definition()?->defaults() ?? [];
+        });
     }
 
     /** @return array<int, string> */
@@ -87,6 +118,24 @@ class PageSection extends Model
         }
 
         return $this->definition()?->defaults()[$name] ?? $default;
+    }
+
+    /**
+     * How this section looks, as a value object rather than a raw array.
+     *
+     * Named `presentation()` rather than `settings()` on purpose: a method with
+     * the same name as a column is one Eloquent has to disambiguate, and the
+     * rule it uses — attribute first, then relation — is not obvious to a
+     * reader and would break the day somebody made it a relationship.
+     *
+     * Every block view asks this for its classes rather than reading the column
+     * itself, so the closed vocabulary in `SectionSettings` is the only way a
+     * stored value reaches a class attribute — and a `settings` column edited
+     * by hand can produce nothing the file does not already contain.
+     */
+    public function presentation(): SectionSettings
+    {
+        return new SectionSettings($this->settings);
     }
 
     public function displayName(): string
