@@ -20,11 +20,7 @@
     $resolver = app(App\Blocks\BlockDataResolver::class);
 @endphp
 
-<x-layouts.app
-    :title="$page->seoTitle()"
-    :description="$page->seoDescription()"
-    :noindex="! $page->seoShouldIndex()"
->
+<x-layouts.app :meta="App\Support\PageMeta::for($page)">
     @if ($isPreview)
         {{-- Unmissable on purpose. Somebody looking at a preview of a draft
              needs to know the public cannot see this, or they will wonder why

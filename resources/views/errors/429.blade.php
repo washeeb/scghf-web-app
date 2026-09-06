@@ -6,7 +6,7 @@
     moment a donor abandons a payment. Every one of these keeps the header, the
     footer and the theme, so the visitor can see where they are and get back.
 --}}
-<x-layouts.app title="Too many requests">
+<x-layouts.app :noindex="true" title="Too many requests">
     <div class="mx-auto max-w-2xl px-4 py-24 text-center">
         <p class="text-sm font-semibold tracking-widest text-[var(--text-muted)]">429</p>
         <h1 class="mt-3 text-3xl font-semibold tracking-tight text-[var(--text-primary)]">{{ __('Too many requests') }}</h1>

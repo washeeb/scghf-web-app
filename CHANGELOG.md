@@ -8,6 +8,123 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 6 — The public content pages — 2026-09-06
+
+Module 1 of the public site. Eleven pages over content the CMS already managed,
+and the four things that turned out to be missing underneath them.
+
+#### Added
+
+**The SEO layer, connected**
+- `PageMeta` and `<x-site.meta>`: title, description, canonical, Open Graph and
+  the Twitter card, resolved from each record's own `HasSeo` values
+- **This is why it matters.** `seoOpenGraph()` was written in Phase 3 and read
+  by nothing, so until now every link to this site shared on WhatsApp — which is
+  how most of this foundation's supporters share anything — rendered as a bare
+  blue URL with no title, no summary and no picture. A donation appeal shared as
+  a bare link is an appeal nobody taps
+- A canonical on every page, because the same page is reachable with a trailing
+  slash, with a `?utm_source` from the newsletter, and through a redirect —
+  without one a search engine treats those as competing pages and the
+  foundation's own campaign link outranks the page it points at
+- A share image is refused if it is not publishable. An OG image is fetched by
+  Facebook, WhatsApp and every scraper that sees the link, so an unsanitised
+  photograph shared as one hands its GPS coordinates to all of them
+- `StructuredData`: `NGO` and `WebSite` on every page, `BreadcrumbList` on inner
+  ones, built entirely from the settings layer so it cannot drift from the
+  footer, the receipts and the emails that read the same rows. An unfilled
+  `{{PLACEHOLDER}}` is omitted rather than published — the absence is invisible,
+  the token is a claim that the site is unfinished
+- The safeguarding address is deliberately absent from the contact points: a
+  confidential reporting route published as structured data is one that is in
+  every scraper's index by Friday
+
+**Crawlers**
+- `/sitemap.xml`, from the database rather than a crawl. `spatie/laravel-sitemap`
+  is a dependency and its crawler fetches every page over HTTP — on shared
+  hosting that is the site crawling itself through the same PHP workers serving
+  donors
+- `/robots.txt` as a route, refusing everything while indexing is off and
+  pointing at the sitemap once it is on
+- `SetRobotsHeader` adds `X-Robots-Tag` when indexing is off, because the meta
+  tag is read only by a crawler that parses HTML — and one fetching an uploaded
+  PDF, an annual report or an image never does
+
+**Eleven pages**
+- News index, category and post, with scheduled posts held by the query rather
+  than by a job — so a post scheduled for 6am appears at 6am without the cron
+  having had to run
+- FAQs as `<details>`, with anchor ids search results link straight to
+- Galleries and albums, documents, team, partners, testimonials, and a search
+  results page
+- `<x-site.page-shell>` frames all of them, so eleven pages cannot each invent
+  their own spacing and their own idea of where the breadcrumb goes
+- Breadcrumbs with `aria-current` on the last item and the separator hidden from
+  screen readers — otherwise every inner page reads as "Home, greater-than,
+  About, greater-than, Leadership"
+
+**The contact form**
+- The missing half of a feature finished on the admin side in Phase 5. Consent
+  is required and its exact wording snapshotted onto the record, because consent
+  to a privacy notice that has since been rewritten is not evidence of anything
+- **A confidential department is never offered and never accepted.** A
+  safeguarding route in a dropdown beside "Shop enquiries" is one that gets used
+  for shop enquiries — and whose existence and address are published to every
+  scraper. The department is re-checked server-side, not trusted from the form
+- The enquiry is stored first and the acknowledgement attempted afterwards. The
+  other order loses the message and tells the sender it failed, so they give up
+  — and on shared hosting the mail host is periodically down
+
+**The newsletter**
+- Double opt-in: subscribe, confirm from the inbox, one-click unsubscribe.
+  `Subscriber::recordConsent()`, `confirm()` and `unsubscribe()` were written in
+  Phase 3 with the confirmation template seeded beside them, and nothing called
+  any of it
+- **The same answer whether or not the address is already on the list.** "You
+  are already subscribed" is an address-existence oracle: anybody can type an
+  email in and learn whether that person supports this foundation, which on a
+  charity working with vulnerable people is not a neutral fact
+- A suppressed address is never re-enrolled. Mailing one that hard-bounced or
+  reported a message as spam is the single fastest route to a blocked sending
+  domain — and expired suppressions are honoured as expired, so a soft bounce
+  from six months ago does not refuse somebody asking to hear from us
+- Unsubscribe is one click with no sign-in and no confirmation step. A
+  friction-filled unsubscribe is how a recipient reports the message as spam
+  instead, and a complaint damages delivery for every message the foundation
+  sends, receipts included
+
+#### Fixed
+
+- **⚠ `robots.txt` said the opposite of the setting.** A static file in
+  `public/` allowing every crawler in, while `.env.example` had claimed since
+  Phase 2 that the indexing switch drove it. A staging deployment was indexable
+  regardless — and a staging site indexed beside the real one splits its search
+  ranking and shows donors a test site. The file is gone; the route decides
+- **`show_in_sitemap` was a switch that did nothing.** A column since Phase 3, a
+  toggle in the page builder since Phase 5, and no sitemap for it to affect
+- **The footer's newsletter form has rendered nothing on every page since
+  Phase 4.** Its `Route::has('newsletter.subscribe')` guard was correct and
+  doing its job — the route did not exist. What was missing was everything
+  behind it
+- **`<x-site.field>` promised `type="textarea"` in its own docblock and only
+  ever rendered an `<input>`**, so the contact form's message box was a
+  single-line field. The value now goes between the tags rather than into a
+  `value` attribute, which is the specific way a rejected form loses somebody
+  three paragraphs of typing
+- Error pages, the account area and the auth screens are noindexed. An indexed
+  404 is a search result that takes somebody to a dead end on the foundation's
+  own domain
+- The site search escapes `%` and `_` before they reach a `LIKE`. Unescaped, a
+  visitor searching for "100%" matched every row on the site — bindings stop
+  injection, they do not stop this
+
+#### Added — settings
+
+- `compliance.contact_consent_text` and `compliance.newsletter_consent_text`, so
+  the sentence somebody ticks can be corrected by the foundation's own lawyer
+  without a deploy, and so the form and the stored evidence read the same row
+
+
 ### Phase 5 — The admin experience — 2026-09-05
 
 Module 5 of 5, and the end of the CMS phase. A dashboard, global search, CSV

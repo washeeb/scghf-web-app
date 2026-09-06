@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CountVisit;
 use App\Http\Middleware\HandleRedirects;
+use App\Http\Middleware\SetRobotsHeader;
 use App\Support\ErrorReporter;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -56,6 +57,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             CountVisit::class,
             HandleRedirects::class,
+            /*
+             * `X-Robots-Tag` when indexing is off. The meta tag in the layout
+             * covers HTML; this covers the PDFs, images and downloads a crawler
+             * fetches without ever parsing a page.
+             */
+            SetRobotsHeader::class,
         ]);
 
         /*

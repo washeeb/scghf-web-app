@@ -17,7 +17,7 @@
 --}}
 @props(['title', 'subtitle' => null])
 
-<x-layouts.app :title="$title.setting('seo.title_suffix', '')">
+<x-layouts.app :noindex="true" :title="$title.setting('seo.title_suffix', '')">
     <div class="mx-auto w-full max-w-md px-4 py-12 sm:py-16">
         <h1 class="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">{{ $title }}</h1>
 

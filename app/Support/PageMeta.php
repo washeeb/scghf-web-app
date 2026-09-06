@@ -1,0 +1,149 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Support;
+
+use App\Models\Media;
+use Illuminate\Contracts\Support\Arrayable;
+
+/**
+ * Everything that goes in a page's `<head>`, resolved once.
+ *
+ * ── Why this exists ─────────────────────────────────────────────────────────
+ *
+ * `HasSeo::seoOpenGraph()` was written in Phase 3 and read by nothing. The
+ * layout emitted a title, a description and sometimes a noindex, and that was
+ * all — no canonical, no Open Graph, no Twitter card. Which means that until
+ * now, every time somebody shared a cause on WhatsApp (the way most of this
+ * foundation's supporters share anything), it rendered as a bare blue link with
+ * no title, no summary and no picture.
+ *
+ * A donation appeal shared as a bare link is an appeal nobody clicks.
+ *
+ * ── The canonical is not decoration either ──────────────────────────────────
+ *
+ * The same page is reachable with a trailing slash, with a `?utm_source`, and
+ * through a redirect. Without a canonical, a search engine treats those as
+ * separate pages competing with each other, and the foundation's own newsletter
+ * campaign quietly outranks the page it points at.
+ *
+ * ── One object, not eight component parameters ──────────────────────────────
+ *
+ * The alternative is a layout with `title`, `description`, `noindex`,
+ * `canonical`, `ogImage`, `ogType`, `publishedAt` and `author` slots, and every
+ * caller remembering all eight. This is built by whoever has the record and
+ * handed over whole.
+ */
+class PageMeta implements Arrayable
+{
+    public function __construct(
+        public readonly string $title,
+        public readonly ?string $description = null,
+        public readonly bool $noindex = false,
+        public readonly ?string $canonical = null,
+        public readonly ?string $imageUrl = null,
+        public readonly ?string $imageAlt = null,
+        public readonly string $type = 'website',
+        public readonly ?string $publishedAt = null,
+        public readonly ?string $modifiedAt = null,
+        public readonly ?string $author = null,
+    ) {}
+
+    /**
+     * Build from any model using `HasSeo`.
+     *
+     * @param  object  $model  anything with the HasSeo trait
+     */
+    public static function for(object $model, ?string $canonical = null): self
+    {
+        $og = method_exists($model, 'seoOpenGraph') ? $model->seoOpenGraph() : [];
+
+        $image = static::resolveImage($og['image'] ?? null)
+            ?? static::defaultShareImage();
+
+        return new self(
+            title: $model->seoTitle(),
+            description: $model->seoDescription(),
+            noindex: ! $model->seoShouldIndex(),
+            canonical: $canonical ?? request()->url(),
+            imageUrl: $image?->url,
+            imageAlt: $image?->alt,
+            type: $og['type'] ?? 'website',
+            publishedAt: $model->published_at?->toIso8601String(),
+            modifiedAt: $model->updated_at?->toIso8601String(),
+        );
+    }
+
+    /** The fallback for a page with no model behind it — search results, the sitemap page. */
+    public static function site(string $title, ?string $description = null, bool $noindex = false): self
+    {
+        $image = static::defaultShareImage();
+
+        return new self(
+            title: $title.setting('seo.title_suffix', ''),
+            description: $description ?? setting('seo.default_description'),
+            noindex: $noindex || ! setting('seo.allow_indexing', false),
+            canonical: request()->url(),
+            imageUrl: $image?->url,
+            imageAlt: $image?->alt,
+        );
+    }
+
+    /**
+     * Whether search engines may index this page.
+     *
+     * ⚠ Two independent reasons not to, and either is enough. The SITE switch
+     * is off on staging and no page may override it — a noindexed staging site
+     * that leaks one indexable page is worse than useless. The PAGE switch is
+     * for a thank-you page or a receipt, reached only by having just done
+     * something.
+     */
+    public function shouldIndex(): bool
+    {
+        return ! $this->noindex && (bool) setting('seo.allow_indexing', false);
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [
+            'title' => $this->title,
+            'description' => $this->description,
+            'canonical' => $this->canonical,
+            'image' => $this->imageUrl,
+            'type' => $this->type,
+        ];
+    }
+
+    /**
+     * A media id turned into a URL and its alt text.
+     *
+     * Refuses an unpublishable file for the same reason the image component
+     * does: a share image is fetched by Facebook, WhatsApp and every scraper
+     * that sees the link, so an unsanitised photograph shared as an OG image is
+     * a photograph's GPS coordinates handed to every one of them.
+     */
+    private static function resolveImage(mixed $mediaId): ?object
+    {
+        if (blank($mediaId)) {
+            return null;
+        }
+
+        $media = Media::find($mediaId);
+
+        if ($media === null || ! $media->isPublishable()) {
+            return null;
+        }
+
+        return (object) [
+            'url' => $media->conversionUrl('card'),
+            'alt' => $media->altText(),
+        ];
+    }
+
+    private static function defaultShareImage(): ?object
+    {
+        return static::resolveImage(setting('seo.og_image'));
+    }
+}

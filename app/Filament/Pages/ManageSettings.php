@@ -104,6 +104,7 @@ class ManageSettings extends Page
         'header' => 'Header',
         'site' => 'Site & footer',
         'seo' => 'Search engines',
+        'compliance' => 'Consent wording',
     ];
 
     public static function getNavigationLabel(): string

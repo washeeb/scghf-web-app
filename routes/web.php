@@ -13,9 +13,20 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DeliveryWebhookController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\FaqController;
+use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\NewsController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\PaystackWebhookController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TestimonialsController;
 use Illuminate\Support\Facades\Route;
 use Spatie\Honeypot\ProtectAgainstSpam;
 
@@ -237,6 +248,96 @@ Route::get('announcements/{announcement:ulid}/go', [AnnouncementController::clas
 
 Route::post('announcements/{announcement:ulid}/dismiss', [AnnouncementController::class, 'dismiss'])
     ->name('announcements.dismiss');
+
+/*
+|--------------------------------------------------------------------------
+| The public content pages
+|--------------------------------------------------------------------------
+|
+| Everything here reads content the CMS already manages. None of it is a new
+| kind of data — the news posts, FAQs, galleries, documents, team and partners
+| all had admin screens in Phase 5 and nowhere to be seen.
+|
+| ⚠ All of it must stay ABOVE the CMS catch-all at the bottom of this file.
+| `{path}` with `.*` matches everything, and a route registered below it is a
+| route that is never reached — silently, with the CMS answering 404 for it.
+*/
+Route::get('news', [NewsController::class, 'index'])->name('news.index');
+Route::get('news/{post:slug}', [NewsController::class, 'show'])->name('news.show');
+Route::get('news/category/{category:slug}', [NewsController::class, 'category'])->name('news.category');
+
+Route::get('faq', FaqController::class)->name('faq');
+
+Route::get('galleries', [GalleryController::class, 'index'])->name('galleries.index');
+Route::get('galleries/{gallery:slug}', [GalleryController::class, 'show'])->name('galleries.show');
+
+/*
+ * Reports, policies and financial statements.
+ *
+ * A Ghanaian non-profit asking the public for money is expected to publish its
+ * accounts and its safeguarding policy, and a donor deciding whether to trust a
+ * payment form looks for exactly those. The download route counts each fetch
+ * and refuses anything marked as needing a sign-in.
+ */
+Route::get('reports', [DocumentController::class, 'index'])->name('documents.index');
+Route::get('reports/{document:slug}/download', [DocumentController::class, 'download'])
+    ->name('documents.download');
+
+Route::get('team', TeamController::class)->name('team');
+Route::get('partners', PartnersController::class)->name('partners');
+Route::get('testimonials', TestimonialsController::class)->name('testimonials');
+
+Route::get('search', SearchController::class)->name('search');
+
+/*
+| Contact.
+|
+| The form is the missing half of a feature that has been complete on the admin
+| side since Phase 5: `contact_messages`, the departments, the inbox, the
+| routing of confidential enquiries and the acknowledgement template all
+| existed, and nothing could create a message.
+*/
+Route::get('contact', [ContactController::class, 'show'])->name('contact');
+Route::post('contact', [ContactController::class, 'store'])
+    ->middleware(ProtectAgainstSpam::class)
+    ->name('contact.store');
+
+/*
+| Newsletter, double opt-in.
+|
+| `Subscriber::recordConsent()`, `confirm()` and `unsubscribe()` were written in
+| Phase 3 and the confirmation email was seeded with them. Nothing called any of
+| it, and the footer's signup form checked `Route::has('newsletter.subscribe')`
+| and rendered nothing — so the form has been invisible on every page since
+| Phase 4.
+|
+| The confirm and unsubscribe links are opened from an inbox, so neither can be
+| behind a session. Both are keyed on a token rather than an address, because a
+| URL containing somebody's email address is a URL that leaks it into every
+| referrer header and browser history it touches.
+*/
+Route::post('newsletter/subscribe', [NewsletterController::class, 'subscribe'])
+    ->middleware(ProtectAgainstSpam::class)
+    ->name('newsletter.subscribe');
+
+Route::get('newsletter/confirm/{token}', [NewsletterController::class, 'confirm'])
+    ->name('newsletter.confirm');
+
+Route::get('newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])
+    ->name('newsletter.unsubscribe');
+
+/*
+|--------------------------------------------------------------------------
+| Crawlers
+|--------------------------------------------------------------------------
+|
+| `sitemap.xml` is a query, not a crawl — see SitemapController. `robots.txt` is
+| a route rather than the static file that used to sit in public/, because the
+| static one allowed every crawler in regardless of the indexing setting, on
+| staging included.
+*/
+Route::get('sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
+Route::get('robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 /*
 |--------------------------------------------------------------------------

@@ -119,6 +119,21 @@ class SettingsSeeder extends Seeder
         ['banking', 'momo_name', '{{MOMO_MERCHANT_NAME}}', SettingType::String, 'Mobile Money name', true],
         ['banking', 'momo_number', '{{MOMO_MERCHANT_NUMBER}}', SettingType::Phone, 'Mobile Money number', true],
 
+        // ── Consent wording ──────────────────────────────────────────────────
+        // The exact sentence somebody ticks is snapshotted onto their record at
+        // the moment they tick it, because consent to a notice that has since
+        // been rewritten is not evidence of anything. It lives here so it can
+        // be corrected by the foundation's own lawyer without a deploy — and so
+        // the form and the stored evidence read from the same row.
+        ['compliance', 'contact_consent_text',
+            'I agree that my details may be stored so that you can reply to me.',
+            SettingType::Text, 'Contact form consent wording', true,
+            'Shown beside the tick box on the contact form, and stored with each enquiry.'],
+        ['compliance', 'newsletter_consent_text',
+            'I would like to receive email updates, and I can unsubscribe at any time.',
+            SettingType::Text, 'Newsletter consent wording', true,
+            'Stored with each subscriber as the evidence of what they agreed to.'],
+
         // ── The shop ─────────────────────────────────────────────────────────
         // A threshold rather than a hardcoded number, because "low" depends on
         // how fast a thing sells. Ten tote bags is plenty; ten of a bracelet

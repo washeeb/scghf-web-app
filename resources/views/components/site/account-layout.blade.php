@@ -21,7 +21,7 @@
     ];
 @endphp
 
-<x-layouts.app :title="$title.setting('seo.title_suffix', '')">
+<x-layouts.app :noindex="true" :title="$title.setting('seo.title_suffix', '')">
     <div class="mx-auto w-full max-w-4xl px-4 py-10">
         <header class="space-y-1">
             <p class="text-sm text-[var(--text-muted)]">{{ __('Your account') }}</p>

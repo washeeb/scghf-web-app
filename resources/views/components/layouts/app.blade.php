@@ -24,6 +24,21 @@
 @php
     $theme = app(App\Support\ThemePreference::class);
     $preference = $theme->resolve(request());
+
+    /*
+     * The head tags, as one object.
+     *
+     * A page that hands over a `PageMeta` gets a canonical, Open Graph and a
+     * Twitter card. One that hands over nothing still gets a complete head,
+     * built from the settings layer — because the alternative is a page added
+     * in a year that quietly shares as a bare link, and nobody notices until
+     * somebody posts it.
+     */
+    $meta = $meta ?? App\Support\PageMeta::site(
+        $title ?? setting('seo.default_title', setting('general.short_name', config('app.name'))),
+        $description ?? null,
+        $noindex ?? false,
+    );
 @endphp
 <!DOCTYPE html>
 <html
@@ -47,29 +62,38 @@
     {{-- Before first paint. Not deferred, not external. --}}
     <script>{!! $theme->inlineScript() !!}</script>
 
-    <title>{{ $title ?? setting('seo.default_title', setting('general.short_name', config('app.name'))) }}</title>
-
-    <meta name="description" content="{{ $description ?? setting('seo.default_description', '') }}">
-
     {{--
-        Two independent reasons not to be indexed, and either is enough.
+        Title, description, canonical, robots, Open Graph and the Twitter card.
 
-        `seo.allow_indexing` is the SITE switch: seeded false and turned on
-        deliberately at launch, because a staging site indexed alongside the
-        real one splits its search ranking and confuses donors.
+        All of it from `PageMeta`, which reads the record's own `HasSeo` values.
+        `seoOpenGraph()` was written in Phase 3 and read by nothing, so until
+        now a donation appeal shared on WhatsApp — which is how most of this
+        foundation's supporters share anything — rendered as a bare blue link
+        with no title, no summary and no picture.
 
-        `$noindex` is the PAGE switch, from that page's own SEO settings — for a
-        thank-you page, a receipt, anything reached only by having just done
-        something. A page-level yes must never be overridden by a site-level
-        yes, so they are combined with `or` rather than the page winning.
+        The indexing rule lives in `PageMeta::shouldIndex()`: two independent
+        reasons not to be indexed, either sufficient. The SITE switch is off on
+        staging and no page may override it; the PAGE switch is for a thank-you
+        page or a receipt.
     --}}
-    @if (! setting('seo.allow_indexing', false) || ($noindex ?? false))
-        <meta name="robots" content="noindex, nofollow">
-    @endif
+    <x-site.meta :meta="$meta" />
 
     {{-- Matches the painted background, so the mobile browser chrome does not
          sit as a white bar above a dark page. --}}
     <meta name="theme-color" content="{{ $preference === 'dark' ? '#0b0b0d' : '#ffffff' }}">
+
+    {{--
+        Who this organisation is, as data.
+
+        `NGO` structured data carrying the legal name, the registration number
+        and the contact points is one of the signals that separates a real
+        charity from a site impersonating one — which is the exact question a
+        Ghanaian donor is asking when they reach a payment form. Every value
+        comes from the settings layer, so it cannot drift from the footer, the
+        receipts and the emails, all of which read the same rows.
+    --}}
+    <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->organisation() !!}</script>
+    <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->website() !!}</script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 

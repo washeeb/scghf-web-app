@@ -6,7 +6,7 @@
     moment a donor abandons a payment. Every one of these keeps the header, the
     footer and the theme, so the visitor can see where they are and get back.
 --}}
-<x-layouts.app title="Not allowed">
+<x-layouts.app :noindex="true" title="Not allowed">
     <div class="mx-auto max-w-2xl px-4 py-24 text-center">
         <p class="text-sm font-semibold tracking-widest text-[var(--text-muted)]">403</p>
         <h1 class="mt-3 text-3xl font-semibold tracking-tight text-[var(--text-primary)]">{{ __('Not allowed') }}</h1>

@@ -92,28 +92,59 @@
                 </h2>
 
                 {{--
-                    The signup form posts to a route that arrives with the
-                    public site. Rendered now so the footer is complete, and
-                    pointed at a named route only when one exists — a form
-                    posting to a 404 is worse than one that is not there.
+                    ⚠ This form has rendered NOTHING on every page of the site
+                    since Phase 4. The guard below is correct and was doing its
+                    job: `newsletter.subscribe` did not exist, so a form that
+                    would have posted to a 404 was correctly not drawn. What was
+                    missing was the route — and the whole double opt-in flow
+                    behind it, which had been written in Phase 3 and called by
+                    nobody.
+
+                    The guard stays, because it is still the right answer if the
+                    route is ever removed.
                 --}}
                 @if (Route::has('newsletter.subscribe'))
-                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex gap-2">
+                    @if (session('status'))
+                        {{-- The confirmation lands wherever the form was
+                             submitted from, which is any page on the site.
+                             `role="status"` announces it politely rather than
+                             interrupting whatever is being read. --}}
+                        <p role="status" class="text-sm text-[var(--success)]">{{ session('status') }}</p>
+                    @endif
+
+                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="space-y-2">
                         @csrf
-                        <label for="footer-email" class="sr-only">{{ __('Email address') }}</label>
-                        <input
-                            id="footer-email"
-                            type="email"
-                            name="email"
-                            required
-                            autocomplete="email"
-                            placeholder="{{ __('you@example.com') }}"
-                            class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text-primary)]"
-                        >
-                        <button
-                            type="submit"
-                            class="rounded-md bg-[var(--brand-primary)] px-3 py-2 text-sm font-semibold text-[var(--text-on-brand)]"
-                        >{{ __('Join') }}</button>
+                        <x-honeypot />
+
+                        <div class="flex gap-2">
+                            <label for="footer-email" class="sr-only">{{ __('Email address') }}</label>
+                            <input
+                                id="footer-email"
+                                type="email"
+                                name="email"
+                                required
+                                autocomplete="email"
+                                placeholder="{{ __('you@example.com') }}"
+                                @error('email') aria-invalid="true" aria-describedby="footer-email-error" @enderror
+                                class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                            >
+                            <button
+                                type="submit"
+                                class="rounded-md bg-[var(--brand-primary)] px-3 py-2 text-sm font-semibold text-[var(--text-on-brand)]"
+                            >{{ __('Join') }}</button>
+                        </div>
+
+                        @error('email')
+                            <p id="footer-email-error" role="alert" class="text-sm text-[var(--danger)]">{{ $message }}</p>
+                        @enderror
+
+                        {{-- The consent sentence, from the settings layer, and
+                             the same one snapshotted onto the subscriber's
+                             record. Signing up IS the consent here — the
+                             confirmation email is the second half of it. --}}
+                        <p class="text-xs text-[var(--text-muted)]">
+                            {{ setting('compliance.newsletter_consent_text') }}
+                        </p>
                     </form>
                 @endif
 

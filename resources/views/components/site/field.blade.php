@@ -21,6 +21,7 @@
     @param type      input type; `textarea` renders a textarea instead
     @param hint      optional help text, read out with the field
     @param required  adds the attribute AND the visible marker; they must agree
+    @param rows      textarea height; ignored for every other type
 --}}
 @props([
     'name',
@@ -30,6 +31,7 @@
     'required' => false,
     'value' => null,
     'autocomplete' => null,
+    'rows' => 5,
 ])
 
 @php
@@ -54,22 +56,49 @@
         <p id="{{ $id }}-hint" class="text-xs text-[var(--text-muted)]">{{ $hint }}</p>
     @endif
 
-    <input
-        id="{{ $id }}"
-        name="{{ $name }}"
-        type="{{ $type }}"
-        @if ($required) required @endif
-        @if ($autocomplete) autocomplete="{{ $autocomplete }}" @endif
-        @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
-        @if ($hasError) aria-invalid="true" @endif
-        value="{{ old($name, $value) }}"
-        {{ $attributes->class([
+    @php
+        $control = $attributes->class([
             'w-full rounded-md border bg-[var(--bg)] px-3 py-2 text-[var(--text-primary)]',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]',
             'border-[var(--border)]' => ! $hasError,
             'border-[var(--brand-secondary)]' => $hasError,
-        ]) }}
-    >
+        ]);
+    @endphp
+
+    @if ($type === 'textarea')
+        {{--
+            ⚠ This branch was documented above from the day the component was
+            written and did not exist, so `type="textarea"` silently produced a
+            single-line text input — a message box a visitor could not see the
+            end of what they were typing in.
+
+            The value goes BETWEEN the tags, not in a `value` attribute. A
+            textarea with `value=""` renders empty however much old input there
+            is, which is the specific way a rejected contact form loses somebody
+            three paragraphs of typing.
+        --}}
+        <textarea
+            id="{{ $id }}"
+            name="{{ $name }}"
+            rows="{{ $rows }}"
+            @if ($required) required @endif
+            @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
+            @if ($hasError) aria-invalid="true" @endif
+            {{ $control }}
+        >{{ old($name, $value) }}</textarea>
+    @else
+        <input
+            id="{{ $id }}"
+            name="{{ $name }}"
+            type="{{ $type }}"
+            @if ($required) required @endif
+            @if ($autocomplete) autocomplete="{{ $autocomplete }}" @endif
+            @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
+            @if ($hasError) aria-invalid="true" @endif
+            value="{{ old($name, $value) }}"
+            {{ $control }}
+        >
+    @endif
 
     @error($name)
         <p id="{{ $id }}-error" role="alert" class="text-sm text-[var(--brand-secondary)]">{{ $message }}</p>
