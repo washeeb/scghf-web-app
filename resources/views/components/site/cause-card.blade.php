@@ -23,6 +23,10 @@
             />
         @endif
 
+        @if ($cause->is_urgent && $cause->acceptsDonations())
+            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--danger)]">{{ __('Urgent') }}</p>
+        @endif
+
         <h3 class="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
             {{ $cause->title }}
         </h3>
@@ -38,7 +42,7 @@
 
     @if ($cause->acceptsDonations())
         <a
-            href="{{ route('causes.show', $cause) }}"
+            href="{{ route('donate', ['cause' => $cause->slug]) }}"
             class="mt-4 rounded-md bg-[var(--brand-secondary)] px-4 py-2 text-center text-sm font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
         >{{ __('Support this') }}</a>
     @endif

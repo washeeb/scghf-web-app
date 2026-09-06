@@ -8,6 +8,117 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 7 — Projects, causes and impact — 2026-09-06
+
+The programmatic heart of the site, on top of the pages Phase 6 built. Every
+open decision in the brief was taken here rather than deferred; each one is
+recorded below with the reasoning, and in the code beside the thing it governs.
+
+#### Decisions taken
+
+- **Goal-reached behaviour defaults to KEEP ACCEPTING**, settable per appeal to
+  close or redirect. A foundation that hits its target and then refuses money is
+  leaving gifts on the table, and a donor who has already decided to give is not
+  somebody to turn away at the last step. What must not happen is taking money
+  *silently* against a met goal — so the appeal page says the target has been
+  reached whichever behaviour is chosen. Closing is for a specific, funded,
+  finite thing; redirecting is for when there is somewhere better for it to go,
+  and a redirect into a second full appeal is refused rather than bouncing a
+  donor between two pages that both decline their gift
+- **The per-cause expenditure log is aggregated by category, never itemised.** A
+  payout record carries a payee name and frequently the beneficiary it was spent
+  on; publishing the rows would publish who received school fees or a medical
+  payment. Categories with too few payments are folded into "Other", because a
+  single medical payment beside a known beneficiary is an identification
+- **Peer-to-peer fundraising stays behind its flag, off.** The brief said "build
+  if I confirmed I want it; otherwise scaffold the tables and hide the UI behind
+  a feature flag". It was not confirmed. The tables and `donations.fundraiser_id`
+  already exist from Phase 3; `FEATURE_P2P_FUNDRAISING` remains false, which is
+  this project's definition of a genuine deferral rather than a gap
+- **Cause updates are categorised as marketing, not transactional.** They are
+  news, not receipts, so they honour the consent a donor gave or withheld and
+  carry an unsubscribe link. Slipping campaign mail through the transactional
+  channel is the fastest way to have the receipts themselves stop arriving
+
+#### Added
+
+**Giving levels**
+- "GH₵ 50 provides a school kit for one child", per appeal, shown on the appeal
+  page and offered on the donation form in place of the site presets. The single
+  highest-value field in this phase: it answers the question a hesitant donor is
+  actually asking — not "how much should I give?" but "what does my money do?"
+- A level link carries its amount to the form, and a malformed level is dropped
+  rather than thrown on — this is JSON edited through a form, and one bad row
+  must not take down the page the foundation raises money on
+
+**More on an appeal**
+- An urgency flag, deliberately blunt: an appeal marked urgent that is not is
+  the fastest way to make every future one ignored
+- A per-appeal minimum, above the site floor. The two mean different things —
+  the site floor is commercial, an appeal's own is editorial
+- A fund code for the ledger, never rendered publicly. Restricted funds have to
+  be reported separately
+
+**Impact**
+- `ImpactMetricResource`: define what is measured, how it aggregates, and record
+  a value per period rather than overwriting a running total — "1,400 people
+  served" is a number nobody can check, and a series survives somebody mistyping
+  this quarter
+- **"Counts people" is a safeguarding switch, not a label.** A metric marked so
+  is withheld from the public page when the figure falls below the minimum group
+  size, because "3 widows supported in Bongo" identifies those three women to
+  anybody who lives there. Getting it wrong cautiously costs a number on a web
+  page; getting it wrong the other way cannot be taken back
+- The admin table shows the real total *and* what a visitor would see, so
+  nobody has to guess whether a missing figure is zero or withheld. The export
+  carries the **published** figure — disclosure control has to travel with data
+  that leaves the application
+- `/impact`: raised beside **paid out**, supporters, projects, published metrics
+  and projects by region. Publishing "raised" alone is the number every charity
+  publishes and it answers nothing a sceptical donor is asking; what went out is
+  the claim that can be checked. The page says plainly why the two do not match
+
+**Updates that reach the people who funded the work**
+- `CauseUpdateResource` and `ProjectUpdateResource`, and a "tell the donors"
+  action that emails an appeal's update to the people who gave to *that* appeal
+  and consented to updates — one email each however many times they gave
+- Publishing does not send. Sending is a deliberate button with a confirmation
+  naming how many people it reaches, because an email to four hundred donors is
+  not something to trigger by ticking a box while fixing a typo
+- Offered only for a published update: emailing a link to something a visitor
+  cannot see is the one mistake here a donor would definitely notice
+
+#### Added — Phase 6 Module 3, the donation page
+
+- `/donate` with presets, a custom amount, appeal selection, fee cover,
+  anonymity, tribute giving and monthly giving; `/donate/callback` and a
+  thank-you page
+- **Nothing reads the query string about the outcome.** A donor returning from
+  Paystack proves only that a browser followed a link; the money is confirmed by
+  the signed webhook, and these pages report what the database says. A pending
+  gift gets an honest "we are confirming this" rather than a thank-you that may
+  be false
+- Monthly giving is established **when the webhook confirms the money arrived**,
+  not in the browser. A standing order set up from a payment that was later
+  declined is a monthly charge against a card that never worked
+
+#### Fixed
+
+- **⚠ The sandbox checkout had no route.** `FakeGateway` — the DEFAULT payment
+  driver — has returned `/payments/fake/{reference}` as its authorization URL
+  since Phase 3, and that route did not exist. On every developer machine, in CI
+  and on any staging deployment without live keys, starting a donation sent the
+  donor to a 404: the donation engine was fully tested and the donation JOURNEY
+  could not be walked once, by anybody. It now exists, is refused in production
+  by two independent guards, and delivers a real signed webhook through the real
+  handler — signature check, raw event store, idempotency and queued processing
+- **⚠ So did the callback.** `PAYSTACK_CALLBACK_URL` has pointed at
+  `/donate/callback` in `.env.example` since Phase 2. A real payment would have
+  returned the donor to a 404 immediately after taking their money
+- `Cause::allow_recurring` was a toggle in the admin with nothing reading it.
+  Monthly giving is now offered on the form when an appeal allows it
+
+
 ### Phase 6 — Projects, areas of work and appeals — 2026-09-06
 
 Module 2 of the public site. The programmatic pages, the admin screens to

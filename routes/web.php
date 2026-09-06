@@ -17,10 +17,13 @@ use App\Http\Controllers\CauseController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DonateController;
+use App\Http\Controllers\FakeCheckoutController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FocusAreaController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\GivingController;
+use App\Http\Controllers\ImpactController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PageController;
@@ -332,6 +335,60 @@ Route::get('newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsu
 
 /*
 |--------------------------------------------------------------------------
+| Giving by card or mobile money
+|--------------------------------------------------------------------------
+|
+| ⚠ `/donate/callback` is what `PAYSTACK_CALLBACK_URL` has pointed at in
+| `.env.example` since Phase 2, and the route did not exist — so a real payment
+| would have returned the donor to a 404 immediately after taking their money.
+|
+| Neither the callback nor the thank-you page trusts the query string. A donor
+| coming back from Paystack proves only that a browser followed a link; the
+| money is confirmed by the signed webhook, and these pages report what the
+| DATABASE says.
+*/
+Route::get('donate', [DonateController::class, 'show'])->name('donate');
+
+Route::post('donate', [DonateController::class, 'store'])
+    /*
+     * Throttled, and the reason is not abuse of the foundation. A donation
+     * form is a card-testing target: somebody with a list of stolen card
+     * numbers uses a real charity's checkout to find which ones still work,
+     * because small gifts to a charity are the least likely charge to be
+     * queried. The honeypot stops the naive version; the throttle bounds the
+     * rest.
+     */
+    ->middleware(['throttle:6,1', ProtectAgainstSpam::class])
+    ->name('donate.store');
+
+Route::get('donate/callback', [DonateController::class, 'callback'])->name('donate.callback');
+
+Route::get('donate/{donation:ulid}/thank-you', [DonateController::class, 'thanks'])
+    ->name('donate.thanks');
+
+/*
+| The sandbox checkout.
+|
+| ⚠ `FakeGateway` has returned `/payments/fake/{reference}` as its authorization
+| URL since Phase 3, and the route did not exist. `fake` is the DEFAULT driver,
+| so on every developer machine, in CI, and on any staging deployment without
+| live keys, starting a donation sent the donor to a 404 — the engine was fully
+| tested and the JOURNEY could not be walked once, by anybody.
+|
+| Not registered in production, and the controller aborts there as well. A page
+| that can mark a payment successful without money changing hands must not be
+| one stale route cache away from existing on the live site.
+*/
+if (! app()->isProduction()) {
+    Route::get('payments/fake/{reference}', [FakeCheckoutController::class, 'show'])
+        ->name('payments.fake');
+
+    Route::post('payments/fake/{reference}', [FakeCheckoutController::class, 'pay'])
+        ->name('payments.fake.pay');
+}
+
+/*
+|--------------------------------------------------------------------------
 | The programmatic pages
 |--------------------------------------------------------------------------
 |
@@ -349,6 +406,15 @@ Route::get('projects', [ProjectController::class, 'index'])->name('projects.inde
 Route::get('projects/{project:slug}', [ProjectController::class, 'show'])->name('projects.show');
 
 Route::get('appeals', [CauseController::class, 'index'])->name('causes.index');
+
+/*
+ * The transparency page.
+ *
+ * Raised AND paid out, side by side. Publishing "raised" alone is the number
+ * every charity publishes and it answers nothing a sceptical donor is asking;
+ * what went out is the claim that can be checked.
+ */
+Route::get('impact', ImpactController::class)->name('impact');
 Route::get('appeals/{cause:slug}', [CauseController::class, 'show'])->name('causes.show');
 
 /*

@@ -398,6 +398,57 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
 
+            /*
+             * An update on an appeal somebody gave to.
+             *
+             * ── Why this is worth sending at all ────────────────────────────
+             *
+             * The commonest reason a donor does not give a second time is that
+             * they never heard what the first gift did. This is the message
+             * that answers it, and it goes only to people who gave to THIS
+             * appeal — a foundation that mails its whole list about one project
+             * teaches the list to ignore it.
+             *
+             * Categorised as MARKETING rather than transactional, deliberately.
+             * It is news, not a receipt, so it honours the marketing consent a
+             * donor gave or withheld and carries an unsubscribe link. A
+             * foundation that slips campaign mail through the transactional
+             * channel is one whose receipts stop arriving three months later.
+             */
+            [
+                'key' => 'cause.update',
+                'name' => 'An update on an appeal',
+                'description' => 'Sent to the donors of one appeal when an update is published. '
+                    .'Marketing, so it respects consent and carries an unsubscribe link.',
+                'category' => EmailTemplate::CATEGORY_MARKETING,
+                'variables' => ['name', 'cause', 'title', 'body', 'cause_url'],
+                'required' => ['cause', 'title'],
+                'subject' => '{{cause}}: {{title}}',
+                'preheader' => 'An update on something you gave to.',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>You gave to <strong>{{cause}}</strong>, so we wanted you to hear this
+                    first.</p>
+                    <h2>{{title}}</h2>
+                    {{body}}
+                    <p><a href="{{cause_url}}">See the appeal</a></p>
+                    <p>Thank you — none of it happens without you.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    You gave to {{cause}}, so we wanted you to hear this first.
+
+                    {{title}}
+
+                    {{body}}
+
+                    See the appeal: {{cause_url}}
+
+                    Thank you — none of it happens without you.
+                    TEXT,
+            ],
+
             // ── Public accounts ─────────────────────────────────────────────
             //
             // All four are transactional and all four are LOCKED. Not because

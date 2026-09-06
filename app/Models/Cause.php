@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -51,6 +52,8 @@ class Cause extends Model
     protected $fillable = [
         'division_id', 'project_id', 'title', 'slug', 'summary', 'description',
         'goal', 'currency', 'starts_on', 'ends_on', 'status',
+        'giving_levels', 'min_donation_minor', 'is_urgent',
+        'goal_reached_behaviour', 'redirect_cause_id', 'fund_code',
         'is_tax_deductible', 'tax_approval_id', 'allow_recurring', 'allow_fee_cover',
         'featured_image_id', 'is_featured', 'is_published', 'published_at', 'sort_order',
     ];
@@ -86,6 +89,8 @@ class Cause extends Model
             'allow_fee_cover' => 'boolean',
             'is_featured' => 'boolean',
             'is_published' => 'boolean',
+            'giving_levels' => 'array',
+            'is_urgent' => 'boolean',
             'goal' => MoneyCast::class.':goal_minor,currency',
             'raised' => MoneyCast::class.':raised_minor,currency',
         ];
@@ -268,7 +273,128 @@ class Cause extends Model
             return false;
         }
 
-        return $this->ends_on === null || $this->ends_on->endOfDay()->isFuture();
+        if ($this->ends_on !== null && ! $this->ends_on->endOfDay()->isFuture()) {
+            return false;
+        }
+
+        return ! $this->isClosedByReachingItsGoal();
+    }
+
+    // ── Reaching the goal ────────────────────────────────────────────────────
+
+    /** Keep taking money past the target. The default, and see the note below. */
+    public const ON_GOAL_CONTINUE = 'continue';
+
+    /** Stop taking money the moment the target is met. */
+    public const ON_GOAL_CLOSE = 'close';
+
+    /** Send further giving to another appeal. */
+    public const ON_GOAL_REDIRECT = 'redirect';
+
+    public function hasReachedItsGoal(): bool
+    {
+        $goal = $this->goal;
+
+        return $goal !== null && ! $goal->isZero() && $this->raisedAmount()->greaterThanOrEqual($goal);
+    }
+
+    /**
+     * Whether the goal being met has actually stopped this appeal.
+     *
+     * ── The default is to KEEP ACCEPTING, and that is a decision ────────────
+     *
+     * A foundation that hits its target and then refuses money is leaving gifts
+     * on the table, and a donor who has already decided to give is not somebody
+     * to turn away at the last step. What must not happen is taking money
+     * SILENTLY against a goal that is met — so the appeal page says the target
+     * has been reached whatever this returns.
+     *
+     * Closing is for the appeals where continuing would be wrong: a specific,
+     * funded, finite thing where more money cannot buy more of it. Redirecting
+     * is for when there is somewhere better for it to go.
+     */
+    public function isClosedByReachingItsGoal(): bool
+    {
+        if (! $this->hasReachedItsGoal()) {
+            return false;
+        }
+
+        return in_array(
+            $this->goal_reached_behaviour,
+            [self::ON_GOAL_CLOSE, self::ON_GOAL_REDIRECT],
+            true,
+        );
+    }
+
+    /**
+     * Where a donor should be sent instead, if anywhere.
+     *
+     * Null when this appeal is still taking money, when it is simply closed, or
+     * when the appeal it points at has itself stopped accepting. That last
+     * check matters: a redirect chain into a second full appeal would bounce a
+     * donor between two pages that both decline their gift.
+     */
+    public function redirectTarget(): ?self
+    {
+        if ($this->goal_reached_behaviour !== self::ON_GOAL_REDIRECT || ! $this->hasReachedItsGoal()) {
+            return null;
+        }
+
+        $target = $this->redirect_cause_id === null
+            ? null
+            : static::query()->find($this->redirect_cause_id);
+
+        return $target?->acceptsDonations() === true ? $target : null;
+    }
+
+    // ── Giving levels ────────────────────────────────────────────────────────
+
+    /**
+     * The suggested amounts for THIS appeal, with what each one buys.
+     *
+     * "GH₵ 50 provides a school kit for one child" raises materially more than
+     * a blank amount box, because it answers the question a hesitant donor is
+     * actually asking — not "how much should I give?" but "what does my money
+     * do?".
+     *
+     * A malformed level is dropped rather than thrown on: this is JSON edited
+     * through a form, and one bad row must not take down the page the
+     * foundation raises money on.
+     *
+     * @return Collection<int, array{amount: Money, label: string, description: ?string}>
+     */
+    public function givingLevels(): Collection
+    {
+        return collect($this->giving_levels ?? [])
+            ->filter(fn (mixed $level): bool => is_array($level)
+                && is_numeric($level['amount_minor'] ?? null)
+                && (int) $level['amount_minor'] > 0)
+            ->map(fn (array $level): array => [
+                'amount' => Money::ofMinor((int) $level['amount_minor'], $this->currency),
+                'label' => (string) ($level['label'] ?? ''),
+                'description' => ($level['description'] ?? null) ?: null,
+            ])
+            ->sortBy(fn (array $level): int => $level['amount']->toMinor())
+            ->values();
+    }
+
+    /**
+     * The smallest gift this appeal accepts.
+     *
+     * The appeal's own floor where it has one, and the site floor otherwise.
+     * The site floor exists for a commercial reason — a gift smaller than the
+     * transaction fee costs money to accept — and an appeal's own is editorial:
+     * the smallest gift that buys anything in that appeal's terms.
+     */
+    public function minimumDonation(): ?Money
+    {
+        if ($this->min_donation_minor !== null) {
+            return Money::ofMinor((int) $this->min_donation_minor, $this->currency);
+        }
+
+        $siteFloor = setting('donations.min_amount');
+
+        return $siteFloor instanceof Money ? $siteFloor : null;
     }
 
     // ── Tax ──────────────────────────────────────────────────────────────────

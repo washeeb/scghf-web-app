@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Casts\MoneyCast;
 use App\Contracts\Payable;
 use App\Enums\DonationStatus;
+use App\Payments\RecurringGivingService;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,7 +44,7 @@ class Donation extends Model implements Payable
         'reference', 'donor_id', 'user_id', 'cause_id', 'division_id', 'subscription_id',
         'fundraiser_id', 'pledge_id',
         'amount', 'fee', 'fee_covered_by_donor', 'net', 'currency', 'status',
-        'channel', 'momo_network', 'is_anonymous',
+        'channel', 'momo_network', 'is_anonymous', 'wants_recurring',
         'tribute_type', 'tribute_name', 'tribute_message', 'tribute_notify_email',
         'donor_name', 'donor_email', 'donor_phone',
         'consent_email', 'consent_sms', 'consent_text', 'consent_ip', 'consent_at',
@@ -73,6 +74,7 @@ class Donation extends Model implements Payable
             'deductible_amount' => MoneyCast::class.':deductible_amount_minor,currency',
             'fee_covered_by_donor' => 'boolean',
             'is_anonymous' => 'boolean',
+            'wants_recurring' => 'boolean',
             'consent_email' => 'boolean',
             'consent_sms' => 'boolean',
             'consent_at' => 'datetime',
@@ -263,6 +265,42 @@ class Donation extends Model implements Payable
 
             $this->setRawAttributes($donation->getAttributes(), true);
         });
+
+        $this->establishRecurringGiftIfAsked();
+    }
+
+    /**
+     * Turn "make this monthly" into an actual standing order.
+     *
+     * ── Only from a gift that went through ─────────────────────────────────
+     *
+     * `RecurringGivingService::establish()` refuses anything else, and rightly:
+     * a standing order set up from a payment that was later declined is a
+     * monthly charge against a card that never worked. Which is why the
+     * donor's intent is stored on the donation and acted on HERE, when the
+     * webhook has confirmed the money arrived — not in the browser, where the
+     * only thing that has happened is that somebody pressed a button.
+     *
+     * ── A failure here must never undo a completed gift ────────────────────
+     *
+     * The donation is already recorded and the money is already in. If the
+     * authorization cannot be reused — mobile-money ones frequently cannot —
+     * the subscription simply is not created, `wants_recurring` stays true and
+     * `subscription_id` stays null, which is exactly the pair somebody needs to
+     * see in order to follow it up. Throwing would fail the webhook and have
+     * Paystack redeliver a payment that has already been counted.
+     */
+    private function establishRecurringGiftIfAsked(): void
+    {
+        if (! $this->wants_recurring || $this->subscription_id !== null || $this->donor === null) {
+            return;
+        }
+
+        try {
+            app(RecurringGivingService::class)->establish($this->refresh());
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function onPaymentFailed(PaymentTransaction $transaction): void

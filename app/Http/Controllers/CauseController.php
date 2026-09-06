@@ -6,9 +6,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Cause;
 use App\Models\Donation;
+use App\Models\Payout;
+use App\Support\DisclosureControl;
 use App\Support\PageMeta;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -92,6 +96,8 @@ class CauseController extends Controller
                 ->limit(5)
                 ->get(),
 
+            'spending' => $this->spending($cause),
+
             'meta' => PageMeta::for($cause, route('causes.show', $cause)),
             'crumbs' => [
                 ['label' => __('Home'), 'url' => url('/')],
@@ -99,6 +105,64 @@ class CauseController extends Controller
                 ['label' => $cause->title, 'url' => null],
             ],
         ]);
+    }
+
+    /**
+     * Where this appeal's money has gone, by category.
+     *
+     * ⚠ AGGREGATED, never itemised, and that is not a presentation choice. A
+     * payout row carries a payee name and frequently a `beneficiary_id` — the
+     * person it was spent on. Publishing the rows would publish who received
+     * school fees or a medical payment, which is the single most damaging thing
+     * this application could disclose.
+     *
+     * So the public log is category totals. And a category with too FEW
+     * payments in it is folded away as well: "Medical — GH₵ 4,500, 1 payment"
+     * beside a known beneficiary is an identification, and the minimum group
+     * size exists for exactly that shape of leak.
+     *
+     * Only what has actually been paid. An approved payout that has not left
+     * the account is a commitment, and publishing it as spending overstates
+     * what the foundation has done.
+     *
+     * @return Collection<int, array{label: string, amount: Money}>
+     */
+    private function spending(Cause $cause): Collection
+    {
+        $minimum = app(DisclosureControl::class)->minimumGroupSize();
+
+        $rows = Payout::query()
+            ->where('cause_id', $cause->getKey())
+            ->whereNotNull('paid_at')
+            ->selectRaw('category, SUM(amount_minor) as total, COUNT(*) as payments')
+            ->groupBy('category')
+            ->get();
+
+        [$publishable, $folded] = $rows->partition(
+            fn ($row): bool => (int) $row->payments >= $minimum
+        );
+
+        $result = $publishable
+            ->sortByDesc(fn ($row): int => (int) $row->total)
+            ->map(fn ($row): array => [
+                'label' => Str::headline((string) $row->category),
+                'amount' => Money::ofMinor((int) $row->total, $cause->currency),
+            ])
+            ->values();
+
+        /*
+         * Everything too small to publish separately, added together. Shown
+         * rather than dropped: a total that does not add up to the disbursed
+         * figure invites the question this page exists to answer.
+         */
+        if ($folded->isNotEmpty()) {
+            $result->push([
+                'label' => __('Other'),
+                'amount' => Money::ofMinor((int) $folded->sum('total'), $cause->currency),
+            ]);
+        }
+
+        return $result;
     }
 
     /**

@@ -37,6 +37,70 @@
                 </p>
             @endif
 
+            @php $levels = $cause->givingLevels(); @endphp
+
+            @if ($levels->isNotEmpty())
+                <section aria-labelledby="levels-heading">
+                    <h2 id="levels-heading" class="text-xl font-semibold text-[var(--text-primary)]">
+                        {{ __('What your gift buys') }}
+                    </h2>
+
+                    <ul role="list" class="mt-4 space-y-3">
+                        @foreach ($levels as $level)
+                            <li class="rounded-lg border border-[var(--border)] p-4">
+                                <p class="font-semibold text-[var(--text-primary)]">
+                                    {{ $level['amount']->format() }} — {{ $level['label'] }}
+                                </p>
+
+                                @if ($level['description'])
+                                    <p class="mt-1 text-sm text-[var(--text-secondary)]">{{ $level['description'] }}</p>
+                                @endif
+
+                                @if ($cause->acceptsDonations())
+                                    <a
+                                        class="mt-2 inline-block text-sm font-semibold text-[var(--brand-primary)] hover:underline"
+                                        href="{{ route('donate', ['cause' => $cause->slug, 'amount' => $level['amount']->toMajorString()]) }}"
+                                    >{{ __('Give :amount', ['amount' => $level['amount']->format()]) }}</a>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
+            @endif
+
+            @if ($spending->isNotEmpty())
+                <section aria-labelledby="spending-heading">
+                    <h2 id="spending-heading" class="text-xl font-semibold text-[var(--text-primary)]">
+                        {{ __('Where the money went') }}
+                    </h2>
+
+                    <p class="mt-1 text-sm text-[var(--text-secondary)]">
+                        {{ __('Payments that have actually left our account for this appeal.') }}
+                    </p>
+
+                    {{--
+                        ⚠ Totals by category, never the individual payments. A
+                        payout record carries a payee name and often the person
+                        it was spent on — publishing the rows would publish who
+                        received school fees or a medical payment. Categories
+                        with too few payments to be safe are folded into
+                        "Other", because a single medical payment beside a known
+                        beneficiary is an identification.
+                    --}}
+                    <table class="mt-4 w-full max-w-md text-left text-sm">
+                        <caption class="sr-only">{{ __('Spending on this appeal, by category') }}</caption>
+                        <tbody>
+                            @foreach ($spending as $row)
+                                <tr class="border-b border-[var(--border)]">
+                                    <td class="py-2 text-[var(--text-secondary)]">{{ $row['label'] }}</td>
+                                    <td class="py-2 text-right font-medium text-[var(--text-primary)]">{{ $row['amount']->format() }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </section>
+            @endif
+
             @if ($updates->isNotEmpty())
                 <section aria-labelledby="updates-heading">
                     <h2 id="updates-heading" class="text-xl font-semibold text-[var(--text-primary)]">
@@ -60,19 +124,51 @@
 
         <aside class="space-y-8">
             <div class="rounded-lg border border-[var(--border)] p-5">
+                @if ($cause->is_urgent && $cause->acceptsDonations())
+                    <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--danger)]">
+                        {{ __('Urgent') }}
+                    </p>
+                @endif
+
                 <x-site.progress :cause="$cause" />
+
+                @if ($cause->hasReachedItsGoal())
+                    {{--
+                        Said out loud, whatever the appeal does next.
+
+                        Taking money silently against a goal that is already met
+                        is the dishonest version of "keep accepting" — a donor
+                        giving to a full appeal is entitled to know it is full
+                        and to decide anyway.
+                    --}}
+                    <p class="mt-3 rounded-md bg-[var(--surface-sunken)] p-3 text-sm text-[var(--text-primary)]">
+                        {{ __('We have reached the target for this appeal.') }}
+
+                        @if ($cause->acceptsDonations())
+                            {{ __('Gifts are still welcome and go to the same work.') }}
+                        @elseif ($redirect = $cause->redirectTarget())
+                            {{ __('You can support') }}
+                            <a class="font-semibold text-[var(--brand-primary)] hover:underline" href="{{ route('causes.show', $redirect) }}">{{ $redirect->title }}</a>
+                            {{ __('instead.') }}
+                        @else
+                            {{ __('Thank you to everybody who gave.') }}
+                        @endif
+                    </p>
+                @endif
 
                 @if ($cause->acceptsDonations())
                     <a
-                        href="{{ route('give') }}"
+                        href="{{ route('donate', ['cause' => $cause->slug]) }}"
                         class="mt-5 block rounded-md bg-[var(--brand-secondary)] px-4 py-3 text-center font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                     >{{ __('Give to this appeal') }}</a>
 
-                    {{-- Bank transfer and Mobile Money work today and need no
-                         gateway. The card form arrives with the donation
-                         module; this button is not a placeholder for it. --}}
+                    {{-- Kept beside the card button rather than behind it.
+                         Mobile Money and bank transfer need no gateway and cost
+                         the foundation less per gift, and for a good share of
+                         Ghanaian supporters they are the ONLY way they give. --}}
                     <p class="mt-2 text-center text-xs text-[var(--text-muted)]">
-                        {{ __('Bank transfer and Mobile Money') }}
+                        {{ __('or') }}
+                        <a class="font-semibold text-[var(--brand-primary)] hover:underline" href="{{ route('give') }}">{{ __('pay by Mobile Money or bank transfer') }}</a>
                     </p>
                 @endif
 

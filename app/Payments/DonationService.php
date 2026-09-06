@@ -104,6 +104,14 @@ final class DonationService
                 'channel' => $input['channel'] ?? null,
                 'momo_network' => $input['momo_network'] ?? null,
                 'is_anonymous' => (bool) ($input['is_anonymous'] ?? false),
+                /*
+                 * What the donor ASKED for, not what happened. The subscription
+                 * itself is established when the webhook confirms the money
+                 * arrived — a standing order set up from a payment that was
+                 * later declined is a monthly charge against a card that never
+                 * worked.
+                 */
+                'wants_recurring' => (bool) ($input['wants_recurring'] ?? false),
                 'tribute_type' => $input['tribute']['type'] ?? null,
                 'tribute_name' => $input['tribute']['name'] ?? null,
                 'tribute_message' => $input['tribute']['message'] ?? null,

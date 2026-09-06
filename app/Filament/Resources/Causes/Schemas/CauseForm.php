@@ -11,6 +11,7 @@ use App\Models\Project;
 use App\ValueObjects\Money;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
@@ -147,6 +149,89 @@ class CauseForm
                             ->helperText(__('Most donors say yes, and it is the difference between the appeal receiving the whole gift or the gateway taking its cut from it.')),
                     ]),
 
+                    Repeater::make('giving_levels')
+                        ->label(__('What each amount buys'))
+                        ->addActionLabel(__('Add a level'))
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                        ->helperText(__(
+                            'The single highest-value thing on this page. "GH₵ 50 provides a school '
+                            .'kit for one child" raises materially more than a blank amount box, '
+                            .'because it answers what a hesitant donor is actually asking — not "how '
+                            .'much should I give?" but "what does my money do?".'
+                        ))
+                        ->schema([
+                            Grid::make(3)->schema([
+                                TextInput::make('amount_minor')
+                                    ->label(__('Amount'))
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(1)
+                                    ->prefix(__('pesewas'))
+                                    ->live(onBlur: true)
+                                    ->helperText(fn ($state): string => '= GH₵ '.number_format(((int) $state) / 100, 2)),
+
+                                TextInput::make('label')
+                                    ->label(__('What it buys'))
+                                    ->required()
+                                    ->maxLength(120)
+                                    ->columnSpan(2)
+                                    ->helperText(__('Short and concrete. "A school kit", not "Education support".')),
+                            ]),
+
+                            Textarea::make('description')
+                                ->label(__('A little more'))
+                                ->rows(2)
+                                ->maxLength(300),
+                        ]),
+
+                    Grid::make(2)->schema([
+                        TextInput::make('min_donation_minor')
+                            ->label(__('Smallest gift for this appeal'))
+                            ->numeric()
+                            ->minValue(0)
+                            ->prefix(__('pesewas'))
+                            ->live(onBlur: true)
+                            ->helperText(fn ($state): string => blank($state)
+                                ? __('Leave empty to use the site-wide minimum.')
+                                : '= GH₵ '.number_format(((int) $state) / 100, 2)),
+
+                        TextInput::make('fund_code')
+                            ->label(__('Fund code'))
+                            ->maxLength(32)
+                            ->helperText(__('For the ledger. Restricted funds have to be reported separately, and this is what the accountant matches on. Never shown publicly.')),
+                    ]),
+
+                    Grid::make(2)->schema([
+                        Select::make('goal_reached_behaviour')
+                            ->label(__('When the goal is reached'))
+                            ->options([
+                                Cause::ON_GOAL_CONTINUE => __('Keep accepting gifts'),
+                                Cause::ON_GOAL_CLOSE => __('Stop accepting gifts'),
+                                Cause::ON_GOAL_REDIRECT => __('Send donors to another appeal'),
+                            ])
+                            ->default(Cause::ON_GOAL_CONTINUE)
+                            ->required()
+                            ->live()
+                            ->helperText(__(
+                                'Keeping it open is usually right — a donor who has already decided '
+                                .'to give is not somebody to turn away. Either way the page says the '
+                                .'target has been reached; what must not happen is taking money '
+                                .'silently against a goal that is met.'
+                            )),
+
+                        Select::make('redirect_cause_id')
+                            ->label(__('Send them to'))
+                            ->options(fn (?Cause $record): array => Cause::query()
+                                ->when($record?->exists, fn ($q) => $q->whereKeyNot($record->getKey()))
+                                ->orderBy('title')
+                                ->pluck('title', 'id')
+                                ->all())
+                            ->searchable()
+                            ->required(fn (Get $get): bool => $get('goal_reached_behaviour') === Cause::ON_GOAL_REDIRECT)
+                            ->visible(fn (Get $get): bool => $get('goal_reached_behaviour') === Cause::ON_GOAL_REDIRECT),
+                    ]),
+
                     Toggle::make('is_tax_deductible')
                         ->label(__('The trustees consider this a qualifying cause'))
                         ->helperText(__(
@@ -174,6 +259,10 @@ class CauseForm
                     Grid::make(3)->schema([
                         Toggle::make('is_published')->label(__('Show on the site')),
                         Toggle::make('is_featured')->label(__('Feature')),
+
+                        Toggle::make('is_urgent')
+                            ->label(__('Urgent'))
+                            ->helperText(__('Deliberately blunt. An appeal marked urgent that is not is the fastest way to make every future one ignored.')),
                         TextInput::make('sort_order')->label(__('Order'))->numeric()->default(0),
                     ]),
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Payments;
 
+use App\Jobs\ProcessPaymentWebhook;
 use App\Models\PaymentTransaction;
 use App\Models\Refund;
 use App\Payments\Contracts\PaymentGateway;
@@ -171,5 +172,60 @@ final class FakeGateway implements PaymentGateway
     public static function sign(string $rawBody): string
     {
         return hash_hmac('sha512', $rawBody, (string) config('payments.paystack.webhook_secret'));
+    }
+
+    /**
+     * Deliver a webhook for this transaction, exactly as Paystack would.
+     *
+     * ── Why this goes the long way round ────────────────────────────────────
+     *
+     * It would be one line to call `onPaymentSettled()` directly. It would also
+     * mean the sandbox exercised none of the machinery that actually decides
+     * whether a real payment is believed: the signature check, the raw event
+     * store, the idempotency that stops a replayed event double-counting a
+     * gift, and the queued processing.
+     *
+     * The point of a fake GATEWAY rather than a mock is that the path under
+     * test is the path that ships. So the payload is built in Paystack's shape,
+     * signed with the same HMAC-SHA512, and recorded through
+     * `PaymentManager::recordWebhook()` — the same method the live webhook
+     * controller calls.
+     */
+    public function deliverWebhook(PaymentTransaction $transaction, bool $successful = true): void
+    {
+        $payload = [
+            'event' => $successful ? 'charge.success' : 'charge.failed',
+            'data' => [
+                'reference' => $transaction->gateway_reference,
+                'status' => $successful ? 'success' : 'failed',
+                // Paystack reports minor units, and so does this.
+                'amount' => $transaction->amount->toMinor(),
+                'currency' => $transaction->currency,
+                'paid_at' => now()->toIso8601String(),
+                'channel' => 'card',
+                'fees' => FeeCalculator::fromConfig()->on($transaction->amount)->toMinor(),
+                'authorization' => [
+                    'authorization_code' => 'AUTH_fake_'.substr(md5($transaction->gateway_reference), 0, 10),
+                    'last4' => '4242',
+                    'reusable' => true,
+                ],
+                'customer' => ['email' => $transaction->customer_email],
+                'fake' => true,
+            ],
+        ];
+
+        $rawBody = (string) json_encode($payload, JSON_THROW_ON_ERROR);
+
+        $manager = app(PaymentManager::class);
+
+        $event = $manager->recordWebhook(
+            rawBody: $rawBody,
+            signature: self::sign($rawBody),
+            sourceIp: '127.0.0.1',
+        );
+
+        if ($event->signature_valid && ! $event->isProcessed()) {
+            ProcessPaymentWebhook::dispatch($event->id);
+        }
     }
 }
