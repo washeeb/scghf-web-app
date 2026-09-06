@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSeo;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -27,6 +28,7 @@ use Illuminate\Support\Str;
 class FocusArea extends Model
 {
     use HasFactory;
+    use HasSeo;
     use HasUlids;
     use SoftDeletes;
 

@@ -134,6 +134,21 @@ class Project extends Model
             ->orderBy('document_project.sort_order');
     }
 
+    /**
+     * The appeals raising money for this project.
+     *
+     * The inverse of `Cause::project()`, which has existed since Phase 3 with
+     * nothing able to walk it the other way — so a project page had no way to
+     * ask what somebody could give to. A page describing work with no way to
+     * support it has told a visitor what to care about and then stopped.
+     *
+     * @return HasMany<Cause, $this>
+     */
+    public function causes(): HasMany
+    {
+        return $this->hasMany(Cause::class);
+    }
+
     /** @return HasMany<ProjectUpdate, $this> */
     public function updates(): HasMany
     {

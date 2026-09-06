@@ -13,16 +13,20 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\CauseController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\FocusAreaController;
 use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\GivingController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\PaystackWebhookController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TeamController;
@@ -325,6 +329,38 @@ Route::get('newsletter/confirm/{token}', [NewsletterController::class, 'confirm'
 
 Route::get('newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])
     ->name('newsletter.unsubscribe');
+
+/*
+|--------------------------------------------------------------------------
+| The programmatic pages
+|--------------------------------------------------------------------------
+|
+| What the foundation does (focus areas), what it is doing (projects) and what
+| people can give to (causes).
+|
+| `/what-we-do` rather than `/focus-areas`: the visitor's phrasing, not the
+| database's. The slug is what an editor sees in the admin; the URL is what a
+| donor reads in a link.
+*/
+Route::get('what-we-do', [FocusAreaController::class, 'index'])->name('focus-areas.index');
+Route::get('what-we-do/{focusArea:slug}', [FocusAreaController::class, 'show'])->name('focus-areas.show');
+
+Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
+Route::get('projects/{project:slug}', [ProjectController::class, 'show'])->name('projects.show');
+
+Route::get('appeals', [CauseController::class, 'index'])->name('causes.index');
+Route::get('appeals/{cause:slug}', [CauseController::class, 'show'])->name('causes.show');
+
+/*
+ * How to give without a card.
+ *
+ * The `banking.*` settings — bank, branch, account name and number, SWIFT, and
+ * the Mobile Money merchant details — have been seeded since Phase 3 and read
+ * by NOTHING. For a Ghanaian foundation that is not a minor omission: mobile
+ * money is how a large share of giving actually happens, and a supporter who
+ * cannot find the merchant number gives nothing rather than reaching for a card.
+ */
+Route::get('give', GivingController::class)->name('give');
 
 /*
 |--------------------------------------------------------------------------

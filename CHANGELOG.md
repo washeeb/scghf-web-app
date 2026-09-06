@@ -8,6 +8,97 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 6 — Projects, areas of work and appeals — 2026-09-06
+
+Module 2 of the public site. The programmatic pages, the admin screens to
+publish them, and the seven settings that had described how to give since
+Phase 3 and appeared on no page.
+
+#### Added
+
+**Ways to give**
+- `/give` shows the Mobile Money merchant details and the bank account, from
+  `banking.*` — seven settings seeded in Phase 3 and read by **nothing** until
+  now. For a Ghanaian foundation that is not a minor omission: mobile money is
+  how a very large share of giving actually happens, and a supporter who cannot
+  find the merchant number gives nothing rather than reaching for a card
+- Numbers are set in a monospaced run so digits line up and a transposed pair is
+  visible — somebody is typing this into a banking app with the page open behind
+  it
+- Half a set of bank details is never shown. A block reading "Account number:"
+  with nothing after it is worse than no block, on the one page where a visitor
+  most needs to trust what they are looking at
+- Bank transfer and Mobile Money need no gateway and cost the foundation less
+  per gift, so this is a page in its own right rather than a footnote under a
+  card form that has not been built yet
+
+**Areas of work, projects and appeals**
+- `/what-we-do` and its detail pages, `/projects` with filters, `/appeals` and
+  the appeal page with its progress bar
+- **The project page is the transparency page.** Budget, status, dates,
+  locations, public milestones, partners, documents and updates together are
+  what let somebody *check* a claim rather than take it
+- **Milestones are published only when marked public.** An internal target the
+  team missed is not a promise the foundation made to anybody — and a
+  transparency page that publishes every slip is one a team stops recording
+  honestly
+- **Every filter is a link, not a script.** Each combination is a real URL:
+  shareable, bookmarkable, crawlable, and working before any JavaScript has
+  loaded. The options come from the data, so the regions offered are the regions
+  work is actually in — a dropdown of all sixteen Ghanaian regions on a site
+  with work in three is thirteen dead ends
+- A project counts for a year if it was **running** in it, not only if it
+  started in it. Filtering a three-year programme out of years two and three
+  would make the foundation look like it stopped
+- The progress bar writes the amounts out as text above the bar and carries a
+  real `aria-valuetext`, because "68 percent" without saying of what has told
+  somebody almost nothing. It is **not capped**: an appeal that raised 140% says
+  so, which is the best news the page has
+- **A closed appeal keeps its page.** `isLive()` decides whether the page
+  exists; `acceptsDonations()` decides whether it takes money. That page is the
+  record of what was raised, and deleting it turns every link anybody shared
+  into a 404 — so the page says plainly that the appeal has closed instead
+
+**The donor wall**
+- Names only, never amounts. `publicDonorName()` already returned "Anonymous"
+  for a gift marked so, but the amount is a separate question: "Anonymous — GH₵
+  5,000" beside a list of named gifts identifies the anonymous donor to anybody
+  who knows what they gave, which is exactly the person they were hiding it from
+- `site.show_donor_wall` switches the whole feature off, and is honoured. A
+  donor who assumed their gift was private is not somebody to surprise
+- Tax relief wording appears only when `TaxDeductibility` says the foundation
+  holds a current GRA approval. `is_tax_deductible` says the trustees consider
+  the cause qualifying; reading that column directly would be the shortcut that
+  puts an unsupported claim in front of a donor
+
+**The admin screens**
+- `FocusAreaResource`, `ProjectResource` and `CauseResource`, under a new
+  Programmes group. Public pages with no way to publish anything onto them would
+  have been permanently empty — Phase 7 adds impact metrics, cause updates that
+  notify donors, and giving levels on top of these
+- Project locations are **rows, not a text field**: a single "Location" box
+  would make "Upper East" and "Upper East Region" two different regions in the
+  public filter, and nobody would ever find out why one of them returns nothing
+- Amounts are entered in pesewas with a live cedi conversion, and converted
+  explicitly on the way in and out — `MoneyCast` accepts a Money or an integer
+  of minor units and throws on a string, which is what a form field submits
+
+#### Added — models
+
+- `Project::causes()`, the inverse of `Cause::project()`, which had existed
+  since Phase 3 with no way to walk it the other way. A project page had no way
+  to ask what somebody could give to
+- `FocusArea` now uses `HasSeo`, so an area of work gets a real title,
+  description and share card like every other public entity
+
+#### Fixed
+
+- `project_locations.name` is NOT NULL, and the admin form offered it as
+  optional — a save that failed at the database with no field to point at
+- The areas-of-work table reached through to the division once per row. Invisible
+  on a screen with four areas and a real cost on one with forty
+
+
 ### Phase 6 — The public content pages — 2026-09-06
 
 Module 1 of the public site. Eleven pages over content the CMS already managed,
