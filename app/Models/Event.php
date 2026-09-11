@@ -141,6 +141,18 @@ class Event extends Model
         return $this->belongsTo(Project::class);
     }
 
+    /** @return BelongsTo<Cause, $this> */
+    public function cause(): BelongsTo
+    {
+        return $this->belongsTo(Cause::class);
+    }
+
+    /** @return BelongsTo<Media, $this> */
+    public function featuredImage(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'featured_image_id');
+    }
+
     // ── Capacity ─────────────────────────────────────────────────────────────
 
     /**
@@ -255,6 +267,14 @@ class Event extends Model
     {
         return $this->is_published
             && ($this->published_at === null || $this->published_at->isPast());
+    }
+
+    /** Published, and its publish date has passed. Cancelled events stay live: the page is where the cancellation is read. */
+    #[Scope]
+    protected function live(Builder $query): void
+    {
+        $query->where('is_published', true)
+            ->where(fn (Builder $q) => $q->whereNull('published_at')->orWhere('published_at', '<=', now()));
     }
 
     #[Scope]

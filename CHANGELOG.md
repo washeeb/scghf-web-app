@@ -8,6 +8,48 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 6 Module 5 — events — 2026-09-11
+
+Events and their registrations have existed since Phase 3 with no admin
+screen and no page. The confirmation email was seeded and never sent;
+`Event::cancel()` promised in its own docblock that everybody registered would
+be told, and nothing told them.
+
+#### Added
+
+- `/events`: what is coming, then what happened. Past events are an archive,
+  not a deletion — "what have you actually done" is answered by the events that
+  took place. An event page carries schema.org `Event` data, a directions link
+  (a maps search, not an embedded map: a third-party script and a few hundred
+  kilobytes on 3G for a widget people tap once), and **never** the join link
+  for an online event, which goes to the people who register
+- Registration as a plain form. Over capacity is a waiting list, not a refusal;
+  a second registration from the same address updates rather than duplicates;
+  and **photography consent is asked as a yes/no question**, because the column
+  is nullable so that "we never asked" is distinguishable from "no". Three
+  consents, three questions: holding the details, contact about this event, the
+  newsletter — never pre-ticked, never conflated
+- `EventResource` in a new "Community" group, with accessibility described
+  rather than ticked, a headcount that is derived and not editable, and a
+  registrations tab gated on `events.view_registrations` — seeded since Phase 3
+  and protecting nothing — with check-in, and a door list export that carries
+  what the door and the kitchen need and not the email, phone or consent
+  evidence
+- Cancelling is an action that asks why and tells everybody who was coming
+  (`event.cancelled`, new). "Cancelled" on its own is not an explanation
+- `EventNotifier` sends `event.registration_confirmed` at last, saying whether
+  the place is confirmed or waitlisted
+- `feature:events`. Paid tickets stay behind `FEATURE_EVENT_TICKETING`, off,
+  and the model refuses to save a ticketed event while the flag is down
+
+#### Fixed
+
+- The sitemap listed pages and posts and nothing else. The areas of work,
+  projects, appeals, products and events — the pages a donor is most likely to
+  search for — are now listed, along with their index pages, the donation page
+  and the impact page, each only when it has something on it and its feature is
+  on
+
 ### Phase 6 Module 4 — the shop — 2026-09-11
 
 The catalogue, the stock ledger, carts, coupons, delivery zones, orders and

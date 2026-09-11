@@ -312,25 +312,59 @@ class MessageTemplateSeeder extends Seeder
             [
                 'key' => 'event.registration_confirmed',
                 'name' => 'Event registration confirmed',
-                'description' => 'Sent when somebody registers for an event.',
+                'description' => 'Sent when somebody registers for an event. Says whether the '
+                    .'place is confirmed or waitlisted, and carries the join link for an online event.',
                 'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
-                'variables' => ['name', 'event_title', 'event_date', 'venue', 'reference'],
+                'variables' => ['name', 'event_title', 'event_date', 'venue', 'reference', 'status', 'online_url'],
                 'required' => ['name', 'event_title', 'event_date'],
                 'subject' => 'You are registered for {{event_title}}',
                 'html' => <<<'HTML'
                     <p>Dear {{name}},</p>
                     <p>You are registered for <strong>{{event_title}}</strong> on
                     {{event_date}}{{venue}}.</p>
+                    <p>{{status}}</p>
+                    <p>{{online_url}}</p>
                     <p>Your reference is {{reference}}. If you can no longer come, please let us
                     know so we can offer your place to somebody else.</p>
                     HTML,
                 'text' => <<<'TEXT'
                     Dear {{name}},
 
-                    You are registered for {{event_title}} on {{event_date}}.
+                    You are registered for {{event_title}} on {{event_date}}{{venue}}.
+
+                    {{status}}
+
+                    {{online_url}}
 
                     Your reference is {{reference}}. If you can no longer come, please let us
                     know so we can offer your place to somebody else.
+                    TEXT,
+            ],
+            [
+                'key' => 'event.cancelled',
+                'name' => 'Event cancelled',
+                'description' => 'Sent to everybody registered when an event is cancelled. '
+                    .'Always says why: "cancelled" on its own is not an explanation.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'event_title', 'event_date', 'reason', 'reference'],
+                'required' => ['name', 'event_title', 'reason'],
+                'subject' => '{{event_title}} has been cancelled',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>We are sorry to say that <strong>{{event_title}}</strong>, which you registered
+                    for on {{event_date}}, has been cancelled.</p>
+                    <p>{{reason}}</p>
+                    <p>You do not need to do anything. If it is rearranged we will let you know.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    We are sorry to say that {{event_title}}, which you registered for on
+                    {{event_date}}, has been cancelled.
+
+                    {{reason}}
+
+                    You do not need to do anything. If it is rearranged we will let you know.
                     TEXT,
             ],
             [

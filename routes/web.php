@@ -18,6 +18,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DonateController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\FakeCheckoutController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FocusAreaController;
@@ -475,6 +476,26 @@ Route::middleware('feature:shop')->group(function (): void {
 
     // Last, because `{product}` would otherwise swallow `category`.
     Route::get('shop/{product:slug}', [ShopController::class, 'show'])->name('shop.show');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Events
+|--------------------------------------------------------------------------
+|
+| Events and their registrations have existed since Phase 3 with no admin
+| screen and no page. Registration is a plain form; over capacity is a waiting
+| list; the confirmation email that was seeded in Phase 3 finally has a caller.
+| Paid tickets stay behind FEATURE_EVENT_TICKETING, off.
+*/
+Route::middleware('feature:events')->group(function (): void {
+    Route::get('events', [EventController::class, 'index'])->name('events.index');
+    Route::get('events/{event:slug}', [EventController::class, 'show'])->name('events.show');
+    Route::post('events/{event:slug}/register', [EventController::class, 'register'])
+        ->middleware(['throttle:10,1', ProtectAgainstSpam::class])
+        ->name('events.register');
+    Route::get('events/registrations/{registration:ulid}', [EventController::class, 'registered'])
+        ->name('events.registered');
 });
 
 /*

@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Cause;
 use App\Models\Document;
+use App\Models\Event;
 use App\Models\Faq;
+use App\Models\FocusArea;
 use App\Models\Gallery;
 use App\Models\Page;
 use App\Models\Post;
+use App\Models\Product;
+use App\Models\Project;
+use App\Support\Features;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
@@ -137,8 +143,52 @@ class SitemapController extends Controller
         return $urls
             ->concat($pages)
             ->concat($posts)
+            ->concat($this->entities())
             ->concat($this->simpleIndexes())
             ->values();
+    }
+
+    /**
+     * The programmatic pages: areas of work, projects, appeals, products and
+     * events.
+     *
+     * Added in Phase 6 Module 5. The programmatic pages arrived in Module 2
+     * and the sitemap kept listing only pages and posts — so the projects and
+     * appeals, the pages a donor is most likely to search for, were the ones
+     * crawlers were not told about.
+     *
+     * @return Collection<int, array{loc: string, lastmod: string|null, priority: string}>
+     */
+    private function entities(): Collection
+    {
+        $entries = collect();
+
+        if (Route::has('focus-areas.show')) {
+            $entries = $entries->concat(FocusArea::query()->active()->get()
+                ->map(fn (FocusArea $area): array => ['loc' => route('focus-areas.show', $area), 'lastmod' => $area->updated_at?->toAtomString(), 'priority' => '0.7']));
+        }
+
+        if (Route::has('projects.show')) {
+            $entries = $entries->concat(Project::query()->get()->filter(fn (Project $p): bool => $p->isLive())
+                ->map(fn (Project $p): array => ['loc' => route('projects.show', $p), 'lastmod' => $p->updated_at?->toAtomString(), 'priority' => '0.7']));
+        }
+
+        if (Route::has('causes.show')) {
+            $entries = $entries->concat(Cause::query()->get()->filter(fn (Cause $c): bool => $c->isLive())
+                ->map(fn (Cause $c): array => ['loc' => route('causes.show', $c), 'lastmod' => $c->updated_at?->toAtomString(), 'priority' => '0.8']));
+        }
+
+        if (Route::has('shop.show') && app(Features::class)->enabled('shop')) {
+            $entries = $entries->concat(Product::query()->get()->filter(fn (Product $p): bool => $p->isLive())
+                ->map(fn (Product $p): array => ['loc' => route('shop.show', $p), 'lastmod' => $p->updated_at?->toAtomString(), 'priority' => '0.5']));
+        }
+
+        if (Route::has('events.show') && app(Features::class)->enabled('events')) {
+            $entries = $entries->concat(Event::query()->get()->filter(fn (Event $e): bool => $e->isLive())
+                ->map(fn (Event $e): array => ['loc' => route('events.show', $e), 'lastmod' => $e->updated_at?->toAtomString(), 'priority' => '0.6']));
+        }
+
+        return $entries;
     }
 
     /**
@@ -158,6 +208,14 @@ class SitemapController extends Controller
             ['route' => 'galleries.index', 'has' => Gallery::query()->where('is_published', true)->exists()],
             ['route' => 'documents.index', 'has' => Document::query()->where('is_published', true)->where('requires_auth', false)->exists()],
             ['route' => 'contact', 'has' => true],
+            ['route' => 'donate', 'has' => true],
+            ['route' => 'give', 'has' => true],
+            ['route' => 'impact', 'has' => true],
+            ['route' => 'focus-areas.index', 'has' => FocusArea::query()->where('is_active', true)->exists()],
+            ['route' => 'projects.index', 'has' => Project::query()->where('is_published', true)->exists()],
+            ['route' => 'causes.index', 'has' => Cause::query()->where('is_published', true)->exists()],
+            ['route' => 'shop.index', 'has' => app(Features::class)->enabled('shop') && Product::query()->where('is_published', true)->exists()],
+            ['route' => 'events.index', 'has' => app(Features::class)->enabled('events') && Event::query()->where('is_published', true)->exists()],
         ])
             ->filter(fn (array $index): bool => $index['has'] && Route::has($index['route']))
             ->map(fn (array $index): array => [

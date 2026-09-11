@@ -150,10 +150,18 @@ class SettingsSeeder extends Seeder
             'The whole of what the shop makes, after the cost of the goods and delivery, goes to the work of the foundation.',
             SettingType::Text, 'Where the money goes', true,
             'Shown at the top of the shop. Say plainly what a purchase funds — it is the reason to buy here rather than anywhere else.'],
+        ['compliance', 'event_consent_text',
+            'I agree that my details may be held in order to run this event.',
+            SettingType::Text, 'Event registration wording', true,
+            'Shown beside the tick box when somebody registers for an event, and stored with the registration as evidence.'],
         ['compliance', 'shop_consent_text',
             'I understand that my details are held in order to fulfil this order.',
             SettingType::Text, 'Checkout agreement wording', true,
             'Shown beside the tick box at checkout.'],
+
+        // ── Events ───────────────────────────────────────────────────────────
+        ['events', 'intro', 'Come and be part of the work.', SettingType::String, 'Events page introduction', true,
+            'The line under the events heading, and its description in search results.'],
 
         // ── SEO ──────────────────────────────────────────────────────────────
         ['seo', 'default_title', "St. Cecilia's Greater Hope Foundations", SettingType::String, 'Default page title', true],
