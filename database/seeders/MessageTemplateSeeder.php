@@ -310,6 +310,58 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'volunteer.approved',
+                'name' => 'Volunteer application approved',
+                'description' => 'Sent when an application is approved — which the software only '
+                    .'allows once every safeguarding check is recorded.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'role', 'reference'],
+                'required' => ['name'],
+                'subject' => 'Welcome — your volunteer application has been approved',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Your application to volunteer with us as {{role}} has been approved. Thank
+                    you — we are glad to have you.</p>
+                    <p>Somebody from the team will be in touch with the next steps and your first
+                    date. Your reference is {{reference}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Your application to volunteer with us as {{role}} has been approved. Thank
+                    you — we are glad to have you.
+
+                    Somebody from the team will be in touch with the next steps and your first
+                    date. Your reference is {{reference}}.
+                    TEXT,
+            ],
+            [
+                'key' => 'volunteer.declined',
+                'name' => 'Volunteer application declined',
+                'description' => 'Sent when an application is declined. The wording is written '
+                    .'by the person declining, each time — it is never generated from the reason '
+                    .'recorded on the file.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'message', 'reference'],
+                'required' => ['name', 'message'],
+                'subject' => 'About your volunteer application',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Thank you for applying to volunteer with us.</p>
+                    <p>{{message}}</p>
+                    <p>Your reference is {{reference}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Thank you for applying to volunteer with us.
+
+                    {{message}}
+
+                    Your reference is {{reference}}.
+                    TEXT,
+            ],
+            [
                 'key' => 'event.registration_confirmed',
                 'name' => 'Event registration confirmed',
                 'description' => 'Sent when somebody registers for an event. Says whether the '

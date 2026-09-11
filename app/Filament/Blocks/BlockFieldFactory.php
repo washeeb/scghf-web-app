@@ -76,6 +76,18 @@ class BlockFieldFactory
             'url' => TextInput::make("data.{$name}")->url()->maxLength(500),
 
             /*
+             * A closed list. `options` is either an array of value => label or
+             * the name of a class with a static `options()` method returning
+             * one, so a block can offer a list that lives beside the code that
+             * interprets it rather than a copy of it.
+             */
+            'select' => Select::make("data.{$name}")
+                ->options(fn (): array => is_string($spec['options'] ?? null) && class_exists($spec['options'])
+                    ? $spec['options']::options()
+                    : (array) ($spec['options'] ?? []))
+                ->default($spec['default'] ?? null),
+
+            /*
              * A free list of short strings — preset amounts, ids. `TagsInput`
              * rather than a repeater because these are values, not records, and
              * a repeater for a list of numbers is four clicks per number.

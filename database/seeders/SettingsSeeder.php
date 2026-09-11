@@ -154,6 +154,10 @@ class SettingsSeeder extends Seeder
             'I agree that my details may be held in order to run this event.',
             SettingType::Text, 'Event registration wording', true,
             'Shown beside the tick box when somebody registers for an event, and stored with the registration as evidence.'],
+        ['compliance', 'volunteer_declaration_text',
+            'I have read the safeguarding policy, I have disclosed any conviction, caution or investigation that could be relevant to working with children or vulnerable adults, and the information I have given is true.',
+            SettingType::Text, 'Volunteer declaration', true,
+            'What an applicant agrees to. Stored verbatim with each application — it is what they are later held to.'],
         ['compliance', 'shop_consent_text',
             'I understand that my details are held in order to fulfil this order.',
             SettingType::Text, 'Checkout agreement wording', true,
@@ -162,6 +166,13 @@ class SettingsSeeder extends Seeder
         // ── Events ───────────────────────────────────────────────────────────
         ['events', 'intro', 'Come and be part of the work.', SettingType::String, 'Events page introduction', true,
             'The line under the events heading, and its description in search results.'],
+
+        // ── Volunteering ─────────────────────────────────────────────────────
+        ['volunteering', 'intro', 'Give your time.', SettingType::String, 'Volunteer page introduction', true],
+        ['volunteering', 'safeguarding_statement',
+            'We work with children and vulnerable adults. Every volunteer completes safeguarding checks before starting, and we would rather explain that up front than surprise you with it later.',
+            SettingType::Text, 'Safeguarding statement', true,
+            'Shown at the top of the volunteer page.'],
 
         // ── SEO ──────────────────────────────────────────────────────────────
         ['seo', 'default_title', "St. Cecilia's Greater Hope Foundations", SettingType::String, 'Default page title', true],

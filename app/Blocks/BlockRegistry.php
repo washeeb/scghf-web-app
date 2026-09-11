@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Blocks;
 
+use App\Community\EnquiryKinds;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -358,6 +359,29 @@ class BlockRegistry
                     'heading' => ['type' => 'string', 'max' => 160],
                     'show_map' => ['type' => 'boolean', 'default' => false],
                 ],
+            ),
+
+            /*
+             * The structured enquiry forms — partner with us, corporate giving,
+             * an in-kind offer, fundraising for us — as a block, so the
+             * get-involved pages stay CMS-composed: the editor writes the page
+             * and drops the right form into it. Each posts to the contact
+             * inbox routed to its department. See App\Community\EnquiryKinds.
+             */
+            new BlockDefinition(
+                key: 'enquiry-form',
+                name: 'Enquiry form',
+                description: 'A structured form: partner with us, corporate giving, donate goods, or fundraise for us.',
+                category: 'Conversion',
+                icon: 'heroicon-o-envelope-open',
+                fields: [
+                    'heading' => ['type' => 'string', 'max' => 160],
+                    'intro' => ['type' => 'text'],
+                    'kind' => ['type' => 'select', 'required' => true, 'default' => 'partner',
+                        'options' => EnquiryKinds::class],
+                    'button_label' => ['type' => 'string', 'default' => 'Send', 'max' => 40],
+                ],
+                maxPerPage: 1,
             ),
         ];
     }

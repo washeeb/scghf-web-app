@@ -18,6 +18,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DonateController;
+use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FakeCheckoutController;
 use App\Http\Controllers\FaqController;
@@ -38,6 +39,7 @@ use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TestimonialsController;
+use App\Http\Controllers\VolunteerController;
 use Illuminate\Support\Facades\Route;
 use Spatie\Honeypot\ProtectAgainstSpam;
 
@@ -497,6 +499,36 @@ Route::middleware('feature:events')->group(function (): void {
     Route::get('events/registrations/{registration:ulid}', [EventController::class, 'registered'])
         ->name('events.registered');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Getting involved
+|--------------------------------------------------------------------------
+|
+| Volunteering: the open roles and the application form, whose table, checks
+| and workflow have existed since Phase 3 with no way in. And the structured
+| enquiries — partner, corporate, in-kind, fundraise — which are a CMS block on
+| whichever page the editor places them, posting here to land in the contact
+| inbox under the right department.
+*/
+Route::middleware('feature:volunteers')->group(function (): void {
+    Route::get('volunteer', [VolunteerController::class, 'index'])->name('volunteer.index');
+    Route::get('volunteer/apply', [VolunteerController::class, 'general'])->name('volunteer.general');
+    Route::post('volunteer/apply', [VolunteerController::class, 'apply'])
+        ->middleware(['throttle:5,1', ProtectAgainstSpam::class])
+        ->name('volunteer.apply.general');
+    Route::get('volunteer/applications/{application:ulid}', [VolunteerController::class, 'applied'])
+        ->name('volunteer.applied');
+    Route::get('volunteer/{opportunity:slug}', [VolunteerController::class, 'show'])->name('volunteer.show');
+    Route::post('volunteer/{opportunity:slug}/apply', [VolunteerController::class, 'apply'])
+        ->middleware(['throttle:5,1', ProtectAgainstSpam::class])
+        ->name('volunteer.apply');
+});
+
+Route::post('enquiries/{kind}', [EnquiryController::class, 'store'])
+    ->where('kind', '[a-z-]+')
+    ->middleware(['throttle:5,1', ProtectAgainstSpam::class])
+    ->name('enquiries.store');
 
 /*
 |--------------------------------------------------------------------------

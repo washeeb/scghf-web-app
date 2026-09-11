@@ -100,8 +100,11 @@ class MenuSeeder extends Seeder
 
         $this->page($menu, 'get-involved', 'Get Involved', $order++, children: [
             ['route' => 'volunteer.index', 'label' => 'Volunteer'],
+            ['route' => 'events.index', 'label' => 'Events'],
             ['slug' => 'partner-with-us', 'label' => 'Partner With Us'],
+            ['slug' => 'corporate-giving', 'label' => 'Corporate Giving'],
             ['slug' => 'donate-goods', 'label' => 'Donate Goods'],
+            ['slug' => 'fundraise-for-us', 'label' => 'Fundraise For Us'],
             ['slug' => 'prayer', 'label' => 'Prayer Requests'],
         ]);
 
@@ -175,6 +178,7 @@ class MenuSeeder extends Seeder
             ['slug' => 'safeguarding', 'label' => 'Safeguarding'],
             ['slug' => 'accessibility', 'label' => 'Accessibility'],
             ['slug' => 'whistleblowing', 'label' => 'Raise a Concern'],
+            ['slug' => 'anti-fraud', 'label' => 'Anti-Fraud'],
         ] as $row) {
             $this->item($menu, $row, $order++);
         }

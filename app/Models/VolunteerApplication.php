@@ -114,6 +114,12 @@ class VolunteerApplication extends Model implements Retainable
         return $this->belongsTo(VolunteerOpportunity::class, 'volunteer_opportunity_id');
     }
 
+    /** @return BelongsTo<User, $this> */
+    public function assessedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assessed_by');
+    }
+
     /** @return HasMany<SafeguardingCheck, $this> */
     public function checks(): HasMany
     {

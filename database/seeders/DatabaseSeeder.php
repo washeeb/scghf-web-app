@@ -63,6 +63,7 @@ class DatabaseSeeder extends Seeder
                 // foundation makes with a courier, not one to invent here.
                 ShippingZoneSeeder::class,
                 PageSeeder::class,
+                PageContentSeeder::class,
                 MenuSeeder::class,
                 CmsReferenceSeeder::class,
                 // Templates before newsletters: a list points at the campaign

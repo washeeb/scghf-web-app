@@ -56,8 +56,12 @@ class PageSeeder extends Seeder
             'Ways to give, serve and partner.'],
         ['partner-with-us', 'Partner With Us', 'get-involved', false,
             'For churches, companies and institutions.'],
+        ['corporate-giving', 'Corporate Giving', 'get-involved', false,
+            'Sponsorship, matched giving and payroll giving for companies.'],
         ['donate-goods', 'Donate Goods', 'get-involved', false,
             'Food, clothing, books and medical supplies.'],
+        ['fundraise-for-us', 'Fundraise For Us', 'get-involved', false,
+            'A sponsored walk, a harvest collection, a birthday appeal.'],
         ['prayer', 'Prayer Requests', 'get-involved', false,
             'Share a request, or join us in praying.'],
 
@@ -76,6 +80,7 @@ class PageSeeder extends Seeder
             'Annual reports, policies and forms.'],
 
         // ── Legal and trust ──────────────────────────────────────────────────
+        // `anti-fraud` was in the Phase 6 brief and missing here until Module 7.
         // Locked without exception: several are linked from receipts and from
         // the Paystack merchant profile, and a 404 there is a compliance issue,
         // not a broken link.
@@ -97,6 +102,8 @@ class PageSeeder extends Seeder
             'Our accessibility commitment and how to report a barrier.'],
         ['whistleblowing', 'Raising a Concern', null, true,
             'How to report a concern, confidentially.'],
+        ['anti-fraud', 'Anti-Fraud Statement', null, true,
+            'How we prevent, detect and respond to fraud, and how to report it.'],
     ];
 
     public function run(): void

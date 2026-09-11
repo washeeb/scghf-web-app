@@ -8,6 +8,55 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 6 Module 6 — getting involved — 2026-09-11
+
+Volunteering has had a table, a safeguarding-check ledger and an approval
+workflow since Phase 3, with no admin screen, no application form, and a
+permission — `volunteers.view_pii` — that gated nothing.
+
+#### Added
+
+**Volunteering**
+- `/volunteer`: the open roles, and a general application that is always
+  offered — somebody who wants to help and finds no role listed is not sent
+  away. The role page names the checks **before** the form: an applicant for a
+  role with contact with children is told that a police clearance, two
+  references and an interview come first, here rather than in an email three
+  weeks later
+- The application form asks for a date of birth only for a role that needs a
+  police clearance, which is applied for against it; asks about convictions as
+  free text, because a yes/no invites a no; and stores the declaration
+  verbatim with when and where it was agreed, because "they ticked a box" is
+  not evidence of what they were asked
+- `VolunteerOpportunityResource` and `VolunteerApplicationResource` in the
+  Community group. The application view is read-only; the personal details —
+  date of birth, address, next of kin, disclosed convictions — sit behind
+  `volunteers.view_pii`. The safeguarding checks are a tab where each outcome
+  is a decision with a name on it: **passed** needs a reference, **waived**
+  needs a reason and an authoriser, **failed** ends the application. Approve
+  refuses out loud while any check is outstanding, naming what is missing;
+  decline writes a reason for the file and a message for the applicant,
+  written each time
+- `VolunteerNotifier` sends `volunteer.application_received` (seeded since
+  Phase 3, never sent), the `volunteer.approved` SMS (likewise), and two new
+  templates, `volunteer.approved` and `volunteer.declined`
+
+**The structured enquiries**
+- An `enquiry-form` block — partner with us, corporate giving, donate goods,
+  fundraise for us — so the get-involved pages stay CMS-composed. The editor
+  writes the page and drops the right form into it. Each posts to the contact
+  inbox routed to its department, with its answers written under headings so
+  what arrives is actionable rather than "I have some things". The fields come
+  from one list (`EnquiryKinds`) that both the form and the validation read
+- `EnquiryRecorder`, shared with the contact form, so one place decides what is
+  stored with a message and queues the acknowledgement
+- A `select` field type for blocks, with options from an array or a class
+- `PageContentSeeder`: a first draft of the get-involved hub and its four
+  pages, seeded only into a page with no sections and left as **drafts**. Two
+  pages were missing and are now seeded: corporate giving and fundraise for us.
+  Peer-to-peer fundraising remains behind its flag, off; the fundraise page
+  registers an offline effort and gives it a reference
+
 ### Phase 6 Module 5 — events — 2026-09-11
 
 Events and their registrations have existed since Phase 3 with no admin

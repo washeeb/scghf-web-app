@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Communications\MessageDispatcher;
+use App\Community\EnquiryRecorder;
 use App\Http\Requests\ContactRequest;
 use App\Models\ContactDepartment;
-use App\Models\ContactMessage;
 use App\Support\PageMeta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
-use Throwable;
 
 /**
  * The contact form.
@@ -60,21 +58,13 @@ class ContactController extends Controller
     {
         $department = $this->resolveDepartment($request->integer('contact_department_id'));
 
-        $message = ContactMessage::create([
-            'contact_department_id' => $department?->getKey(),
+        $message = app(EnquiryRecorder::class)->record($request, $department, [
             'name' => $request->string('name')->toString(),
             'email' => $request->string('email')->toString(),
             'phone' => $request->string('phone')->toString() ?: null,
             'subject' => $request->string('subject')->toString() ?: null,
             'message' => $request->string('message')->toString(),
-            'consent_given' => true,
-            'consent_text' => $this->consentText(),
-            'ip_address' => $request->ip(),
-            'user_agent' => (string) $request->userAgent(),
-            'source_url' => $request->headers->get('referer'),
-        ]);
-
-        $this->acknowledge($message, $department);
+        ], $this->consentText());
 
         return back()->with('status', __(
             'Thank you. Your reference is :reference — quote it if you write to us again.',
@@ -128,27 +118,5 @@ class ContactController extends Controller
                 'name' => setting('general.legal_name', setting('general.short_name', config('app.name'))),
             ]),
         );
-    }
-
-    /**
-     * Tell the sender we have it.
-     *
-     * Through `MessageDispatcher`, like every other email — so it is logged,
-     * suppression-checked and rate-limited rather than bypassing all three. A
-     * failure is swallowed on purpose: see the note at the top of this class.
-     */
-    private function acknowledge(ContactMessage $message, ?ContactDepartment $department): void
-    {
-        try {
-            app(MessageDispatcher::class)->queueEmail('contact.acknowledgement', $message->email, [
-                'name' => $message->name,
-                'reference' => $message->reference,
-                'department' => $department?->name ?? '',
-                'sla_hours' => (string) ($department?->sla_hours ?? ''),
-            ]);
-        } catch (Throwable) {
-            // The enquiry is already saved. An acknowledgement that could not
-            // be queued is a missing courtesy, not a lost message.
-        }
     }
 }
