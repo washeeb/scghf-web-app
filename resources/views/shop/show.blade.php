@@ -171,7 +171,7 @@
             <section class="mt-16" aria-labelledby="related-heading">
                 <h2 id="related-heading" class="text-xl font-bold text-[var(--text-primary)]">{{ __('You might also like') }}</h2>
 
-                <ul role="list" class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <ul role="list" class="mt-6 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
                     @foreach ($related as $other)
                         <li><x-site.product-card :product="$other" /></li>
                     @endforeach

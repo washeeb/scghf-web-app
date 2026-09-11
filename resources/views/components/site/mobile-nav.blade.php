@@ -32,7 +32,7 @@
 
 <details
     data-mobile-nav
-    class="group/panel md:hidden"
+    class="group/panel lg:hidden"
 >
     <summary
         class="flex cursor-pointer list-none items-center rounded-md p-2 text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"

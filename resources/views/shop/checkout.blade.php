@@ -13,6 +13,30 @@
 @php
     $regionsServed = $delivery->flatMap(fn ($option) => $option['regions'])->unique()->sort()->values();
     $fulfilment = old('fulfilment', $regionsServed->isEmpty() && $pickup ? 'collect' : 'deliver');
+
+    /*
+     * The policies that are live, as links, joined into one sentence. Built
+     * here rather than with three conditional components in a row, because
+     * "terms delivery policy refund policy." with no commas is what that
+     * produces the moment one of them is a draft.
+     */
+    $policies = collect([
+        'terms' => __('terms'),
+        'shipping-and-delivery' => __('delivery policy'),
+        'refund-policy' => __('refund policy'),
+    ])->map(function (string $label, string $slug): ?string {
+        $page = App\Models\Page::query()->where('slug', $slug)->whereNull('parent_id')->first();
+
+        return $page?->isLive()
+            ? '<a class="underline hover:text-[var(--brand-primary)]" href="'.e(url($page->path)).'">'.e($label).'</a>'
+            : null;
+    })->filter()->values();
+
+    $policySentence = match ($policies->count()) {
+        0 => null,
+        1 => $policies->first(),
+        default => $policies->slice(0, -1)->implode(', ').' '.__('and').' '.$policies->last(),
+    };
 @endphp
 
 <x-site.page-shell :meta="$meta" :crumbs="$crumbs" :title="__('Checkout')">
@@ -47,7 +71,7 @@
                             <input type="radio" name="fulfilment" value="deliver" @checked($fulfilment === 'deliver') class="mt-1 size-4 accent-[var(--brand-primary)]">
                             <span>
                                 <span class="block font-semibold text-[var(--text-primary)]">{{ __('Deliver it to me') }}</span>
-                                <span class="block text-sm text-[var(--text-secondary)]">{{ __('The charge depends on your region — see the list beside the form.') }}</span>
+                                <span class="block text-sm text-[var(--text-secondary)]">{{ __('The charge depends on your region — see the delivery charges under "Your order".') }}</span>
                             </span>
                         </label>
                     @endif
@@ -107,10 +131,9 @@
                 />
 
                 <p class="text-xs text-[var(--text-muted)]">
-                    {{ __('By paying you accept our') }}
-                    <x-site.policy-link slug="terms" :label="__('terms')" />
-                    <x-site.policy-link slug="shipping-and-delivery" :label="__('delivery policy')" />
-                    <x-site.policy-link slug="refund-policy" :label="__('refund policy')" />.
+                    @if ($policySentence)
+                        {{ __('By paying you accept our') }} {!! $policySentence !!}.
+                    @endif
                     {{ __('A purchase is not a donation and no charitable receipt is issued for it.') }}
                 </p>
             </fieldset>
@@ -127,7 +150,9 @@
             <p class="text-xs text-[var(--text-muted)]">{{ __('Payment is taken securely by Paystack. We never see your card details.') }}</p>
         </form>
 
-        <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start" aria-labelledby="summary-heading">
+        {{-- First on a phone, so the customer sees what they are paying for
+             before they start typing; beside the form on a laptop. --}}
+        <aside class="order-first space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start" aria-labelledby="summary-heading">
             <h2 id="summary-heading" class="text-lg font-semibold text-[var(--text-primary)]">{{ __('Your order') }}</h2>
 
             <ul role="list" class="divide-y divide-[var(--border)] text-sm">

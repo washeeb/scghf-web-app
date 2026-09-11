@@ -7,8 +7,10 @@
 
     ── One menu, two renderings ────────────────────────────────────────────────
 
-    The same items are rendered twice: as a row of dropdowns at `md` and above,
-    and as an expanding panel below it. Only ever one of the two is displayed,
+    The same items are rendered twice: as a row of dropdowns at `lg` and above,
+    and as an expanding panel below it — `lg`, not `md`, because at 768px eight
+    items, a theme control, a basket and a donate pill wrap onto two lines.
+    Only ever one of the two is displayed,
     so a screen reader is never offered the navigation twice.
 
     Duplicated markup rather than one tree fought into both shapes, because a
@@ -144,7 +146,7 @@
         {{-- Wide screens: a row, with a dropdown for anything that has
              children. `max_depth 1` on the seeded menu means one level, and
              this is the level. --}}
-        <ul class="hidden items-center gap-1 md:flex">
+        <ul class="hidden items-center gap-1 lg:flex">
             @foreach ($nav as $item)
                 <li>
                     @if ($item->children->isNotEmpty())
@@ -188,7 +190,7 @@
             {{-- Signing in. Below `md` this lives inside the mobile panel
                  instead, so the corner a thumb reaches first belongs to the
                  donate button. --}}
-            <div class="hidden md:block">
+            <div class="hidden lg:block">
                 <x-site.account-nav />
             </div>
 

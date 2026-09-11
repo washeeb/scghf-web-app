@@ -49,7 +49,7 @@ beforeEach(function () {
 });
 
 /** @param array<string, mixed> $overrides */
-function registrationPayload(array $overrides = []): array
+function eventRegistrationPayload(array $overrides = []): array
 {
     return array_merge([
         'name' => 'Ama Mensah',
@@ -122,7 +122,7 @@ it('carries schema.org event data and a directions link, but never the join link
 it('registers somebody, counts their guests, and sends the confirmation', function () {
     $event = Event::factory()->create(['capacity' => 10]);
 
-    $this->post(route('events.register', $event), registrationPayload(['guests' => 2]))
+    $this->post(route('events.register', $event), eventRegistrationPayload(['guests' => 2]))
         ->assertRedirect();
 
     $registration = EventRegistration::first();
@@ -149,7 +149,7 @@ it('registers somebody, counts their guests, and sends the confirmation', functi
 it('records "no" to photography as a no, not as unasked', function () {
     $event = Event::factory()->create();
 
-    $this->post(route('events.register', $event), registrationPayload(['photography_consent' => '0']));
+    $this->post(route('events.register', $event), eventRegistrationPayload(['photography_consent' => '0']));
 
     expect(EventRegistration::first()->photography_consent)->toBeFalse()
         ->and(EventRegistration::first()->wasAskedAboutPhotography())->toBeTrue();
@@ -158,7 +158,7 @@ it('records "no" to photography as a no, not as unasked', function () {
 it('will not register somebody who was not asked about photography', function () {
     $event = Event::factory()->create();
 
-    $this->post(route('events.register', $event), registrationPayload(['photography_consent' => null]))
+    $this->post(route('events.register', $event), eventRegistrationPayload(['photography_consent' => null]))
         ->assertSessionHasErrors('photography_consent');
 
     expect(EventRegistration::count())->toBe(0);
@@ -167,8 +167,8 @@ it('will not register somebody who was not asked about photography', function ()
 it('waitlists rather than refuses once the event is full', function () {
     $event = Event::factory()->create(['capacity' => 2]);
 
-    $this->post(route('events.register', $event), registrationPayload(['email' => 'one@example.test', 'guests' => 1]));
-    $this->post(route('events.register', $event), registrationPayload(['email' => 'two@example.test']));
+    $this->post(route('events.register', $event), eventRegistrationPayload(['email' => 'one@example.test', 'guests' => 1]));
+    $this->post(route('events.register', $event), eventRegistrationPayload(['email' => 'two@example.test']));
 
     $second = EventRegistration::where('email', 'two@example.test')->first();
 
@@ -182,8 +182,8 @@ it('waitlists rather than refuses once the event is full', function () {
 it('updates rather than duplicates a second registration from the same address', function () {
     $event = Event::factory()->create();
 
-    $this->post(route('events.register', $event), registrationPayload());
-    $this->post(route('events.register', $event), registrationPayload(['name' => 'Ama Mensah-Boateng', 'phone' => '0241234567']))
+    $this->post(route('events.register', $event), eventRegistrationPayload());
+    $this->post(route('events.register', $event), eventRegistrationPayload(['name' => 'Ama Mensah-Boateng', 'phone' => '0241234567']))
         ->assertRedirect()
         ->assertSessionHas('status');
 
@@ -197,7 +197,7 @@ it('refuses a registration once registration has closed, with the reason', funct
 
     $this->get(route('events.show', $event))->assertOk()->assertSee('Registration closed');
 
-    $this->post(route('events.register', $event), registrationPayload())
+    $this->post(route('events.register', $event), eventRegistrationPayload())
         ->assertSessionHasErrors('registration');
 });
 
@@ -234,8 +234,8 @@ it('cancels with a reason and tells everybody who was coming', function () {
     $this->actingAs(eventsManager());
     $event = Event::factory()->create();
 
-    $this->post(route('events.register', $event), registrationPayload(['email' => 'one@example.test']));
-    $this->post(route('events.register', $event), registrationPayload(['email' => 'two@example.test']));
+    $this->post(route('events.register', $event), eventRegistrationPayload(['email' => 'one@example.test']));
+    $this->post(route('events.register', $event), eventRegistrationPayload(['email' => 'two@example.test']));
     EventRegistration::where('email', 'two@example.test')->first()->cancel();
 
     Livewire::test(ListEvents::class)
@@ -252,7 +252,7 @@ it('cancels with a reason and tells everybody who was coming', function () {
 
 it('shows the door list only to somebody allowed to see registrations', function () {
     $event = Event::factory()->create();
-    $this->post(route('events.register', $event), registrationPayload(['accessibility_needs' => 'Wheelchair user']));
+    $this->post(route('events.register', $event), eventRegistrationPayload(['accessibility_needs' => 'Wheelchair user']));
 
     $this->actingAs(eventsManager());
 

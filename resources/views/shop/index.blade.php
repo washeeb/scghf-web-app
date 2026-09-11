@@ -72,7 +72,7 @@
 
             @forelse ($products as $product)
                 @if ($loop->first)
-                    <ul role="list" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    <ul role="list" class="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3">
                 @endif
 
                 <li><x-site.product-card :product="$product" :eager="$loop->index < 3" /></li>

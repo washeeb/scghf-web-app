@@ -8,6 +8,47 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 6 Module 8 — the responsive and performance pass — 2026-09-11
+
+Every new page checked at 320, 375, 768, 1024 and 1440px, in both themes.
+
+#### Fixed
+
+- **⚠ Rich text had no typography.** `prose-scghf` was referenced by seven
+  views from Module 1 onward and defined nowhere, and the `prose` class the
+  rich-text block used belongs to a Tailwind plugin that is not installed.
+  Tailwind's preflight strips bullets, heading sizes and paragraph margins from
+  everything, so every news post, project description, appeal description and
+  policy page rendered as a run of same-sized text with no bullets. Nothing
+  failed; it read like a telegram. `prose-scghf` now exists, in plain CSS on
+  the theme tokens, with a table style for the cookie list that scrolls inside
+  its own box on a phone
+- The desktop navigation now appears from `lg`, not `md`: at 768px eight
+  items, a theme control, a basket and a donate pill wrapped onto two lines
+- On a phone the checkout shows the order summary and the delivery charges
+  **before** the form rather than after it, and the policy links read as a
+  sentence however many of the policies are published; product grids are two
+  columns on a phone rather than one full-width card per product
+
+#### Confirmed against the budget
+
+- Homepage JavaScript is 1.1 KB gzipped against a 100 KB budget; the
+  stylesheet is 10 KB gzipped. Every image on the site carries width and
+  height, lazy-loads below the fold and is `fetchpriority="high"` above it;
+  every form and every navigation works with JavaScript off; every animation
+  respects `prefers-reduced-motion`; the sticky header keeps the Donate button
+  reachable at every width, which is the floating mobile button the brief asked
+  for without a second control
+
+#### Recorded as decisions for the trustees (see the Phase 6 close-out)
+
+- The brand webfonts (Inter, Plus Jakarta Sans) are named in the theme tokens
+  and not shipped, so the site renders in the system stack. Self-hosting them
+  needs the font files downloaded; the fastest page on a 3G connection is the
+  one with no webfont at all, so this is a choice rather than an omission
+- Dynamically generated share images for appeals need a font file to draw text
+  with and are deferred with the fonts
+
 ### Phase 6 Module 7 — the legal pages — 2026-09-11
 
 #### Added

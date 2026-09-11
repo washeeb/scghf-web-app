@@ -70,3 +70,116 @@ summary {
 summary::-webkit-details-marker {
     display: none;
 }
+
+/*
+ * Rich text from the editor.
+ *
+ * ⚠ `prose-scghf` was referenced by seven views from Phase 6 Module 1 onward
+ * and defined nowhere, and the `prose` class the rich-text block used belongs
+ * to a Tailwind plugin that is not installed. Tailwind's preflight strips list
+ * bullets, heading sizes and paragraph margins from everything — so every news
+ * post, project description, appeal description and policy page rendered as a
+ * run of same-sized text with no bullets. Nothing failed; it just read like a
+ * telegram.
+ *
+ * Plain CSS rather than the typography plugin: the plugin is 40KB of rules for
+ * a site whose editor offers bold, italic, links, two heading levels, lists,
+ * a quote and — on a policy page — a table. Colours are the theme tokens, so
+ * the dark palette applies without a second set of rules. Line length is
+ * capped by the containers that use it, not here.
+ */
+@layer components {
+    .prose-scghf {
+        color: var(--text-primary);
+        line-height: 1.65;
+    }
+
+    .prose-scghf > * + * {
+        margin-top: 1em;
+    }
+
+    .prose-scghf h2 {
+        margin-top: 1.75em;
+        font-size: 1.375rem;
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+    }
+
+    .prose-scghf h3 {
+        margin-top: 1.5em;
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .prose-scghf h2 + *,
+    .prose-scghf h3 + * {
+        margin-top: 0.5em;
+    }
+
+    .prose-scghf a {
+        color: var(--brand-primary);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .prose-scghf a:hover {
+        color: var(--brand-primary-hover);
+    }
+
+    .prose-scghf ul,
+    .prose-scghf ol {
+        padding-left: 1.5em;
+    }
+
+    .prose-scghf ul {
+        list-style: disc;
+    }
+
+    .prose-scghf ol {
+        list-style: decimal;
+    }
+
+    .prose-scghf li + li {
+        margin-top: 0.375em;
+    }
+
+    .prose-scghf blockquote {
+        border-left: 3px solid var(--brand-primary);
+        padding-left: 1em;
+        color: var(--text-secondary);
+        font-style: italic;
+    }
+
+    .prose-scghf strong {
+        font-weight: 600;
+    }
+
+    /* A policy page's table — the cookie list — on a phone: it scrolls
+       inside its own box rather than forcing the page wider. */
+    .prose-scghf table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        border-collapse: collapse;
+        font-size: 0.9375rem;
+    }
+
+    .prose-scghf th,
+    .prose-scghf td {
+        padding: 0.5em 0.75em;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .prose-scghf th {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .prose-scghf img {
+        border-radius: var(--radius-md);
+    }
+}

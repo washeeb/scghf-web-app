@@ -119,7 +119,7 @@ it('offers the same destinations on a phone as on a laptop', function () {
      */
     $html = $this->get('/')->getContent();
 
-    [, $desktop] = explode('md:flex', $html, 2);
+    [, $desktop] = explode('lg:flex', $html, 2);
     [$desktopNav] = explode('</ul>', $desktop, 2);
 
     [, $mobile] = explode('data-mobile-nav', $html, 2);
