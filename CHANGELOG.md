@@ -118,6 +118,14 @@ and report, and each of those is a row in the audit trail.
   and phone even when the entries showing them were hidden. Hidden is not
   withheld; they are stripped before the state leaves the server
 - `Donor::mayBeEmailed()` had `recalculateTotals()`'s docblock and vice versa
+- **⚠ The deploy never published Filament's own CSS and JS.** They come from
+  `php artisan filament:assets`, not Vite, and `public/css`, `public/js` are
+  ignored by git; nothing in `deploy.yml` or Composer ran it, so the first
+  production deploy would have served an admin panel with no stylesheet and
+  no script — every button dead, every page returning 200. Composer's
+  `post-autoload-dump` now runs `filament:upgrade`, the deploy verifies the
+  files exist before assembling the release, and `public/fonts/filament/` is
+  ignored alongside the rest
 
 ### Phase 8 Module 1 — the giving flow — 2026-09-11
 

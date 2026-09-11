@@ -23,6 +23,7 @@ auth.json
 /public/storage
 /public/css/
 /public/js/
+/public/fonts/filament/
 /public/mix-manifest.json
 
 # ─── Laravel runtime ─────────────────────────────────────────────────────────

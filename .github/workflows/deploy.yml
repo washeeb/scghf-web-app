@@ -135,6 +135,16 @@ jobs:
           test -f public/build/manifest.json || { echo "::error::Vite manifest.json is missing."; exit 1; }
           echo "Build size: $(du -sh public/build | cut -f1)"
 
+      # Filament's CSS and JS are published by `filament:assets`, not by Vite,
+      # and `public/css`, `public/js` and `public/fonts/filament` are ignored
+      # by git. Composer's post-autoload-dump runs `filament:upgrade`, which
+      # publishes them; this step is the proof, because an admin panel with
+      # no stylesheet and no script still returns 200.
+      - name: Verify the admin panel assets were published
+        run: |
+          test -f public/css/filament/filament/app.css || { echo "::error::Filament CSS is missing — run php artisan filament:assets."; exit 1; }
+          test -f public/js/filament/filament/app.js || { echo "::error::Filament JS is missing — run php artisan filament:assets."; exit 1; }
+
       # Assemble the release in ./release/ rather than pruning in place, so
       # deploy/scripts/*.sh stay available to this job afterwards.
       - name: Assemble the release tree
