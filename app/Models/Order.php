@@ -321,6 +321,25 @@ class Order extends Model implements Payable
         ]);
     }
 
+    /**
+     * The money went back. A full refund closes the order; a partial one is a
+     * note on it. Putting the goods back on the shelf is a decision for the
+     * person handling the return, not a side effect of the gateway's webhook.
+     */
+    public function onRefunded(Refund $refund): void
+    {
+        $full = $refund->transaction !== null
+            && $refund->transaction->refundedAmount()->greaterThanOrEqual($this->total);
+
+        if ($full && $this->status !== OrderStatus::Refunded) {
+            $this->transitionTo(OrderStatus::Refunded, null, 'Refunded in full via the gateway.');
+        }
+
+        if (! $full) {
+            $this->forceFill(['notes' => trim((string) $this->notes."\nPartial refund of ".$refund->amount->format().' processed.')])->save();
+        }
+    }
+
     // ── Stock ────────────────────────────────────────────────────────────────
 
     /** Reserve the shelf while the customer is on the payment page. */

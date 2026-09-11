@@ -8,6 +8,85 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 8 Module 1 — the giving flow — 2026-09-11
+
+Most of the Phase 8 engine has existed since Phase 3: one transaction table,
+one webhook handler, HMAC-SHA512 over the raw body, the raw event stored
+before processing, idempotent settlement, amount re-checked against what was
+expected. This module is what the donor and the ledger were still missing.
+
+#### Added
+
+**On the form**
+- Frequency — once, weekly, monthly, quarterly, yearly — as chips, replacing
+  the monthly tick box. The subscription is still established only when the
+  first payment is confirmed, and it inherits the interval the donor chose.
+  Weekly is new to the subscription model, because it is how a market trader
+  budgets
+- **Direct Mobile Money.** "Prompt to my phone" charges the wallet through
+  `POST /charge` and leaves the donor on our page, which says what to do in
+  the network's own words — approve the prompt, or type the voucher code
+  Telecel texts — and asks the server every few seconds whether the money
+  landed. Without a script the page still works: every load verifies the
+  transaction with the gateway. The fake gateway reaches every state: a wallet
+  ending 00 wants a code, one ending 99 is declined, and the sandbox page
+  stands in for the handset
+- A public message for the donor wall, an optional postal address (filled
+  onto the donor record, never overwriting one), and a summary line — "GH₵ 50
+  → School kits, every month" — drawn by a few lines of script and absent
+  rather than wrong without one
+- Phone numbers normalised to `+233…`, so `024…` and `+233 24…` are one donor
+  and one SMS destination
+- Attribution: `?source=` and `utm_*` on the link that brought the donor are
+  carried through the form and stored on the gift and in the gateway's
+  metadata, with the donation, cause and donor ids, so a Paystack export can
+  be joined to ours and the foundation can tell whether the radio advert or
+  the church notice raised more
+
+**After paying**
+- **The receipt as a branded PDF** (DomPDF — pure PHP, so it runs on the
+  shared host), rendered from the frozen receipt row and never from the live
+  donation, kept on the private disk and served only through a signed link
+  that expires — in the receipt email and on the thank-you page — or to the
+  signed-in donor it belongs to. Every download is audited as an export
+- The thank-you page offers the receipt, a WhatsApp share of the appeal (not
+  of the donor's page), and two soft asks: make it monthly, and create an
+  account with the email already filled in
+- The callback verifies with the gateway before landing, so a donor sees
+  "thank you" rather than "confirming" for the minute the cron queue takes —
+  through exactly the path the webhook uses, and a second settlement is a
+  no-op
+- `donation.failed` — seeded since Phase 3 and never sent — goes out on a
+  decline with a link back to the form, amount and appeal filled in.
+  `donation.abandoned`, new, follows up somebody who reached the payment page
+  and left; **off** unless `donations.abandoned_followup` is switched on, and
+  only to a donor who consented to email
+
+**Regular giving**
+- `/account/giving` and a **signed management link** in every recurring email,
+  valid sixty days and needing no account: pause, resume, change the amount
+  (down as well as up), stop. Nothing changes on a GET; every change posts to a
+  signed URL of its own
+- Dunning in the tone of a thank-you: `recurring.failed` (email and SMS) when
+  a charge fails and will be retried, `recurring.paused` after
+  `RECURRING_MAX_FAILURES` in a row — "we have stopped trying; start again when
+  you are ready" — and `recurring.established` when it is set up
+
+**Refunds**
+- `RefundService`: requested by one person, approved by another (the model
+  refuses the requester as approver), sent to the gateway, and the ledger
+  moves only when the gateway confirms — by API answer or by the
+  `refund.processed` webhook, whichever arrives. A full refund marks the gift
+  refunded; either kind recomputes the appeal's total and the donor's lifetime
+  figures from the donations table rather than decrementing them
+
+#### Fixed
+
+- `PAYSTACK_WEBHOOK_IPS` has been read into config since Phase 3 and consulted
+  by nothing. When set, a delivery from any other address is stored as
+  evidence and never processed
+- `refund.processed` and `refund.failed` webhooks were stored and ignored
+
 ### Phase 6 Module 8 — the responsive and performance pass — 2026-09-11
 
 Every new page checked at 320, 375, 768, 1024 and 1440px, in both themes.

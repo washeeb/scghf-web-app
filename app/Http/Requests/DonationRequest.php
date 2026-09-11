@@ -69,7 +69,36 @@ class DonationRequest extends FormRequest
 
             'cover_fee' => ['nullable', 'boolean'],
             'is_anonymous' => ['nullable', 'boolean'],
-            'wants_recurring' => ['nullable', 'boolean'],
+
+            /*
+             * How often. `once` is a single gift; anything else is a standing
+             * commitment established once the first payment is confirmed.
+             * Weekly is offered because it is how a market trader budgets.
+             */
+            'frequency' => ['nullable', Rule::in(['once', 'weekly', 'monthly', 'quarterly', 'annually'])],
+
+            /*
+             * The hosted page, or a direct charge to a mobile-money wallet. The
+             * direct charge needs the network and the number the prompt goes
+             * to — which may not be the number they gave as their contact.
+             */
+            'pay_with' => ['nullable', Rule::in(['gateway', 'momo'])],
+            'momo_provider' => ['required_if:pay_with,momo', 'nullable', Rule::in(['mtn', 'vod', 'atl'])],
+            'momo_phone' => ['required_if:pay_with,momo', 'nullable', 'string', 'max:20', 'regex:/^(\+?233|0)[2345][0-9]{8}$/'],
+
+            'public_message' => ['nullable', 'string', 'max:300'],
+            'donor_address' => ['nullable', 'string', 'max:255'],
+            'donor_city' => ['nullable', 'string', 'max:191'],
+
+            // Attribution, carried as hidden fields from the link that brought
+            // the donor here. Never shown, never trusted for anything but a
+            // report.
+            'source' => ['nullable', 'string', 'max:64'],
+            'utm_source' => ['nullable', 'string', 'max:100'],
+            'utm_medium' => ['nullable', 'string', 'max:100'],
+            'utm_campaign' => ['nullable', 'string', 'max:100'],
+            'utm_term' => ['nullable', 'string', 'max:100'],
+            'utm_content' => ['nullable', 'string', 'max:100'],
 
             // Marketing, and optional. See the note at the top.
             'consent_email' => ['nullable', 'boolean'],
@@ -164,6 +193,39 @@ class DonationRequest extends FormRequest
             'donor_phone.regex' => __('That does not look like a Ghanaian number. Try 024 123 4567.'),
             'consent.accepted' => __('We need your permission to hold your details in order to issue a receipt.'),
             'tribute_name.required_with' => __('Please tell us who this gift is for.'),
+            'momo_provider.required_if' => __('Which network is the wallet on?'),
+            'momo_phone.required_if' => __('Which number should we send the prompt to?'),
+            'momo_phone.regex' => __('That does not look like a Ghanaian number. Try 024 123 4567.'),
         ];
+    }
+
+    public function frequency(): string
+    {
+        return $this->string('frequency')->toString() ?: 'once';
+    }
+
+    public function wantsRecurring(): bool
+    {
+        return $this->frequency() !== 'once';
+    }
+
+    public function paysByMobileMoney(): bool
+    {
+        return $this->input('pay_with') === 'momo';
+    }
+
+    /**
+     * The UTM parameters that were filled in, or null.
+     *
+     * @return array<string, string>|null
+     */
+    public function utm(): ?array
+    {
+        $utm = collect(['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'])
+            ->mapWithKeys(fn (string $key): array => [substr($key, 4) => trim((string) $this->input($key))])
+            ->filter()
+            ->all();
+
+        return $utm === [] ? null : $utm;
     }
 }

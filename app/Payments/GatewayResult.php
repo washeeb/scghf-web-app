@@ -83,6 +83,30 @@ final readonly class GatewayResult
     }
 
     /** @param array<string, mixed> $raw */
+    /**
+     * The charge is waiting on the donor's handset.
+     *
+     * `$status` is the gateway's own word for what it is waiting for —
+     * `pay_offline` (approve the prompt), `send_otp` (type the code the network
+     * texted), `send_pin`, or a bare `pending`. `$message` is the text the
+     * gateway asked us to show, which is usually better than ours because it
+     * names the network's own prompt.
+     */
+    public static function awaiting(
+        string $status,
+        string $gatewayReference,
+        ?string $message = null,
+        array $raw = [],
+    ): self {
+        return new self(
+            successful: true,
+            status: $status,
+            gatewayReference: $gatewayReference,
+            message: $message,
+            raw: $raw,
+        );
+    }
+
     public static function failed(
         string $status,
         string $message,
@@ -112,6 +136,12 @@ final readonly class GatewayResult
      */
     public function isPending(): bool
     {
-        return in_array($this->status, ['pending', 'ongoing', 'processing', 'send_otp', 'pay_offline'], true);
+        return in_array($this->status, ['pending', 'ongoing', 'processing', 'send_otp', 'send_pin', 'pay_offline', 'queued'], true);
+    }
+
+    /** Waiting on something the donor has to do on their phone, as opposed to merely not settled yet. */
+    public function needsDonorAction(): bool
+    {
+        return in_array($this->status, ['send_otp', 'send_pin', 'pay_offline'], true);
     }
 }

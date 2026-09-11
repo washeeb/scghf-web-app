@@ -9,6 +9,7 @@ use App\Models\Refund;
 use App\Payments\Contracts\PaymentGateway;
 use App\ValueObjects\Money;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -168,6 +169,78 @@ final class PaystackService implements PaymentGateway
             paidAt: isset($data['paid_at']) ? Carbon::parse((string) $data['paid_at']) : null,
             raw: $raw ?: $data,
             authorization: $this->safeAuthorization($data['authorization'] ?? []),
+        );
+    }
+
+    /**
+     * Charge a mobile-money wallet directly.
+     *
+     * `POST /charge` with a `mobile_money` object. Paystack pushes the prompt
+     * to the handset and answers with what it is waiting for: `pay_offline`
+     * for MTN and AirtelTigo (approve on the phone), `send_otp` for Telecel
+     * (type the voucher code), or occasionally `success` straight away. The
+     * status word is passed through as-is so the waiting page can be specific.
+     *
+     * The amount is the transaction's — never re-read from the request — and
+     * the currency is sent explicitly, as it is on every other call.
+     */
+    public function chargeMobileMoney(PaymentTransaction $transaction, string $provider, string $phone): GatewayResult
+    {
+        $response = $this->client()->post('/charge', [
+            'email' => $transaction->customer_email,
+            'amount' => $transaction->amount->toMinor(),
+            'currency' => $transaction->currency,
+            'reference' => $transaction->gateway_reference,
+            'mobile_money' => [
+                'phone' => $phone,
+                'provider' => $provider,
+            ],
+            'metadata' => $transaction->request_payload ?: null,
+        ]);
+
+        return $this->chargeResult($response, $transaction->gateway_reference);
+    }
+
+    public function submitOtp(PaymentTransaction $transaction, string $otp): GatewayResult
+    {
+        $response = $this->client()->post('/charge/submit_otp', [
+            'otp' => $otp,
+            'reference' => $transaction->gateway_reference,
+        ]);
+
+        return $this->chargeResult($response, $transaction->gateway_reference);
+    }
+
+    /**
+     * Read a `/charge` response — one of settled, waiting, or refused.
+     *
+     * Shared by the direct charge and the OTP step because they answer with
+     * the same shape, and two parsers would eventually disagree.
+     */
+    private function chargeResult(Response $response, string $gatewayReference): GatewayResult
+    {
+        $body = $this->scrubber->scrub((array) $response->json());
+        $data = $body['data'] ?? [];
+        $status = (string) ($data['status'] ?? '');
+
+        if (! $response->successful() || ($body['status'] ?? false) !== true || $status === '' || $status === 'failed') {
+            return GatewayResult::failed(
+                status: 'failed',
+                message: (string) ($data['gateway_response'] ?? $body['message'] ?? 'The network declined the charge.'),
+                gatewayReference: $gatewayReference,
+                raw: $body,
+            );
+        }
+
+        if ($status === 'success') {
+            return $this->resultFromTransactionData($data, $gatewayReference, $body);
+        }
+
+        return GatewayResult::awaiting(
+            status: $status,
+            gatewayReference: $gatewayReference,
+            message: $data['display_text'] ?? null,
+            raw: $body,
         );
     }
 

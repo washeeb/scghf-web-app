@@ -9,11 +9,14 @@ use App\Models\Cause;
 use App\Models\Donation;
 use App\Models\PaymentTransaction;
 use App\Payments\DonationService;
+use App\Payments\PaymentManager;
 use App\Support\PageMeta;
 use App\ValueObjects\Money;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 /**
@@ -47,6 +50,16 @@ use Illuminate\View\View;
  */
 class DonateController extends Controller
 {
+    /**
+     * Paystack's codes for the Ghanaian networks, and what a donor calls them.
+     * Telecel was Vodafone, and the gateway still says `vod`.
+     */
+    public const MOMO_PROVIDERS = [
+        'mtn' => 'MTN Mobile Money',
+        'vod' => 'Telecel Cash',
+        'atl' => 'AirtelTigo Money',
+    ];
+
     public function show(Request $request): View
     {
         $cause = $this->causeFromRequest($request);
@@ -55,6 +68,8 @@ class DonateController extends Controller
             'cause' => $cause,
             'causes' => $this->openCauses(),
             'presets' => $this->presets(),
+            'attribution' => $this->attribution($request),
+            'momoProviders' => self::MOMO_PROVIDERS,
             'meta' => PageMeta::site(
                 $cause !== null
                     ? __('Give to :appeal', ['appeal' => $cause->title])
@@ -79,7 +94,7 @@ class DonateController extends Controller
      */
     public function store(DonationRequest $request): RedirectResponse
     {
-        $result = app(DonationService::class)->start([
+        $input = [
             // `ofMajor`, because the donor typed cedis. This is the only place
             // the conversion happens.
             'amount' => Money::ofMajor((float) $request->input('amount')),
@@ -88,10 +103,18 @@ class DonateController extends Controller
             'donor_name' => $request->string('donor_name')->toString(),
             'donor_email' => $request->string('donor_email')->toString(),
             'donor_phone' => $request->string('donor_phone')->toString() ?: null,
+            'donor_address' => $request->string('donor_address')->toString() ?: null,
+            'donor_city' => $request->string('donor_city')->toString() ?: null,
 
             'cover_fee' => $request->boolean('cover_fee'),
             'is_anonymous' => $request->boolean('is_anonymous'),
-            'wants_recurring' => $request->boolean('wants_recurring'),
+            'wants_recurring' => $request->wantsRecurring(),
+            'recurring_interval' => $request->wantsRecurring() ? $request->frequency() : null,
+            'public_message' => $request->string('public_message')->toString() ?: null,
+
+            'source' => $request->string('source')->toString() ?: null,
+            'utm' => $request->utm(),
+            'callback_url' => route('donate.callback'),
 
             'consent_email' => $request->boolean('consent_email'),
             'consent_sms' => $request->boolean('consent_sms'),
@@ -106,7 +129,23 @@ class DonateController extends Controller
                 'message' => $request->string('tribute_message')->toString() ?: null,
                 'notify_email' => $request->string('tribute_notify_email')->toString() ?: null,
             ] : [],
-        ]);
+        ];
+
+        if ($request->paysByMobileMoney()) {
+            /*
+             * A direct charge. The donor stays here and approves a prompt on
+             * their phone; the waiting page — the same thank-you page, in its
+             * pending state — says what to do and watches for the webhook.
+             */
+            $result = app(DonationService::class)->startMobileMoney($input + [
+                'momo_provider' => $request->string('momo_provider')->toString(),
+                'momo_phone' => $request->string('momo_phone')->toString(),
+            ]);
+
+            return redirect()->route('donate.thanks', $result['donation']);
+        }
+
+        $result = app(DonationService::class)->start($input);
 
         /** @var PaymentTransaction $transaction */
         $transaction = $result['transaction'];
@@ -160,6 +199,65 @@ class DonateController extends Controller
             return redirect()->route('donate');
         }
 
+        /*
+         * Asked of the gateway, not assumed from the redirect. The webhook is
+         * the source of truth and it arrives through a cron-driven queue, so a
+         * donor would otherwise see "confirming" for a minute after paying;
+         * verifying here settles the gift through exactly the same path the
+         * webhook uses, and a second settlement is a no-op.
+         */
+        app(PaymentManager::class)->verifyAndSettle($transaction);
+
+        return redirect()->route('donate.thanks', $donation);
+    }
+
+    /**
+     * Where the gift stands, for the waiting page to poll.
+     *
+     * A pending transaction is verified with the gateway each time, so a
+     * mobile-money approval shows here within seconds rather than when the
+     * queue next drains. Throttled on the route; nothing here is expensive
+     * but a verify is a call to Paystack.
+     */
+    public function status(Donation $donation): JsonResponse
+    {
+        $transaction = $donation->transaction;
+
+        if ($transaction !== null && ! $transaction->status->isFinal()) {
+            app(PaymentManager::class)->verifyAndSettle($transaction);
+            $transaction->refresh();
+        }
+
+        $donation->refresh();
+
+        return response()->json([
+            'status' => $donation->status->value,
+            'awaiting' => $transaction?->awaiting_action,
+            'message' => $transaction?->display_text,
+            'settled' => $donation->status->value !== 'pending',
+        ]);
+    }
+
+    /**
+     * The code the network texted, during a direct mobile-money charge.
+     */
+    public function otp(Request $request, Donation $donation): RedirectResponse
+    {
+        $request->validate(['otp' => ['required', 'string', 'regex:/^[0-9]{4,8}$/']]);
+
+        $transaction = $donation->transaction;
+
+        if ($transaction === null || $transaction->awaiting_action !== 'send_otp') {
+            return redirect()->route('donate.thanks', $donation);
+        }
+
+        $transaction = app(PaymentManager::class)->submitOtp($transaction, $request->string('otp')->toString());
+
+        if ($transaction->status->value === 'failed') {
+            return redirect()->route('donate.thanks', $donation)
+                ->withErrors(['otp' => __('That code was not accepted. Nothing has been charged.')]);
+        }
+
         return redirect()->route('donate.thanks', $donation);
     }
 
@@ -172,14 +270,47 @@ class DonateController extends Controller
      */
     public function thanks(Donation $donation): View
     {
+        $donation->load(['cause', 'transaction', 'receipt']);
+
         return view('donate.thanks', [
-            'donation' => $donation->load('cause'),
+            'donation' => $donation,
+            'transaction' => $donation->transaction,
+            /*
+             * A signed link, valid for a month: the receipt is a document the
+             * donor is entitled to and the page they are on proves nothing
+             * about who they are. Signing it means the link in the email and
+             * the link here are the same thing, and neither can be guessed.
+             */
+            'receiptUrl' => $donation->receipt !== null
+                ? URL::temporarySignedRoute('receipts.download', now()->addMonth(), ['receipt' => $donation->receipt->ulid])
+                : null,
+            'shareUrl' => $donation->cause !== null && ! $donation->cause->is_general_fund
+                ? route('causes.show', $donation->cause)
+                : route('donate'),
             'meta' => PageMeta::site(__('Thank you'), noindex: true),
             'crumbs' => [
                 ['label' => __('Home'), 'url' => url('/')],
                 ['label' => __('Thank you'), 'url' => null],
             ],
         ]);
+    }
+
+    /**
+     * Where the donor came from, for the hidden fields on the form.
+     *
+     * Read from the query string of the page that loaded the form — a link in
+     * a WhatsApp broadcast, a radio advert's short URL — and carried through
+     * the POST. Truncated and whitelisted here; the request validates them
+     * again on the way back.
+     *
+     * @return array<string, string>
+     */
+    private function attribution(Request $request): array
+    {
+        return collect(['source', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'])
+            ->mapWithKeys(fn (string $key): array => [$key => mb_substr(trim($request->string($key)->toString()), 0, 100)])
+            ->filter()
+            ->all();
     }
 
     /**

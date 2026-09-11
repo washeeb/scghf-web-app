@@ -195,6 +195,16 @@ return [
     | Backups that are never restored and ledgers that are never reconciled fail
     | the same way: silently, and only discovered when it matters.
     */
+    'recurring' => [
+        /*
+         * Consecutive failed charges before a standing gift is paused rather
+         * than retried. Retrying an expired card every month is how a charity
+         * ends up on a card network's watch list, and by the third failure the
+         * donor has usually moved on anyway.
+         */
+        'max_failures' => (int) env('RECURRING_MAX_FAILURES', 3),
+    ],
+
     'reconciliation' => [
         'enabled' => (bool) env('PAYMENT_RECONCILIATION_ENABLED', true),
 

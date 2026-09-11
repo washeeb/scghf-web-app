@@ -55,6 +55,21 @@ interface PaymentGateway
      */
     public function verify(string $gatewayReference): GatewayResult;
 
+    /**
+     * Charge a mobile-money wallet directly, without the hosted page.
+     *
+     * The donor is prompted on their handset. The result is usually an
+     * awaiting state (`pay_offline`, `send_otp`) rather than a settlement; the
+     * webhook, or a verify, says whether the money came.
+     *
+     * @param  string  $provider  the gateway's code for the network: mtn, vod, atl
+     * @param  string  $phone  normalised, +233…
+     */
+    public function chargeMobileMoney(PaymentTransaction $transaction, string $provider, string $phone): GatewayResult;
+
+    /** Submit the one-time code a network texted the donor during a direct charge. */
+    public function submitOtp(PaymentTransaction $transaction, string $otp): GatewayResult;
+
     /** Send money back. */
     public function refund(Refund $refund): GatewayResult;
 

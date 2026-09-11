@@ -168,6 +168,14 @@ return [
             'refund.requested' => ['category' => 'money', 'severity' => 'warning'],
             'refund.approved' => ['category' => 'money', 'severity' => 'critical'],
             'receipt.issued' => ['category' => 'money', 'severity' => 'info'],
+            // A receipt leaving the application as a PDF: a name and an amount
+            // on a document. Recorded like a CSV export, because it is one.
+            'receipt.downloaded' => ['category' => 'data_export', 'severity' => 'info'],
+            'receipt.resent' => ['category' => 'money', 'severity' => 'notice'],
+            'refund.processed' => ['category' => 'money', 'severity' => 'critical'],
+            'refund.failed' => ['category' => 'money', 'severity' => 'warning'],
+            'donation.reconciled' => ['category' => 'money', 'severity' => 'info'],
+            'donation.note_added' => ['category' => 'money', 'severity' => 'info'],
 
             /*
              * Money leaving the foundation. Critical on approval rather than on

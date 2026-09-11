@@ -45,11 +45,11 @@ class Donation extends Model implements Payable
         'reference', 'donor_id', 'user_id', 'cause_id', 'division_id', 'subscription_id',
         'fundraiser_id', 'pledge_id',
         'amount', 'fee', 'fee_covered_by_donor', 'net', 'currency', 'status',
-        'channel', 'momo_network', 'is_anonymous', 'wants_recurring',
-        'tribute_type', 'tribute_name', 'tribute_message', 'tribute_notify_email',
+        'channel', 'momo_network', 'momo_provider', 'is_anonymous', 'wants_recurring', 'recurring_interval',
+        'tribute_type', 'tribute_name', 'tribute_message', 'tribute_notify_email', 'public_message',
         'donor_name', 'donor_email', 'donor_phone',
         'consent_email', 'consent_sms', 'consent_text', 'consent_ip', 'consent_at',
-        'notes', 'recorded_by',
+        'notes', 'recorded_by', 'source', 'utm',
     ];
 
     /** @var array<string, mixed> */
@@ -76,6 +76,7 @@ class Donation extends Model implements Payable
             'fee_covered_by_donor' => 'boolean',
             'is_anonymous' => 'boolean',
             'wants_recurring' => 'boolean',
+            'utm' => 'array',
             'consent_email' => 'boolean',
             'consent_sms' => 'boolean',
             'consent_at' => 'datetime',
@@ -306,7 +307,10 @@ class Donation extends Model implements Payable
         }
 
         try {
-            app(RecurringGivingService::class)->establish($this->refresh());
+            app(RecurringGivingService::class)->establish(
+                $this->refresh(),
+                $this->recurring_interval ?: Subscription::INTERVAL_MONTHLY,
+            );
         } catch (\Throwable $e) {
             report($e);
         }
@@ -324,6 +328,10 @@ class Donation extends Model implements Payable
             'failed_at' => now(),
             'paystack_reference' => $transaction->gateway_reference,
         ])->save();
+
+        // "It did not go through and nothing was taken" — sent once, and
+        // reported rather than thrown if the outbox refuses it.
+        app(DonationNotifier::class)->failed($this);
     }
 
     /**
@@ -342,6 +350,33 @@ class Donation extends Model implements Payable
             'status' => DonationStatus::Abandoned,
             'paystack_reference' => $transaction->gateway_reference,
         ])->save();
+
+        // Optional, and off unless the foundation switches it on: a nudge to
+        // somebody who got as far as the payment page. See DonationNotifier.
+        app(DonationNotifier::class)->abandoned($this);
+    }
+
+    /**
+     * The money went back.
+     *
+     * A full refund makes the gift `refunded`; a partial one leaves it
+     * completed — the foundation still holds part of it — and the appeal's
+     * running total is recalculated from the donations table either way, so
+     * the progress bar never shows money that was returned. The donor's
+     * lifetime total is corrected the same way: what they gave is what the
+     * foundation kept.
+     */
+    public function onRefunded(Refund $refund): void
+    {
+        $full = $refund->transaction !== null
+            && $refund->transaction->refundedAmount()->greaterThanOrEqual($this->amount);
+
+        if ($full) {
+            $this->forceFill(['status' => DonationStatus::Refunded])->save();
+        }
+
+        $this->cause?->recalculateRaised();
+        $this->donor?->recalculateTotals();
     }
 
     /**

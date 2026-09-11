@@ -36,6 +36,8 @@ class Subscription extends Model
 
     public const DRIVER_GATEWAY = 'gateway';
 
+    public const INTERVAL_WEEKLY = 'weekly';
+
     public const INTERVAL_MONTHLY = 'monthly';
 
     public const INTERVAL_QUARTERLY = 'quarterly';
@@ -134,6 +136,7 @@ class Subscription extends Model
     public function advanceFrom(Carbon $from): Carbon
     {
         return match ($this->interval) {
+            self::INTERVAL_WEEKLY => $from->copy()->addWeek(),
             self::INTERVAL_QUARTERLY => $from->copy()->addMonthsNoOverflow(3),
             self::INTERVAL_ANNUALLY => $from->copy()->addYearNoOverflow(),
             // addMonthsNoOverflow, not addMonths: a gift set up on the 31st must

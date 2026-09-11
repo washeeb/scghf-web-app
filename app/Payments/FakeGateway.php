@@ -81,6 +81,63 @@ final class FakeGateway implements PaymentGateway
         );
     }
 
+    /**
+     * A direct mobile-money charge, faked.
+     *
+     * Every network prompts on the handset (`pay_offline`), except that a phone
+     * number ending in 00 is treated as a Telecel voucher flow (`send_otp`),
+     * and one ending in 99 is declined — so every state the waiting page has to
+     * show can be reached without a real wallet. The sandbox page is where the
+     * "approve on phone" step is pressed, and it delivers the webhook.
+     */
+    public function chargeMobileMoney(PaymentTransaction $transaction, string $provider, string $phone): GatewayResult
+    {
+        if (str_ends_with($phone, '99')) {
+            return GatewayResult::failed(
+                status: 'failed',
+                message: 'Insufficient balance (fake gateway).',
+                gatewayReference: $transaction->gateway_reference,
+                raw: ['fake' => true, 'provider' => $provider],
+            );
+        }
+
+        if (str_ends_with($phone, '00')) {
+            return GatewayResult::awaiting(
+                status: 'send_otp',
+                gatewayReference: $transaction->gateway_reference,
+                message: 'Dial *110# to generate a voucher code and enter it here.',
+                raw: ['fake' => true, 'provider' => $provider],
+            );
+        }
+
+        return GatewayResult::awaiting(
+            status: 'pay_offline',
+            gatewayReference: $transaction->gateway_reference,
+            message: 'Please approve the payment prompt on your phone.',
+            raw: ['fake' => true, 'provider' => $provider],
+        );
+    }
+
+    /** Any six digits are accepted; "000000" is refused, so the wrong-code path can be seen. */
+    public function submitOtp(PaymentTransaction $transaction, string $otp): GatewayResult
+    {
+        if ($otp === '000000') {
+            return GatewayResult::failed(
+                status: 'failed',
+                message: 'The code was not accepted (fake gateway).',
+                gatewayReference: $transaction->gateway_reference,
+                raw: ['fake' => true],
+            );
+        }
+
+        return GatewayResult::awaiting(
+            status: 'pay_offline',
+            gatewayReference: $transaction->gateway_reference,
+            message: 'Code accepted. Approve the payment prompt on your phone.',
+            raw: ['fake' => true],
+        );
+    }
+
     public function verify(string $gatewayReference): GatewayResult
     {
         $transaction = PaymentTransaction::where('gateway_reference', $gatewayReference)->first();

@@ -7,6 +7,7 @@ namespace App\Payments;
 use App\Communications\MessageDispatcher;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\HtmlString;
 use Throwable;
 
@@ -83,6 +84,80 @@ final class DonationNotifier
         }
     }
 
+    /**
+     * The payment did not go through, and nothing was taken.
+     *
+     * The single most useful email a failed payment can produce: it says
+     * plainly that no money left, and it carries a link that brings the donor
+     * back to the form with the same amount and appeal filled in. Transactional
+     * — it reports on something the donor just did.
+     */
+    public function failed(Donation $donation): void
+    {
+        if (blank($donation->donor_email)) {
+            return;
+        }
+
+        try {
+            $this->dispatcher->queueEmail('donation.failed', (string) $donation->donor_email, [
+                'donor_name' => $donation->donor_name ?: __('friend'),
+                'amount' => $donation->amount,
+                'reference' => $donation->reference,
+                'retry_url' => $this->retryUrl($donation),
+            ], [
+                'to_name' => $donation->donor_name,
+                'related' => $donation,
+                'user_id' => $donation->user_id,
+                'idempotency_key' => 'donation.failed:'.$donation->reference,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * The donor opened the payment page and never came back.
+     *
+     * ⚠ OFF unless `donations.abandoned_followup` is switched on. A reminder
+     * to somebody who decided not to give is the kind of email that makes a
+     * foundation look desperate, and the trustees should choose it rather than
+     * have it chosen for them. Sent once, an hour or more after the fact
+     * (the reconciliation sweep decides when a payment counts as abandoned),
+     * and only to a donor who consented to email.
+     */
+    public function abandoned(Donation $donation): void
+    {
+        if (! setting('donations.abandoned_followup', false) || blank($donation->donor_email) || ! $donation->consent_email) {
+            return;
+        }
+
+        try {
+            $this->dispatcher->queueEmail('donation.abandoned', (string) $donation->donor_email, [
+                'donor_name' => $donation->donor_name ?: __('friend'),
+                'amount' => $donation->amount,
+                'cause_name' => $donation->cause?->title,
+                'retry_url' => $this->retryUrl($donation),
+            ], [
+                'to_name' => $donation->donor_name,
+                'related' => $donation,
+                'user_id' => $donation->user_id,
+                'idempotency_key' => 'donation.abandoned:'.$donation->reference,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** Back to the form, with the amount and appeal filled in. */
+    private function retryUrl(Donation $donation): string
+    {
+        return route('donate', array_filter([
+            'amount' => $donation->amount->toMajorString(),
+            'cause' => $donation->cause !== null && ! $donation->cause->is_general_fund ? $donation->cause->slug : null,
+            'source' => 'retry',
+        ]));
+    }
+
     private function email(Donation $donation, DonationReceipt $receipt): void
     {
         $paragraphs = collect($receipt->paragraphs())
@@ -98,6 +173,9 @@ final class DonationNotifier
             'cause_name' => $receipt->cause,
             'donation_date' => $receipt->donated_on,
             'acknowledgement' => new HtmlString($paragraphs),
+            // Signed and dated: the receipt names a person and an amount, and
+            // this link will be forwarded. Ninety days, then the account area.
+            'receipt_url' => URL::temporarySignedRoute('receipts.download', now()->addDays(90), ['receipt' => $receipt->ulid]),
         ], [
             'to_name' => $receipt->donor_name,
             'related' => $donation,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailController;
 use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Account\RegularGivingController;
 use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\TwoFactorController;
 use App\Http\Controllers\AnnouncementController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Shop\CartController;
 use App\Http\Controllers\Shop\CheckoutController;
@@ -181,6 +183,9 @@ Route::middleware(['auth', 'auth.session'])
         Route::get('/', DashboardController::class)->middleware('verified')->name('dashboard');
 
         Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
+
+        // Standing gifts: see, pause, resume, change the amount, stop.
+        Route::get('giving', [RegularGivingController::class, 'index'])->name('giving');
         Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
 
         Route::get('security', [SecurityController::class, 'show'])->name('security');
@@ -240,6 +245,22 @@ Route::get('account/email/confirm/{ulid}/{hash}', [EmailController::class, 'conf
 Route::get('account/email/cancel/{ulid}/{hash}', [EmailController::class, 'cancel'])
     ->middleware('signed')
     ->name('account.email.cancel');
+
+/*
+|--------------------------------------------------------------------------
+| Managing a regular gift
+|--------------------------------------------------------------------------
+|
+| Signed in, or from the signed link in every recurring-giving email — a donor
+| who set up a monthly gift at a church event has no account and should not
+| need one to stop it. `GivingController::authorise()` accepts either; nothing
+| here is behind `auth`, and nothing changes on a GET.
+*/
+Route::get('giving/{subscription:ulid}', [RegularGivingController::class, 'manage'])->name('giving.manage');
+Route::post('giving/{subscription:ulid}/pause', [RegularGivingController::class, 'pause'])->name('giving.pause');
+Route::post('giving/{subscription:ulid}/resume', [RegularGivingController::class, 'resume'])->name('giving.resume');
+Route::post('giving/{subscription:ulid}/amount', [RegularGivingController::class, 'amount'])->name('giving.amount');
+Route::post('giving/{subscription:ulid}/cancel', [RegularGivingController::class, 'cancel'])->name('giving.cancel');
 
 /*
 |--------------------------------------------------------------------------
@@ -371,6 +392,30 @@ Route::get('donate/callback', [DonateController::class, 'callback'])->name('dona
 
 Route::get('donate/{donation:ulid}/thank-you', [DonateController::class, 'thanks'])
     ->name('donate.thanks');
+
+/*
+ * The waiting page's questions.
+ *
+ * `status` verifies a pending gift with the gateway each time it is asked,
+ * so a mobile-money approval shows within seconds rather than when the queue
+ * next drains; throttled because a verify is a call to Paystack. `otp` is the
+ * second step of a direct charge — the code the network texted the donor.
+ */
+Route::get('donate/{donation:ulid}/status', [DonateController::class, 'status'])
+    ->middleware('throttle:30,1')
+    ->name('donate.status');
+
+Route::post('donate/{donation:ulid}/otp', [DonateController::class, 'otp'])
+    ->middleware('throttle:6,1')
+    ->name('donate.otp');
+
+/*
+ * The receipt as a PDF. Signed — the link lives in an email and on the
+ * thank-you page, and the receipt names a person and an amount — or fetched by
+ * the signed-in donor it belongs to.
+ */
+Route::get('receipts/{receipt:ulid}/download', [ReceiptController::class, 'download'])
+    ->name('receipts.download');
 
 /*
 | The sandbox checkout.

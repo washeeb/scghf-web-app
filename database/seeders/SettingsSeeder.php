@@ -138,6 +138,17 @@ class SettingsSeeder extends Seeder
             SettingType::Text, 'Newsletter consent wording', true,
             'Stored with each subscriber as the evidence of what they agreed to.'],
 
+        // ── Giving, Phase 8 ──────────────────────────────────────────────────
+        ['donations', 'abandoned_followup', '0', SettingType::Boolean, 'Follow up an abandoned donation', false,
+            'Email a donor who reached the payment page and never finished, once, with a link to pick it up. '
+            .'Off by default: a reminder to somebody who decided not to give can read as pressure. '
+            .'Only donors who agreed to email are written to.'],
+        ['donations', 'allow_mobile_money_direct', '1', SettingType::Boolean, 'Offer direct Mobile Money payment', false,
+            'A prompt sent straight to the donor\'s phone, without leaving the site. '
+            .'Switch off if the gateway account does not have the charge API enabled.'],
+        ['donations', 'allow_public_message', '1', SettingType::Boolean, 'Let donors leave a public message', true,
+            'Shown beside their name on the donor wall of the appeal they gave to.'],
+
         // ── The shop ─────────────────────────────────────────────────────────
         // A threshold rather than a hardcoded number, because "low" depends on
         // how fast a thing sells. Ten tote bags is plenty; ten of a bracelet

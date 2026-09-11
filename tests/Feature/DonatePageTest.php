@@ -293,7 +293,7 @@ it('sets up a monthly gift only once the money has actually arrived', function (
      * later declined is a monthly charge against a card that never worked. So
      * the intent is stored on the donation and acted on by the webhook.
      */
-    $this->post(route('donate.store'), donationPayload(['wants_recurring' => '1']));
+    $this->post(route('donate.store'), donationPayload(['frequency' => 'monthly']));
 
     $donation = Donation::first();
 
@@ -307,7 +307,7 @@ it('sets up a monthly gift only once the money has actually arrived', function (
 });
 
 it('does not set one up for a gift that failed', function () {
-    $this->post(route('donate.store'), donationPayload(['wants_recurring' => '1']));
+    $this->post(route('donate.store'), donationPayload(['frequency' => 'monthly']));
 
     $donation = Donation::first();
 

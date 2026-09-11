@@ -116,6 +116,83 @@ final class PaymentManager
      * @param  Model&Payable  $payable
      * @param  array<string, mixed>  $options
      */
+    /**
+     * Charge a mobile-money wallet directly, and record where it got to.
+     *
+     * The transaction is written first, as with every other charge, so a
+     * gateway timeout leaves a row that reconciliation can ask about rather
+     * than a donor who paid against a reference we never stored. A settled
+     * result is applied at once; an awaiting one is kept on the transaction so
+     * the waiting page can show the right prompt; a refusal is marked failed
+     * and the payable told.
+     *
+     * @param  array<string, mixed>  $options  reference, metadata
+     */
+    public function chargeMobileMoney(Model $payable, string $provider, string $phone, array $options = []): PaymentTransaction
+    {
+        $amount = $payable->chargeableAmount();
+
+        $this->assertChargeable($amount);
+
+        $transaction = PaymentTransaction::create([
+            'payable_type' => $payable->getMorphClass(),
+            'payable_id' => $payable->getKey(),
+            'gateway' => $this->gateway->name(),
+            'gateway_reference' => $options['reference'] ?? self::generateReference(),
+            'amount' => $amount,
+            'currency' => $amount->currency,
+            'status' => PaymentStatus::Initialised,
+            'customer_email' => $payable->payerEmail(),
+            'channel' => 'mobile_money',
+            'momo_network' => $provider,
+            'initialised_at' => now(),
+            'request_payload' => $this->scrubber->scrub($options['metadata'] ?? []),
+        ]);
+
+        $result = $this->gateway->chargeMobileMoney($transaction, $provider, $phone);
+
+        $this->applyChargeResult($transaction, $result);
+
+        return $transaction->refresh();
+    }
+
+    /** The second step of a direct charge: the code the network texted. */
+    public function submitOtp(PaymentTransaction $transaction, string $otp): PaymentTransaction
+    {
+        if ($transaction->status->isFinal()) {
+            return $transaction;
+        }
+
+        $result = $this->gateway->submitOtp($transaction, $otp);
+
+        $this->applyChargeResult($transaction, $result);
+
+        return $transaction->refresh();
+    }
+
+    /**
+     * A `/charge` answer: settled, waiting on the donor, or refused.
+     *
+     * An awaiting state is recorded on the transaction rather than being
+     * treated as a failure — mobile money legitimately sits here for a minute
+     * while somebody finds their phone.
+     */
+    private function applyChargeResult(PaymentTransaction $transaction, GatewayResult $result): void
+    {
+        if ($result->isPending()) {
+            $transaction->forceFill([
+                'status' => PaymentStatus::Pending,
+                'awaiting_action' => $result->needsDonorAction() ? $result->status : null,
+                'display_text' => $result->message,
+                'response_payload' => $result->raw,
+            ])->save();
+
+            return;
+        }
+
+        $this->applyResult($transaction, $result);
+    }
+
     public function chargeStored(Model $payable, string $authorizationCode, array $options = []): PaymentTransaction
     {
         $amount = $payable->chargeableAmount();
@@ -222,7 +299,7 @@ final class PaymentManager
      */
     public function recordWebhook(string $rawBody, ?string $signature, ?string $sourceIp = null): PaymentWebhookEvent
     {
-        $valid = $this->gateway->verifySignature($rawBody, $signature);
+        $valid = $this->gateway->verifySignature($rawBody, $signature) && $this->sourceIpAllowed($sourceIp);
 
         $parsed = json_decode($rawBody, true);
         $parsed = is_array($parsed) ? $parsed : [];
@@ -318,6 +395,21 @@ final class PaymentManager
     private function dispatchEvent(PaymentWebhookEvent $event): void
     {
         $data = $event->data();
+
+        /*
+         * Refunds are keyed on the refund, not the charge, and are handled by
+         * the service that requested them. `subscription.*` and `invoice.*`
+         * would matter for gateway-managed plans, which this foundation does
+         * not use — standing gifts are charged from stored authorizations by
+         * the daily command — and `transfer.*` is payouts, which are recorded
+         * by hand. All are stored and acknowledged; none changes a ledger.
+         */
+        if (in_array($event->event_type, ['refund.processed', 'refund.failed'], true)) {
+            app(RefundService::class)->applyWebhook((string) $event->event_type, $data);
+
+            return;
+        }
+
         $reference = (string) ($data['reference'] ?? $event->gateway_reference ?? '');
 
         if ($reference === '') {
@@ -418,6 +510,26 @@ final class PaymentManager
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * The optional second check on a webhook: where it came from.
+     *
+     * `PAYSTACK_WEBHOOK_IPS` has been read into config since Phase 3 and
+     * consulted by nothing. When the list is set, a delivery from any other
+     * address is stored as evidence — it may be a probe — but treated as
+     * unverified and never processed. When the list is empty the HMAC
+     * signature stands alone, which is already the real check.
+     */
+    private function sourceIpAllowed(?string $sourceIp): bool
+    {
+        $allowed = (array) config('payments.paystack.webhook_ips', []);
+
+        if ($allowed === []) {
+            return true;
+        }
+
+        return $sourceIp !== null && in_array($sourceIp, $allowed, true);
     }
 
     /**

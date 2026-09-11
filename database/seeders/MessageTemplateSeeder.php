@@ -131,6 +131,7 @@ class MessageTemplateSeeder extends Seeder
                     <p>Your reference is <strong>{{reference}}</strong>. Please quote it in any
                     correspondence about this gift.</p>
                     {{acknowledgement}}
+                    <p>Your receipt {{receipt_number}} can be downloaded here: {{receipt_url}}</p>
                     <p>With gratitude,<br>{{organisation_legal_name}}</p>
                     HTML,
                 'text' => <<<'TEXT'
@@ -142,6 +143,8 @@ class MessageTemplateSeeder extends Seeder
                     Your reference is {{reference}}.
 
                     {{acknowledgement}}
+
+                    Your receipt {{receipt_number}} can be downloaded here: {{receipt_url}}
 
                     With gratitude,
                     {{organisation_legal_name}}
@@ -173,6 +176,131 @@ class MessageTemplateSeeder extends Seeder
 
                     If you think this is a mistake, contact us on {{contact_phone}} or at
                     {{contact_email}}, quoting {{reference}}.
+                    TEXT,
+            ],
+            [
+                'key' => 'donation.abandoned',
+                'name' => 'Donation not completed — follow-up',
+                'description' => 'Sent, only if the follow-up is switched on in settings, to a '
+                    .'donor who reached the payment page and never finished. One message, once, '
+                    .'and only to somebody who consented to email.',
+                'category' => EmailTemplate::CATEGORY_MARKETING,
+                'variables' => ['donor_name', 'amount', 'cause_name', 'retry_url'],
+                'required' => ['donor_name', 'retry_url'],
+                'subject' => 'Your gift to {{site_name}} was not completed',
+                'html' => <<<'HTML'
+                    <p>Dear {{donor_name}},</p>
+                    <p>You started a gift of {{amount}} towards {{cause_name}} and the payment
+                    did not complete. No money has been taken.</p>
+                    <p>If something went wrong, or you simply ran out of time, you can pick it up
+                    where you left off: {{retry_url}}</p>
+                    <p>If you decided not to give, that is entirely fine — we will not write
+                    again about this.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{donor_name}},
+
+                    You started a gift of {{amount}} towards {{cause_name}} and the payment did
+                    not complete. No money has been taken.
+
+                    If something went wrong, or you simply ran out of time, you can pick it up
+                    where you left off: {{retry_url}}
+
+                    If you decided not to give, that is entirely fine — we will not write again
+                    about this.
+                    TEXT,
+            ],
+            [
+                'key' => 'recurring.established',
+                'name' => 'Regular gift set up',
+                'description' => 'Sent once the first payment of a regular gift is confirmed. '
+                    .'Carries the signed link a donor without an account uses to manage it.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['donor_name', 'amount', 'interval', 'cause_name', 'next_date', 'manage_url'],
+                'required' => ['donor_name', 'amount', 'manage_url'],
+                'subject' => 'Your regular gift to {{site_name}} is set up',
+                'html' => <<<'HTML'
+                    <p>Dear {{donor_name}},</p>
+                    <p>Thank you. Your gift of <strong>{{amount}} {{interval}}</strong> towards
+                    {{cause_name}} is set up. The next one is on {{next_date}}.</p>
+                    <p>You can pause it, change the amount or stop it at any time here:
+                    {{manage_url}}</p>
+                    <p>A regular gift is what lets us plan. We are grateful.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{donor_name}},
+
+                    Thank you. Your gift of {{amount}} {{interval}} towards {{cause_name}} is set
+                    up. The next one is on {{next_date}}.
+
+                    You can pause it, change the amount or stop it at any time here:
+                    {{manage_url}}
+
+                    A regular gift is what lets us plan. We are grateful.
+                    TEXT,
+            ],
+            [
+                'key' => 'recurring.failed',
+                'name' => 'Regular gift — payment did not go through',
+                'description' => 'Sent when a scheduled charge fails and will be retried. Assumes '
+                    .'goodwill: a donor whose card expired is a donor, not a debtor.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['donor_name', 'amount', 'interval', 'cause_name', 'reason', 'next_date', 'attempts', 'manage_url'],
+                'required' => ['donor_name', 'amount', 'manage_url'],
+                'subject' => 'This {{interval}} gift did not go through',
+                'html' => <<<'HTML'
+                    <p>Dear {{donor_name}},</p>
+                    <p>Your regular gift of {{amount}} towards {{cause_name}} did not go through
+                    this time ({{reason}}). Nothing has been taken.</p>
+                    <p>We will try again on {{next_date}}. If your card or Mobile Money wallet has
+                    changed, the simplest thing is to set up the gift again and stop this one:
+                    {{manage_url}}</p>
+                    <p>If you would rather pause for a while, you can do that from the same link.
+                    Thank you for giving regularly.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{donor_name}},
+
+                    Your regular gift of {{amount}} towards {{cause_name}} did not go through this
+                    time ({{reason}}). Nothing has been taken.
+
+                    We will try again on {{next_date}}. If your card or Mobile Money wallet has
+                    changed, the simplest thing is to set up the gift again and stop this one:
+                    {{manage_url}}
+
+                    If you would rather pause for a while, you can do that from the same link.
+                    Thank you for giving regularly.
+                    TEXT,
+            ],
+            [
+                'key' => 'recurring.paused',
+                'name' => 'Regular gift paused after repeated failures',
+                'description' => 'Sent when a regular gift is paused because several charges in '
+                    .'a row failed. We stop trying; the donor restarts when ready.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['donor_name', 'amount', 'interval', 'cause_name', 'reason', 'attempts', 'manage_url'],
+                'required' => ['donor_name', 'amount', 'manage_url'],
+                'subject' => 'We have paused your regular gift',
+                'html' => <<<'HTML'
+                    <p>Dear {{donor_name}},</p>
+                    <p>Your regular gift of {{amount}} {{interval}} towards {{cause_name}} has not
+                    gone through {{attempts}} times running, so we have paused it rather than keep
+                    trying. Nothing has been taken.</p>
+                    <p>Whenever you are ready, you can start it again — with a new card or wallet
+                    if yours has changed — here: {{manage_url}}</p>
+                    <p>Thank you for everything you have given. There is no need to reply.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{donor_name}},
+
+                    Your regular gift of {{amount}} {{interval}} towards {{cause_name}} has not
+                    gone through {{attempts}} times running, so we have paused it rather than keep
+                    trying. Nothing has been taken.
+
+                    Whenever you are ready, you can start it again — with a new card or wallet if
+                    yours has changed — here: {{manage_url}}
+
+                    Thank you for everything you have given. There is no need to reply.
                     TEXT,
             ],
             [
@@ -859,6 +987,18 @@ class MessageTemplateSeeder extends Seeder
                 // "GHS", not "GH₵" — see the note on this class.
                 'body' => 'Thank you. We have received your gift of GHS {{amount}}. '
                     .'Ref {{reference}}. {{site_name}}',
+            ],
+            [
+                'key' => 'recurring.failed',
+                'name' => 'Regular gift did not go through',
+                'description' => 'One line, when a scheduled charge fails. The donor whose '
+                    .'mobile-money charge failed reads a text before an email.',
+                'category' => SmsTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['amount', 'next_date'],
+                'required' => ['amount'],
+                'max_segments' => 1,
+                'body' => 'Your regular gift of GHS {{amount}} to {{site_name}} did not go '
+                    .'through. Nothing was taken; we will try again on {{next_date}}.',
             ],
             [
                 'key' => 'order.shipped',

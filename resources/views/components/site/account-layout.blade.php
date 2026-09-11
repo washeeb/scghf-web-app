@@ -16,6 +16,7 @@
 @php
     $tabs = [
         ['route' => 'account.dashboard', 'label' => __('Overview')],
+        ['route' => 'account.giving', 'label' => __('Regular giving')],
         ['route' => 'account.profile', 'label' => __('Your details')],
         ['route' => 'account.security', 'label' => __('Security')],
     ];

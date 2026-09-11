@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Payments;
 
+use App\Communications\PhoneNumber;
 use App\Enums\DonationStatus;
 use App\Models\Cause;
 use App\Models\Donation;
 use App\Models\DonationItem;
 use App\Models\Donor;
 use App\Models\PaymentTransaction;
+use App\Models\Subscription;
 use App\ValueObjects\Money;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -112,6 +114,11 @@ final class DonationService
                  * worked.
                  */
                 'wants_recurring' => (bool) ($input['wants_recurring'] ?? false),
+                'recurring_interval' => ! empty($input['wants_recurring']) ? ($input['recurring_interval'] ?? Subscription::INTERVAL_MONTHLY) : null,
+                'public_message' => $input['public_message'] ?? null,
+                'source' => $input['source'] ?? null,
+                'utm' => $input['utm'] ?? null,
+                'momo_provider' => $input['momo_provider'] ?? null,
                 'tribute_type' => $input['tribute']['type'] ?? null,
                 'tribute_name' => $input['tribute']['name'] ?? null,
                 'tribute_message' => $input['tribute']['message'] ?? null,
@@ -120,7 +127,9 @@ final class DonationService
                 // and the acknowledgement already issued said what it said.
                 'donor_name' => $input['donor_name'] ?? $donor?->name,
                 'donor_email' => $input['donor_email'] ?? $donor?->email,
-                'donor_phone' => $input['donor_phone'] ?? $donor?->phone,
+                // Normalised to +233…, so the same number typed as 024… and
+                // +233 24… is one donor and one SMS destination.
+                'donor_phone' => PhoneNumber::tryNormalise($input['donor_phone'] ?? null) ?? $donor?->phone,
                 'consent_email' => (bool) ($input['consent_email'] ?? false),
                 'consent_sms' => (bool) ($input['consent_sms'] ?? false),
                 'consent_text' => $input['consent_text'] ?? null,
@@ -167,12 +176,62 @@ final class DonationService
         $transaction = $this->payments->charge($donation, [
             'reference' => $donation->reference,
             'channel' => $input['channel'] ?? null,
-            'metadata' => [
+            'callback_url' => $input['callback_url'] ?? null,
+            /*
+             * What the Paystack dashboard shows beside the payment. Ids and
+             * slugs, never names or amounts of anything the gateway does not
+             * already hold; attribution travels so a finance report from
+             * Paystack's side can be joined to ours.
+             */
+            'metadata' => array_filter([
                 'donation' => $donation->reference,
+                'donation_id' => $donation->getKey(),
                 'cause' => $donation->cause?->slug,
+                'cause_id' => $donation->cause_id,
+                'donor_id' => $donation->donor_id,
                 'division' => $donation->division?->slug,
-            ],
+                'source' => $donation->source,
+                'utm' => $donation->utm ?: null,
+                'type' => 'donation',
+            ], fn ($v) => $v !== null),
         ]);
+
+        return ['donation' => $donation, 'transaction' => $transaction];
+    }
+
+    /**
+     * Build the gift and charge a mobile-money wallet directly.
+     *
+     * No redirect: the donor stays on our page and approves a prompt on their
+     * phone. The gift is created exactly as in `start()` — same validation,
+     * same allocation, same fee handling — and only the way the money is
+     * asked for differs. What comes back is the transaction with its waiting
+     * state, or a settled or failed one where the network answered at once.
+     *
+     * @param  array<string, mixed>  $input  as start(), plus momo_provider and momo_phone
+     * @return array{donation: Donation, transaction: PaymentTransaction}
+     */
+    public function startMobileMoney(array $input): array
+    {
+        $donation = $this->create(array_merge($input, ['channel' => 'mobile_money']));
+
+        $transaction = $this->payments->chargeMobileMoney(
+            $donation,
+            (string) $input['momo_provider'],
+            PhoneNumber::normalise((string) $input['momo_phone']),
+            [
+                'reference' => $donation->reference,
+                'metadata' => array_filter([
+                    'donation' => $donation->reference,
+                    'donation_id' => $donation->getKey(),
+                    'cause' => $donation->cause?->slug,
+                    'cause_id' => $donation->cause_id,
+                    'donor_id' => $donation->donor_id,
+                    'source' => $donation->source,
+                    'type' => 'donation',
+                ], fn ($v) => $v !== null),
+            ],
+        );
 
         return ['donation' => $donation, 'transaction' => $transaction];
     }
@@ -248,6 +307,8 @@ final class DonationService
             'name' => $input['donor_name'] ?? 'Anonymous donor',
             'email' => $input['donor_email'] ?? null,
             'phone' => $input['donor_phone'] ?? null,
+            'address' => $input['donor_address'] ?? null,
+            'city' => $input['donor_city'] ?? null,
             'consent_email' => $input['consent_email'] ?? false,
             'consent_sms' => $input['consent_sms'] ?? false,
             'consent_text' => $input['consent_text'] ?? null,

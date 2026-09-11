@@ -92,6 +92,10 @@ final class RecurringGivingService
 
         $donation->forceFill(['subscription_id' => $subscription->getKey()])->save();
 
+        // "It is set up, and here is how to change it" — with the signed link
+        // that lets a donor with no account manage the gift.
+        app(RecurringNotifier::class)->established($subscription->refresh()->load(['donor', 'cause']));
+
         return $subscription->refresh();
     }
 
@@ -218,7 +222,12 @@ final class RecurringGivingService
             $reason = $transaction->mismatch_reason ?? 'The stored authorization was declined.';
 
             $charge->markFailed($reason);
-            $subscription->recordFailure($reason);
+            $subscription->recordFailure($reason, (int) config('payments.recurring.max_failures', 3));
+
+            // Dunning, in the tone of a thank-you: "this one did not go
+            // through, we will try again on <date>", and after the last
+            // attempt, "we have stopped; start again when you are ready".
+            app(RecurringNotifier::class)->failed($subscription->refresh()->load(['donor', 'cause']), $reason);
 
             return $charge;
         }

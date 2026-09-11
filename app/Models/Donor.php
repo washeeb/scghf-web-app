@@ -161,6 +161,21 @@ class Donor extends Model
         }
 
         if ($donor !== null) {
+            /*
+             * An address given with a later gift fills a blank on the record.
+             * It never overwrites one — a donor who moved and gave from the
+             * old address by habit should not have the record changed by a
+             * form, and a mismatch is something a person should look at.
+             */
+            $donor->fill(array_filter([
+                'address' => blank($donor->address) ? ($details['address'] ?? null) : null,
+                'city' => blank($donor->city) ? ($details['city'] ?? null) : null,
+            ]));
+
+            if ($donor->isDirty()) {
+                $donor->save();
+            }
+
             return $donor;
         }
 
@@ -168,6 +183,9 @@ class Donor extends Model
             'name' => $details['name'] ?? 'Anonymous donor',
             'email' => $email,
             'phone' => $phone,
+            'address' => $details['address'] ?? null,
+            'city' => $details['city'] ?? null,
+            'country' => isset($details['address']) || isset($details['city']) ? 'GH' : null,
             'donor_type' => $details['donor_type'] ?? self::TYPE_INDIVIDUAL,
             'consent_email' => (bool) ($details['consent_email'] ?? false),
             'consent_sms' => (bool) ($details['consent_sms'] ?? false),
@@ -204,6 +222,26 @@ class Donor extends Model
     }
 
     /** Whether this donor may be emailed anything other than a receipt. */
+    /**
+     * Rebuild the lifetime figures from the donations table.
+     *
+     * The counters are incremented as gifts land; a refund, an amended
+     * offline gift or a merge is corrected by recomputing rather than by
+     * decrementing, because a decrement that runs twice is a wrong number and
+     * a recount is not.
+     */
+    public function recalculateTotals(): void
+    {
+        $completed = Donation::query()->where('donor_id', $this->getKey())->completed();
+
+        static::whereKey($this->getKey())->update([
+            'total_donated_minor' => (int) (clone $completed)->sum('amount_minor'),
+            'donation_count' => (clone $completed)->count(),
+            'first_donated_at' => (clone $completed)->min('paid_at'),
+            'last_donated_at' => (clone $completed)->max('paid_at'),
+        ]);
+    }
+
     public function mayBeEmailed(): bool
     {
         return $this->consent_email && filled($this->email);

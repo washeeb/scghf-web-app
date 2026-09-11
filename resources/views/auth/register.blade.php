@@ -31,11 +31,14 @@
             required
         />
 
+        {{-- Pre-filled from the thank-you page's "create an account" link, so
+             a donor who just gave does not type the address a second time. --}}
         <x-site.field
             name="email"
             type="email"
             :label="__('Email address')"
             :hint="__('We send a link here to confirm it is yours.')"
+            :value="request()->string('email')->toString()"
             autocomplete="email"
             required
             inputmode="email"

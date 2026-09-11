@@ -35,6 +35,11 @@
      * an unrelated field must not have their choice quietly reset.
      */
     $selected = old('amount', request()->string('amount')->toString() ?: null);
+
+    $allowMomoDirect = (bool) setting('donations.allow_mobile_money_direct', true);
+    $allowPublicMessage = (bool) setting('donations.allow_public_message', true);
+    $frequency = old('frequency', 'once');
+    $payWith = old('pay_with', 'gateway');
 @endphp
 
 <x-site.page-shell
@@ -51,6 +56,14 @@
             @if ($cause)
                 <input type="hidden" name="cause" value="{{ $cause->slug }}">
             @endif
+
+            {{-- Where the donor came from — a WhatsApp broadcast, a radio
+                 advert's short link — carried from the query string so a
+                 finance report can say which appeal channel actually raised
+                 money. Never shown; never trusted for anything else. --}}
+            @foreach ($attribution as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
 
             <fieldset>
                 <legend class="text-lg font-semibold text-[var(--text-primary)]">
@@ -203,6 +216,31 @@
                 />
             </fieldset>
 
+            @if ($allowRecurring)
+                <fieldset>
+                    <legend class="text-lg font-semibold text-[var(--text-primary)]">{{ __('How often?') }}</legend>
+
+                    <p class="mt-1 text-sm text-[var(--text-secondary)]">
+                        {{ __('A regular gift is set up after this first payment goes through. You can stop it at any time from your account or by replying to any receipt.') }}
+                    </p>
+
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach ([
+                            'once' => __('Just once'),
+                            'weekly' => __('Every week'),
+                            'monthly' => __('Every month'),
+                            'quarterly' => __('Every three months'),
+                            'annually' => __('Every year'),
+                        ] as $value => $label)
+                            <label class="cursor-pointer">
+                                <input type="radio" name="frequency" value="{{ $value }}" @checked($frequency === $value) class="peer sr-only">
+                                <span class="block rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] peer-checked:border-[var(--brand-primary)] peer-checked:bg-[var(--brand-primary)] peer-checked:text-[var(--text-on-brand)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus-ring)]">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+            @endif
+
             <fieldset class="space-y-3">
                 <legend class="text-lg font-semibold text-[var(--text-primary)]">{{ __('A few choices') }}</legend>
 
@@ -214,13 +252,6 @@
                     />
                 @endif
 
-                @if ($allowRecurring)
-                    <x-site.checkbox
-                        name="wants_recurring"
-                        :label="__('Make this a monthly gift')"
-                        :hint="__('Set up after this payment goes through. You can stop it at any time from your account or by replying to any receipt.')"
-                    />
-                @endif
 
                 @if ($allowAnonymous)
                     <x-site.checkbox
@@ -230,6 +261,25 @@
                     />
                 @endif
             </fieldset>
+
+            @if ($allowPublicMessage)
+                <x-site.field
+                    name="public_message"
+                    type="textarea"
+                    :rows="2"
+                    :label="__('A message for the donor wall')"
+                    :hint="__('Optional. Shown beside your name on the appeal page — or just the message, if you give anonymously.')"
+                />
+            @endif
+
+            <details class="rounded-lg border border-[var(--border)] p-4">
+                <summary class="cursor-pointer font-medium text-[var(--text-primary)]">{{ __('Add a postal address') }}</summary>
+                <p class="mt-2 text-sm text-[var(--text-secondary)]">{{ __('Optional. Only if you would like it on your receipt.') }}</p>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    <x-site.field name="donor_address" :label="__('Address')" autocomplete="street-address" />
+                    <x-site.field name="donor_city" :label="__('Town or city')" autocomplete="address-level2" />
+                </div>
+            </details>
 
             @if ($allowTribute)
                 {{-- `<details>`, so the form is short for the 95% who are not
@@ -278,15 +328,105 @@
                 <x-site.checkbox name="consent_sms" :label="__('Send me occasional updates by SMS')" />
             </fieldset>
 
+            @if ($allowMomoDirect)
+                {{--
+                    How to pay. The hosted page takes cards and Mobile Money and
+                    is the default; the direct charge sends the prompt straight
+                    to the wallet without leaving this site, which for a donor
+                    on a slow connection is one page fewer to load — and the
+                    page that fails to load is usually the payment provider's.
+                --}}
+                <fieldset class="space-y-3">
+                    <legend class="text-lg font-semibold text-[var(--text-primary)]">{{ __('How would you like to pay?') }}</legend>
+
+                    <label class="flex cursor-pointer items-start gap-3 rounded-md border border-[var(--border)] p-4 has-[:checked]:border-[var(--brand-primary)]">
+                        <input type="radio" name="pay_with" value="gateway" @checked($payWith === 'gateway') class="mt-1 size-4 accent-[var(--brand-primary)]">
+                        <span>
+                            <span class="block font-semibold text-[var(--text-primary)]">{{ __('Card or Mobile Money, on the payment page') }}</span>
+                            <span class="block text-sm text-[var(--text-secondary)]">{{ __('You will be taken to our payment provider. We never see or store your details.') }}</span>
+                        </span>
+                    </label>
+
+                    <label class="flex cursor-pointer items-start gap-3 rounded-md border border-[var(--border)] p-4 has-[:checked]:border-[var(--brand-primary)]">
+                        <input type="radio" name="pay_with" value="momo" @checked($payWith === 'momo') class="mt-1 size-4 accent-[var(--brand-primary)]">
+                        <span>
+                            <span class="block font-semibold text-[var(--text-primary)]">{{ __('Mobile Money prompt to my phone') }}</span>
+                            <span class="block text-sm text-[var(--text-secondary)]">{{ __('Stay here; approve the payment on your phone.') }}</span>
+                        </span>
+                    </label>
+
+                    <div class="grid gap-4 rounded-md border border-[var(--border)] p-4 sm:grid-cols-2">
+                        <div>
+                            <label for="momo_provider" class="mb-1 block text-sm font-medium text-[var(--text-primary)]">{{ __('Network') }}</label>
+                            <select id="momo_provider" name="momo_provider"
+                                @error('momo_provider') aria-invalid="true" aria-describedby="momo_provider-error" @enderror
+                                class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-[var(--text-primary)]">
+                                <option value="">{{ __('Choose') }}</option>
+                                @foreach ($momoProviders as $code => $label)
+                                    <option value="{{ $code }}" @selected(old('momo_provider') === $code)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('momo_provider')
+                                <p id="momo_provider-error" role="alert" class="mt-1 text-sm text-[var(--brand-secondary)]">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <x-site.field name="momo_phone" type="tel" :label="__('Wallet number')" autocomplete="tel" :hint="__('The number the prompt goes to. For the prompt only.')" />
+                    </div>
+                </fieldset>
+            @else
+                <input type="hidden" name="pay_with" value="gateway">
+            @endif
+
+            {{-- The summary the brief asks for: "GH₵ X to <cause>, <frequency>".
+                 Filled by a few lines of script from the fields above, and
+                 hidden entirely without one — a summary that could be wrong is
+                 worse than none, and the gateway shows the amount regardless. --}}
+            <p id="donation-summary" hidden class="rounded-md bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-primary)]" aria-live="polite"></p>
+
             <button
                 type="submit"
                 class="w-full rounded-md bg-[var(--brand-secondary)] px-6 py-3 text-lg font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] sm:w-auto"
             >{{ __('Continue to payment') }}</button>
 
             <p class="text-xs text-[var(--text-muted)]">
-                {{ __('You will be taken to our payment provider to enter your card or mobile money details. We never see or store them.') }}
+                {{ __('Payments are taken by Paystack. We never see or store your card or wallet details.') }}
             </p>
         </form>
+
+        @push('scripts')
+            <script>
+            (function () {
+                var form = document.querySelector('form[action="{{ route('donate.store') }}"]');
+                var out = document.getElementById('donation-summary');
+                if (!form || !out) return;
+                var causeName = {!! json_encode($cause?->title ?? null) !!};
+                var freq = {!! json_encode([
+                    'once' => __('one gift'),
+                    'weekly' => __('every week'),
+                    'monthly' => __('every month'),
+                    'quarterly' => __('every three months'),
+                    'annually' => __('every year'),
+                ]) !!};
+                var general = {!! json_encode(__('wherever it is needed most')) !!};
+                function update() {
+                    var amount = null;
+                    form.querySelectorAll('input[name="amount"]').forEach(function (el) {
+                        if ((el.type === 'radio' && el.checked) || (el.type !== 'radio' && el.value)) amount = el.value;
+                    });
+                    if (!amount || isNaN(parseFloat(amount))) { out.hidden = true; return; }
+                    var f = form.querySelector('input[name="frequency"]:checked');
+                    var causeSelect = form.querySelector('select[name="cause"]');
+                    var cause = causeName || (causeSelect && causeSelect.value ? causeSelect.options[causeSelect.selectedIndex].text : general);
+                    out.textContent = 'GH₵ ' + parseFloat(amount).toLocaleString('en-GH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' → ' + cause + ', ' + (f ? freq[f.value] : freq.once) + '.';
+                    out.hidden = false;
+                }
+                form.addEventListener('input', update);
+                form.addEventListener('change', update);
+                update();
+            })();
+            </script>
+        @endpush
 
         <aside class="space-y-8">
             @if ($cause)
