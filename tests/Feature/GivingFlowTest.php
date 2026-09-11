@@ -8,7 +8,6 @@ use App\Enums\SubscriptionStatus;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
 use App\Models\Donor;
-use App\Models\PaymentTransaction;
 use App\Models\PaymentWebhookEvent;
 use App\Models\Refund;
 use App\Models\ScheduledMessage;
@@ -422,4 +421,47 @@ it('closes a refund from the gateway\'s webhook when the API answer never came',
         ->and($refund->fresh()->gateway_reference)->toBe('555')
         // Partial: the gift stays completed; the appeal total is recomputed.
         ->and($donation->fresh()->status)->toBe(DonationStatus::Completed);
+});
+
+// ── Tributes ────────────────────────────────────────────────────────────────
+
+it('tells the person named on a tribute that a gift was made, and never how much', function () {
+    /*
+     * The field has been collected since Phase 3 and read by nothing. The
+     * form promises "never how much", so the amount is not even a variable
+     * the template could print.
+     */
+    $this->post(route('donate.store'), giftPayload([
+        'tribute_type' => 'memory',
+        'tribute_name' => 'Auntie Cecilia',
+        'tribute_message' => 'She taught half the village to read.',
+        'tribute_notify_email' => 'family@example.test',
+    ]));
+
+    $donation = Donation::first();
+    expect(ScheduledMessage::where('template_key', 'donation.tribute')->count())->toBe(0);
+
+    app(FakeGateway::class)->deliverWebhook($donation->transaction);
+    app(FakeGateway::class)->deliverWebhook($donation->transaction);
+
+    $message = ScheduledMessage::where('template_key', 'donation.tribute')->get();
+
+    expect($message)->toHaveCount(1)
+        ->and($message->first()->to_address)->toBe('family@example.test')
+        ->and($message->first()->payload['tribute_name'])->toBe('Auntie Cecilia')
+        ->and($message->first()->payload['tribute_kind'])->toBe('in memory of')
+        ->and(json_encode($message->first()->payload))->not->toContain('50.00');
+});
+
+it('names an anonymous tribute donor as Someone', function () {
+    $this->post(route('donate.store'), giftPayload([
+        'is_anonymous' => '1',
+        'tribute_type' => 'honour',
+        'tribute_name' => 'Pastor Kofi',
+        'tribute_notify_email' => 'church@example.test',
+    ]));
+
+    app(FakeGateway::class)->deliverWebhook(Donation::first()->transaction);
+
+    expect(ScheduledMessage::where('template_key', 'donation.tribute')->first()->payload['donor_name'])->toBe('Someone');
 });

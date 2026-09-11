@@ -11,6 +11,7 @@ use App\Models\PaymentTransaction;
 use App\Models\Refund;
 use App\Models\User;
 use App\Payments\Contracts\PaymentGateway;
+use App\Support\AuditLogger;
 use App\ValueObjects\Money;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -47,7 +48,7 @@ use RuntimeException;
  */
 final class RefundService
 {
-    public function __construct(private readonly PaymentGateway $gateway) {}
+    public function __construct(private readonly PaymentGateway $gateway, private readonly AuditLogger $audit) {}
 
     public function request(PaymentTransaction $transaction, Money $amount, string $reason, User $by): Refund
     {
@@ -99,6 +100,7 @@ final class RefundService
 
         if (! $result->successful) {
             $refund->markFailed($result->message ?? 'The gateway refused the refund.', $result->raw);
+            $this->audit->record('refund.failed', 'Refund of '.$refund->amount->format().' refused by the gateway', $refund, null, ['reason' => $refund->failure_reason]);
 
             return $refund->refresh();
         }
@@ -163,6 +165,7 @@ final class RefundService
 
         if ($refund->status !== Refund::STATUS_PROCESSED) {
             $refund->markFailed((string) ($data['reason'] ?? $data['status'] ?? 'Refund failed at the gateway.'), $data);
+            $this->audit->record('refund.failed', 'Refund of '.$refund->amount->format().' failed at the gateway', $refund, null, ['reason' => $refund->failure_reason]);
         }
     }
 
@@ -174,6 +177,11 @@ final class RefundService
         }
 
         $refund->markProcessed($gatewayReference, $payload);
+
+        $this->audit->record('refund.processed', 'Refund of '.$refund->amount->format().' confirmed by the gateway', $refund, null, [
+            'gateway_reference' => $gatewayReference,
+            'transaction' => $refund->transaction?->gateway_reference,
+        ]);
 
         $payable = $refund->transaction?->payable;
 

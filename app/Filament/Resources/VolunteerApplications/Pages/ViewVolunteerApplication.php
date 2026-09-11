@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\VolunteerApplications\Pages;
 
 use App\Community\VolunteerNotifier;
+use App\Filament\Concerns\AuditsRecordAccess;
 use App\Filament\Resources\VolunteerApplications\VolunteerApplicationResource;
 use App\Models\VolunteerApplication;
 use Filament\Actions\Action;
@@ -33,6 +34,20 @@ use RuntimeException;
 class ViewVolunteerApplication extends ViewRecord
 {
     protected static string $resource = VolunteerApplicationResource::class;
+
+    use AuditsRecordAccess;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $this->auditAccess(
+            'volunteer.pii_viewed',
+            'Opened volunteer application '.$this->getRecord()->getKey(),
+            $this->getRecord(),
+            shown: auth()->user()->can('volunteers.view_pii'),
+        );
+    }
 
     protected function getHeaderActions(): array
     {

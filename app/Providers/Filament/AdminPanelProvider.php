@@ -6,6 +6,7 @@ namespace App\Providers\Filament;
 
 use App\Http\Middleware\RecordAdminActivity;
 use App\Models\ThemeSetting;
+use App\Payments\PaymentMode;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -15,6 +16,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
@@ -122,6 +124,19 @@ class AdminPanelProvider extends PanelProvider
             ])
 
             /*
+             * Test mode versus live mode, visibly, on every admin page.
+             *
+             * The brief's safety rule, and the one that stops a trustee
+             * reporting last month's "income" from the sandbox. Rendered by
+             * `PaymentMode`, which reads the driver and the key prefix the same
+             * way Site Health does.
+             */
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): string => view('filament.partials.payment-mode-banner', ['mode' => PaymentMode::current()])->render(),
+            )
+
+            /*
              * The order the sidebar groups appear in, and it is the order
              * somebody works rather than alphabetical.
              *
@@ -132,6 +147,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 'Website',
                 'Programmes',
+                'Finance',
                 'Shop',
                 'Community',
                 'Content',

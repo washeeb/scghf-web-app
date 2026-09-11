@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
@@ -125,6 +126,24 @@ class Donor extends Model
         return $this->hasMany(Donation::class);
     }
 
+    /** @return HasMany<Subscription, $this> */
+    /**
+     * Tags are how Finance segments donors without a schema change per idea:
+     * "church-network", "gala-2026", "major-donor". Shared with posts through
+     * the same `taggables` table.
+     *
+     * @return MorphToMany<Tag, $this>
+     */
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'taggable');
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
     /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
@@ -221,7 +240,6 @@ class Donor extends Model
             ->update(['first_donated_at' => $paidAt]);
     }
 
-    /** Whether this donor may be emailed anything other than a receipt. */
     /**
      * Rebuild the lifetime figures from the donations table.
      *
@@ -242,6 +260,7 @@ class Donor extends Model
         ]);
     }
 
+    /** Whether this donor may be emailed anything other than a receipt. */
     public function mayBeEmailed(): bool
     {
         return $this->consent_email && filled($this->email);

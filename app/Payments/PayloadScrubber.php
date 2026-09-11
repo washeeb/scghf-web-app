@@ -33,6 +33,30 @@ final class PayloadScrubber
     }
 
     /**
+     * The payload as it may be put on a screen.
+     *
+     * Storage keeps the authorisation code, because charging a regular gift
+     * needs it. A screen does not: the code can charge the card again, and a
+     * screenshot of it is card data by another route. The donor's contact
+     * details go too unless the viewer holds the permission to see them.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function forDisplay(array $payload, bool $withContactDetails = false): array
+    {
+        $keys = array_map('strtolower', (array) config('payments.webhooks.scrub_keys', []));
+        $keys[] = 'authorization_code';
+        $keys[] = 'signature';
+
+        if (! $withContactDetails) {
+            array_push($keys, 'email', 'phone', 'customer', 'first_name', 'last_name', 'account_name', 'mobile_money');
+        }
+
+        return $this->walk($payload, $keys);
+    }
+
+    /**
      * @param  array<mixed>  $data
      * @param  array<int, string>  $keys
      * @return array<mixed>

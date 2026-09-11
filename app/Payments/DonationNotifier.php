@@ -82,6 +82,54 @@ final class DonationNotifier
                 report($e);
             }
         }
+
+        if (filled($donation->tribute_notify_email)) {
+            try {
+                $this->tribute($donation);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
+    /**
+     * Tell the person the donor named that a gift was made in tribute.
+     *
+     * The form promised "never how much", so the amount is not a variable
+     * the template can reach. An anonymous donor is "Someone". Sent once per
+     * gift, after the money is in — a tribute for a payment that failed is
+     * a message nobody should receive.
+     */
+    private function tribute(Donation $donation): void
+    {
+        $this->dispatcher->queueEmail('donation.tribute', (string) $donation->tribute_notify_email, [
+            'donor_name' => $donation->is_anonymous ? __('Someone') : ($donation->donor_name ?: __('A donor')),
+            'tribute_kind' => $donation->tribute_type === 'memory' ? __('in memory of') : __('in honour of'),
+            'tribute_name' => (string) $donation->tribute_name,
+            'tribute_message' => (string) ($donation->tribute_message ?? ''),
+            'cause_name' => $donation->cause?->title ?? __('our work'),
+        ], [
+            'related' => $donation,
+            'idempotency_key' => 'donation.tribute:'.$donation->reference,
+        ]);
+    }
+
+    /**
+     * Send the acknowledgement again, on request.
+     *
+     * A fresh idempotency key each time, so the outbox does not refuse it as
+     * the duplicate of the one sent at settlement — which is what the donor
+     * who says it never arrived is asking for.
+     */
+    public function resend(Donation $donation): void
+    {
+        $receipt = $donation->receipt;
+
+        if ($receipt === null || blank($donation->donor_email)) {
+            return;
+        }
+
+        $this->email($donation, $receipt, 'donation.receipt:'.$donation->reference.':'.now()->timestamp);
     }
 
     /**
@@ -158,7 +206,7 @@ final class DonationNotifier
         ]));
     }
 
-    private function email(Donation $donation, DonationReceipt $receipt): void
+    private function email(Donation $donation, DonationReceipt $receipt, ?string $idempotencyKey = null): void
     {
         $paragraphs = collect($receipt->paragraphs())
             ->map(fn (string $p): string => '<p>'.e($p).'</p>')
@@ -180,7 +228,7 @@ final class DonationNotifier
             'to_name' => $receipt->donor_name,
             'related' => $donation,
             'user_id' => $donation->user_id,
-            'idempotency_key' => 'donation.receipt:'.$donation->reference,
+            'idempotency_key' => $idempotencyKey ?? 'donation.receipt:'.$donation->reference,
         ]);
 
         $receipt->markSent((string) $donation->donor_email);

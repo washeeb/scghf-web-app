@@ -176,6 +176,7 @@ return [
             'refund.failed' => ['category' => 'money', 'severity' => 'warning'],
             'donation.reconciled' => ['category' => 'money', 'severity' => 'info'],
             'donation.note_added' => ['category' => 'money', 'severity' => 'info'],
+            'donor.merged' => ['category' => 'data_access', 'severity' => 'warning'],
 
             /*
              * Money leaving the foundation. Critical on approval rather than on

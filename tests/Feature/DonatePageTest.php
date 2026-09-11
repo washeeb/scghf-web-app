@@ -6,6 +6,7 @@ use App\Enums\CauseStatus;
 use App\Enums\DonationStatus;
 use App\Models\Cause;
 use App\Models\Donation;
+use App\Models\Page;
 use App\Models\PaymentTransaction;
 use App\Models\Subscription;
 use App\Payments\FakeGateway;
@@ -314,4 +315,62 @@ it('does not set one up for a gift that failed', function () {
     app(FakeGateway::class)->deliverWebhook($donation->transaction, successful: false);
 
     expect(Subscription::count())->toBe(0);
+});
+
+// ── The two amount fields ───────────────────────────────────────────────────
+
+it('keeps a chosen preset when the "another amount" box is left empty', function () {
+    /*
+     * ⚠ Two inputs with one name send both, and the later, empty one wins —
+     * so a donor who picked GH₵ 50 and typed nothing was told they had
+     * entered no amount. The box is its own field and only overrides when
+     * something is typed in it.
+     */
+    $this->post(route('donate.store'), donationPayload(['amount' => '50.00', 'amount_other' => '']))
+        ->assertSessionHasNoErrors();
+
+    expect(Donation::first()->amount->toMinor())->toBe(5000);
+});
+
+it('lets a typed amount replace the preset', function () {
+    $this->post(route('donate.store'), donationPayload(['amount' => '50.00', 'amount_other' => '75.50']))
+        ->assertSessionHasNoErrors();
+
+    expect(Donation::first()->amount->toMinor())->toBe(7550);
+});
+
+it('arrives from the widget with the amount, cause and frequency already chosen', function () {
+    $cause = Cause::query()->where('status', CauseStatus::Active)->first();
+
+    $this->get(route('donate', ['cause' => $cause->slug, 'frequency' => 'monthly']))
+        ->assertOk()
+        ->assertSee('name="frequency" value="monthly" checked', escape: false)
+        ->assertSee('name="cause" value="'.$cause->slug.'"', escape: false);
+
+    // With no appeal the presets are drawn, and the one the widget sent is selected.
+    $html = $this->get(route('donate', ['amount' => '100.00']))->assertOk()->getContent();
+    expect(preg_match('/name="amount"\s+value="100\.00"\s+checked/', $html))->toBe(1);
+
+    // A typed amount from the widget lands in the box, not on a chip.
+    $this->get(route('donate', ['amount_other' => '73.25']))
+        ->assertOk()
+        ->assertSee('name="amount_other"', escape: false)
+        ->assertSee('value="73.25"', escape: false);
+});
+
+it('draws the donation widget as a first step, with no card fields', function () {
+    $page = Page::factory()->published()->create(['slug' => 'give-widget']);
+    $page->sections()->create([
+        'block_type' => 'donation-widget',
+        'data' => ['heading' => 'Give today', 'preset_amounts' => [2000, 5000]],
+    ]);
+
+    $this->get('/give-widget')
+        ->assertOk()
+        ->assertSee('Give today')
+        ->assertSee('action="'.route('donate').'"', escape: false)
+        ->assertSee('name="amount" value="20.00"', escape: false)
+        ->assertSee('name="amount_other"', escape: false)
+        ->assertDontSee('card_number')
+        ->assertDontSee('cvv');
 });

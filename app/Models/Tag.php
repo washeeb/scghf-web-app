@@ -35,6 +35,11 @@ class Tag extends Model
         return $this->morphedByMany(Post::class, 'taggable');
     }
 
+    public function donors(): MorphToMany
+    {
+        return $this->morphedByMany(Donor::class, 'taggable');
+    }
+
     /** Find or create by name, so an editor typing a tag does not create duplicates. */
     public static function findOrCreateByName(string $name): self
     {

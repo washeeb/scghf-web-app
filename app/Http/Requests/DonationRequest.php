@@ -47,6 +47,21 @@ class DonationRequest extends FormRequest
     }
 
     /** @return array<string, mixed> */
+    /**
+     * The preset radios and the "another amount" box are two fields, so a
+     * chosen preset is not blanked by an empty box beside it (two inputs with
+     * one name would send both, and the empty one, being later, would win).
+     * A typed amount takes precedence, which is what the box says it does.
+     */
+    protected function prepareForValidation(): void
+    {
+        $other = trim((string) $this->input('amount_other', ''));
+
+        if ($other !== '') {
+            $this->merge(['amount' => $other]);
+        }
+    }
+
     public function rules(): array
     {
         return [

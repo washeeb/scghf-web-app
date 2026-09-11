@@ -8,6 +8,117 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 8 Module 2 — the finance admin — 2026-09-11
+
+Nothing here edits money. A gift's amount is written once, by the gateway,
+and never by a form; the screens request, approve, reconcile, resend, replay
+and report, and each of those is a row in the audit trail.
+
+#### Added
+
+**Finance, a new navigation group**
+- **Donations** — searchable, filterable by status, appeal, channel, method
+  and date, exportable (donor columns only for `donations.view_pii`). One
+  gift shows the money as the gateway reported it (asked, settled, fee,
+  net), the donor (contact details behind `view_pii`), the receipt, the
+  transaction, every webhook received for it, the refunds, the activity
+  trail, and the gateway's response with the authorisation code and anything
+  card-shaped removed. Actions: check with the gateway, resend the receipt
+  (a fresh idempotency key, so the outbox does not refuse it as a
+  duplicate), mark reconciled, request a refund, add a dated and signed note
+- **Record an offline gift** — cash, cheque, bank transfer, goods — through
+  `OfflineDonationService`, never `Donation::create`, so it is allocated,
+  snapshotted for deductibility, given an `offline` transaction row that
+  reconciliation knows not to ask the gateway about, and receipted. A cheque
+  needs its number; nothing can have arrived in the future
+- **Donors** — lifetime value, first and last gift, average, frequency, what
+  was sent to them and whether it arrived, and consent per channel. Editing
+  a consent **on** here is not consent and the form says so; **off** is
+  honoured at once. **Merge a duplicate** (`donors.merge`, seeded since
+  Phase 3 with nothing behind it): gifts, regular gifts, pledges and
+  sponsorships move to the survivor, blanks fill from the duplicate, filled
+  fields are never overwritten, consent comes with its evidence or not at
+  all, totals are recounted from the donations table, and the duplicate is
+  removed with a note saying where it went. **Tags** — "church network",
+  "gala 2026", "major donor" — through the `taggables` table posts already
+  use; a column, a filter and therefore an export on the donor list, and
+  they travel with a merge
+- **Regular gifts** — status, next charge, charge history, failures;
+  pause and stop with a reason, resume, charge now for a missed date.
+  Changing the amount is deliberately absent: it is the donor's, from
+  their signed link or their account
+- **Refunds** — the queue awaiting approval, **Approve and send** for a
+  different person than the requester (the model refuses; the screen shows
+  the refusal), cancel. `refund.processed` and `refund.failed` are now
+  audited when the gateway answers, which the definitions in
+  `config/system.php` had promised since Module 1
+- **Webhook events** — every delivery with its signature verdict, processed
+  state and error; **Replay** re-runs the handler synchronously for a valid
+  event (`payments.replay_webhook`) and counts nothing twice; an invalid
+  signature has no button
+- **Reports** — one window, every cut: raised, net of fees, average gift,
+  refunded; by day, week or month; by appeal, channel, region of the work
+  (through the appeal's project) and source; new against returning donors;
+  regular giving's monthly value, starts, stops and retention; and what has
+  settled but not been reconciled against a payout. `GivingReports` computes
+  in integer pesewas in SQL and is tested on its own; the page only draws
+  it. **Run reconciliation now** runs the 06:30 job on demand
+- **Test mode versus live mode, on every admin page.** An amber band for
+  Paystack test keys, a dark band for the fake gateway, nothing for live —
+  so a permanent "all is well" strip never trains anybody to stop reading
+  strips, and a trustee cannot report sandbox gifts as income. `PaymentMode`
+  reads the driver and the key prefix exactly as Site Health does
+
+**Access to personal data is now recorded**
+- `donor.pii_viewed` and `volunteer.pii_viewed` were defined in the audit
+  vocabulary since Phase 3 and written by nothing. Opening a donor record,
+  a gift with the donor's contact details shown, or a volunteer application
+  with the applicant's details shown now writes one — only when the details
+  were actually shown, so somebody who may see a gift but not the donor has
+  not accessed them
+
+**The tribute is told**
+- `tribute_notify_email` has been collected by the form since Phase 3, with
+  the promise "we will let them know a gift was made — never how much", and
+  read by nothing. `donation.tribute`, new, goes to the person named once the
+  money is in, saying who gave (or "Someone", for an anonymous gift), in
+  memory or in honour of whom, and towards what. The amount is not a
+  variable the template can reach
+
+**The donation widget is a form**
+- The `donation-widget` block had been a heading and a link since Phase 5.
+  It is now the first step — amount chips, another amount, once or monthly,
+  optionally pinned to an appeal — as a plain GET to the donation page,
+  which arrives with those choices made. No card fields anywhere but the
+  gateway
+
+**Documentation**
+- `docs/PHASE-8-PAYMENTS-TEST-PLAN.md`: the fake gateway's rules, Paystack
+  test cards and mobile money, forging a webhook, duplicate and out-of-order
+  delivery, replay, every failure simulation, reconciliation, and the one
+  live cedi
+
+#### Fixed
+
+- **⚠ A chosen preset amount was blanked by the empty "another amount" box.**
+  Both inputs were named `amount`; a browser sends both and the later, empty
+  one wins, so a donor who picked GH₵ 50 and typed nothing was told they had
+  entered no amount. The box is `amount_other` and overrides only when
+  something is typed. The automated tests posted arrays directly and never
+  met the browser's behaviour
+- `PaymentPolicy` looked for `payments.view`, which does not exist; the
+  permission is `payments.view_transactions`. Without the override the
+  Refunds and Webhook screens would have been open to Super Admin alone
+- The gateway's raw response was shown to anybody who could open a gift,
+  authorisation code and customer email included, under a heading that said
+  "scrubbed". `PayloadScrubber::forDisplay()` removes the code and the
+  signature always and the contact fields unless the viewer may see them;
+  the same goes for the refund and webhook screens
+- The page state Filament serialises into the HTML carried the donor's email
+  and phone even when the entries showing them were hidden. Hidden is not
+  withheld; they are stripped before the state leaves the server
+- `Donor::mayBeEmailed()` had `recalculateTotals()`'s docblock and vice versa
+
 ### Phase 8 Module 1 — the giving flow — 2026-09-11
 
 Most of the Phase 8 engine has existed since Phase 3: one transaction table,

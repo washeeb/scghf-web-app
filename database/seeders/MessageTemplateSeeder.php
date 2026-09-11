@@ -211,6 +211,35 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'donation.tribute',
+                'name' => 'A gift was made in tribute',
+                'description' => 'Sent to the person the donor named when giving in honour or in '
+                    .'memory of somebody. Says that a gift was made and for whom — never how much.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['donor_name', 'tribute_kind', 'tribute_name', 'tribute_message', 'cause_name'],
+                'required' => ['tribute_kind', 'tribute_name'],
+                'subject' => 'A gift to {{site_name}} {{tribute_kind}} {{tribute_name}}',
+                'html' => <<<'HTML'
+                    <p>Hello,</p>
+                    <p>{{donor_name}} has made a gift to {{site_name}} {{tribute_kind}}
+                    <strong>{{tribute_name}}</strong>, towards {{cause_name}}, and asked us to let
+                    you know.</p>
+                    <p>{{tribute_message}}</p>
+                    <p>With warm regards,<br>{{site_name}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Hello,
+
+                    {{donor_name}} has made a gift to {{site_name}} {{tribute_kind}} {{tribute_name}},
+                    towards {{cause_name}}, and asked us to let you know.
+
+                    {{tribute_message}}
+
+                    With warm regards,
+                    {{site_name}}
+                    TEXT,
+            ],
+            [
                 'key' => 'recurring.established',
                 'name' => 'Regular gift set up',
                 'description' => 'Sent once the first payment of a regular gift is confirmed. '

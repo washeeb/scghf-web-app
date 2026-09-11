@@ -34,11 +34,13 @@
      * clicked "Give GH₵ 50 — a school kit" and then had the form rejected for
      * an unrelated field must not have their choice quietly reset.
      */
-    $selected = old('amount', request()->string('amount')->toString() ?: null);
+    $selected = old('amount_other') ?: old('amount', request()->string('amount_other')->toString() ?: (request()->string('amount')->toString() ?: null));
 
     $allowMomoDirect = (bool) setting('donations.allow_mobile_money_direct', true);
     $allowPublicMessage = (bool) setting('donations.allow_public_message', true);
-    $frequency = old('frequency', 'once');
+    // As with the amount: a link or the donation widget may carry the frequency.
+    $requestedFrequency = request()->string('frequency')->toString();
+    $frequency = old('frequency', in_array($requestedFrequency, ['once', 'weekly', 'monthly', 'quarterly', 'annually'], true) ? $requestedFrequency : 'once');
     $payWith = old('pay_with', 'gateway');
 @endphp
 
@@ -149,7 +151,7 @@
                         <input
                             id="amount-other"
                             type="number"
-                            name="amount"
+                            name="amount_other"
                             step="0.01"
                             min="0.01"
                             inputmode="decimal"
@@ -411,7 +413,7 @@
                 var general = {!! json_encode(__('wherever it is needed most')) !!};
                 function update() {
                     var amount = null;
-                    form.querySelectorAll('input[name="amount"]').forEach(function (el) {
+                    form.querySelectorAll('input[name="amount"], input[name="amount_other"]').forEach(function (el) {
                         if ((el.type === 'radio' && el.checked) || (el.type !== 'radio' && el.value)) amount = el.value;
                     });
                     if (!amount || isNaN(parseFloat(amount))) { out.hidden = true; return; }
