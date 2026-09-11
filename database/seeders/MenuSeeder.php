@@ -9,6 +9,7 @@ use App\Models\Menu;
 use App\Models\MenuItem;
 use App\Models\Page;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Header, footer and mobile navigation.
@@ -18,9 +19,18 @@ use Illuminate\Database\Seeder;
  * reorder, relabel and remove items freely.
  *
  * Route-type items point at code-backed sections (/donate, /shop) that are not
- * CMS pages. They resolve to null until those routes exist in a later phase,
- * and `isRenderable()` omits them — so the nav is correct at every stage rather
+ * CMS pages. They resolve to null until those routes exist, and
+ * `isRenderable()` omits them — so the nav is correct at every stage rather
  * than showing links that 404.
+ *
+ * ⚠ The route NAMES here have to be the ones the routes were actually given.
+ * Until Phase 6 this file said `donate.index`, `impact.index` and
+ * `divisions.index`; the routes were built as `donate`, `impact` and
+ * `focus-areas.index`. `isRenderable()` did exactly what it should with a name
+ * that resolves to nothing — dropped the item — which is how a fresh install
+ * had no Donate pill, no Impact link and no Divisions menu, silently, with
+ * every test passing. `repointStaleRoutes()` corrects an install seeded with
+ * the old names.
  *
  * Idempotent: menus are upserted, and items are only seeded into a menu that
  * has none, so a re-run never undoes an editor's arrangement.
@@ -56,6 +66,7 @@ class MenuSeeder extends Seeder
         $this->seedFooterPrimary($footerPrimary);
         $this->seedFooterSupport($footerSupport);
         $this->seedFooterLegal($footerLegal);
+        $this->repointStaleRoutes();
 
         $this->command?->info(sprintf(
             'Menus: %d menus, %d items.',
@@ -83,9 +94,9 @@ class MenuSeeder extends Seeder
 
         // Divisions is a code-backed section; its children are the four
         // divisions, seeded in the Programmes module rather than here.
-        $this->route($menu, 'divisions.index', 'Our Divisions', $order++);
+        $this->route($menu, 'focus-areas.index', 'Our Divisions', $order++);
         $this->route($menu, 'projects.index', 'Projects', $order++);
-        $this->route($menu, 'impact.index', 'Impact', $order++);
+        $this->route($menu, 'impact', 'Impact', $order++);
 
         $this->page($menu, 'get-involved', 'Get Involved', $order++, children: [
             ['route' => 'volunteer.index', 'label' => 'Volunteer'],
@@ -103,7 +114,7 @@ class MenuSeeder extends Seeder
             'menu_id' => $menu->id,
             'label' => 'Donate',
             'link_type' => MenuItemLinkType::Route,
-            'route_name' => 'donate.index',
+            'route_name' => 'donate',
             'is_highlighted' => true,
             'sort_order' => $order,
         ]);
@@ -119,9 +130,9 @@ class MenuSeeder extends Seeder
         foreach ([
             ['slug' => 'about', 'label' => 'About Us'],
             ['slug' => 'our-story', 'label' => 'Our Story'],
-            ['route' => 'divisions.index', 'label' => 'Our Divisions'],
+            ['route' => 'focus-areas.index', 'label' => 'Our Divisions'],
             ['route' => 'projects.index', 'label' => 'Projects'],
-            ['route' => 'impact.index', 'label' => 'Impact'],
+            ['route' => 'impact', 'label' => 'Impact'],
             ['route' => 'news.index', 'label' => 'News'],
         ] as $row) {
             $this->item($menu, $row, $order++);
@@ -136,7 +147,7 @@ class MenuSeeder extends Seeder
 
         $order = 0;
         foreach ([
-            ['route' => 'donate.index', 'label' => 'Donate'],
+            ['route' => 'donate', 'label' => 'Donate'],
             ['slug' => 'other-ways-to-give', 'label' => 'Other Ways to Give'],
             ['route' => 'volunteer.index', 'label' => 'Volunteer'],
             ['slug' => 'partner-with-us', 'label' => 'Partner With Us'],
@@ -166,6 +177,33 @@ class MenuSeeder extends Seeder
             ['slug' => 'whistleblowing', 'label' => 'Raise a Concern'],
         ] as $row) {
             $this->item($menu, $row, $order++);
+        }
+    }
+
+    /**
+     * Items seeded with a route name that was never built.
+     *
+     * Only names from this file's own history are touched, and only where the
+     * new name is a real route — an editor's own route-type item is not this
+     * seeder's to rewrite.
+     */
+    private function repointStaleRoutes(): void
+    {
+        $renamed = [
+            'donate.index' => 'donate',
+            'impact.index' => 'impact',
+            'divisions.index' => 'focus-areas.index',
+        ];
+
+        foreach ($renamed as $old => $new) {
+            if (! Route::has($new)) {
+                continue;
+            }
+
+            MenuItem::query()
+                ->where('link_type', MenuItemLinkType::Route)
+                ->where('route_name', $old)
+                ->update(['route_name' => $new]);
         }
     }
 

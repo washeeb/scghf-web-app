@@ -132,6 +132,8 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 'Website',
                 'Programmes',
+                'Shop',
+                'Community',
                 'Content',
                 'Inbox',
                 'Library',

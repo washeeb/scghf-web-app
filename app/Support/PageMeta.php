@@ -75,13 +75,29 @@ class PageMeta implements Arrayable
         );
     }
 
-    /** The fallback for a page with no model behind it — search results, the sitemap page. */
+    /**
+     * The fallback for a page with no model behind it — search results, the
+     * sitemap page.
+     *
+     * ⚠ The suffix is appended ONCE. Eighteen controllers appended it
+     * themselves before passing the title in, and this method appended it
+     * again, so every code-backed page shipped with a `<title>` of
+     * "Appeals | Greater Hope Foundations | Greater Hope Foundations". The
+     * page shell strips every occurrence before printing the h1, which is why
+     * nobody saw it on the page — only in the tab, the search result and the
+     * share card, which is where a title matters most.
+     */
     public static function site(string $title, ?string $description = null, bool $noindex = false): self
     {
         $image = static::defaultShareImage();
+        $suffix = (string) setting('seo.title_suffix', '');
+
+        if ($suffix !== '' && str_ends_with($title, $suffix)) {
+            $title = substr($title, 0, -strlen($suffix));
+        }
 
         return new self(
-            title: $title.setting('seo.title_suffix', ''),
+            title: $title.$suffix,
             description: $description ?? setting('seo.default_description'),
             noindex: $noindex || ! setting('seo.allow_indexing', false),
             canonical: request()->url(),

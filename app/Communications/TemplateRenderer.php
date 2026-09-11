@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Communications;
 
 use App\Communications\Exceptions\UnresolvedVariable;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Str;
 
 /**
@@ -150,6 +151,33 @@ class TemplateRenderer
                 // Missing and empty are the same failure from the reader's
                 // point of view: "Dear ," either way.
                 $raw = data_get($values, $name);
+
+                /*
+                 * ⚠ A value that declares itself HTML is printed as HTML in the
+                 * HTML body and as plain text everywhere else.
+                 *
+                 * Before this branch every variable was escaped in the HTML
+                 * body, including the ones that ARE the body — a newsletter
+                 * campaign's `{{content}}`, an appeal update's `{{body}}`, the
+                 * acknowledgement paragraphs on a receipt — so every campaign
+                 * would have gone out as a page of visible `&lt;p&gt;` tags.
+                 * Only an `Htmlable` gets through unescaped; a plain string
+                 * that happens to contain tags is still escaped, because a
+                 * donor's name is a plain string and this is where stored XSS
+                 * would otherwise land.
+                 */
+                if ($raw instanceof Htmlable) {
+                    $html = trim($raw->toHtml());
+
+                    if ($html === '') {
+                        $missing[] = $name;
+
+                        return '';
+                    }
+
+                    return $escape ? $html : trim(html_entity_decode(strip_tags($html)));
+                }
+
                 $value = $this->stringify($raw);
 
                 if ($value === '') {

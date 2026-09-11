@@ -184,7 +184,7 @@ class MessageTemplateSeeder extends Seeder
                 'locked' => true,
                 'variables' => [
                     'customer_name', 'order_reference', 'order_total', 'order_items',
-                    'delivery_address', 'invoice_number',
+                    'delivery_address', 'invoice_number', 'order_url',
                 ],
                 'required' => ['customer_name', 'order_reference', 'order_total'],
                 'subject' => 'Your order {{order_reference}}',
@@ -195,6 +195,9 @@ class MessageTemplateSeeder extends Seeder
                     <p>Order reference: <strong>{{order_reference}}</strong></p>
                     {{order_items}}
                     <p>Delivery to: {{delivery_address}}</p>
+                    <p>You can see this order at any time here: {{order_url}}</p>
+                    <p>This is a purchase, not a donation, and no charitable receipt is issued
+                    for it. Invoice number: {{invoice_number}}</p>
                     HTML,
                 'text' => <<<'TEXT'
                     Dear {{customer_name}},
@@ -206,6 +209,11 @@ class MessageTemplateSeeder extends Seeder
                     {{order_items}}
 
                     Delivery to: {{delivery_address}}
+
+                    You can see this order at any time here: {{order_url}}
+
+                    This is a purchase, not a donation, and no charitable receipt is issued
+                    for it. Invoice number: {{invoice_number}}
                     TEXT,
             ],
             [

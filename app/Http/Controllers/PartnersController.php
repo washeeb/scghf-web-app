@@ -33,7 +33,7 @@ class PartnersController extends Controller
                 && $partner->partnership_ended_on->isPast()),
 
             'meta' => PageMeta::site(
-                __('Our partners').setting('seo.title_suffix', ''),
+                __('Our partners'),
                 __('The organisations we work with.'),
             ),
             'crumbs' => [

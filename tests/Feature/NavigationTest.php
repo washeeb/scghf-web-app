@@ -193,11 +193,13 @@ it('does not put the highlighted item in the list as well as on the button', fun
 
 it('still renders a working donate button when nobody has highlighted one', function () {
     /*
-     * The seeded highlight points at `donate.index`, a route that does not
-     * exist yet — so `isRenderable()` correctly drops it and the header falls
-     * back. A donation site whose donate button disappears because a route is
-     * not built yet would be the worst possible failure of this fallback.
+     * A donation site whose donate button disappears because somebody removed
+     * the highlighted item — or, as happened until Phase 6, because the seeder
+     * named a route that was never built — would be the worst possible failure
+     * of this fallback. The highlight is removed here to exercise it.
      */
+    MenuItem::where('is_highlighted', true)->delete();
+
     expect(Menu::renderable('header')->firstWhere('is_highlighted', true))->toBeNull();
 
     $this->get('/')
@@ -210,14 +212,20 @@ it('still renders a working donate button when nobody has highlighted one', func
 
 it('drops an item whose route has not been built yet', function () {
     /*
-     * `divisions.index`, `projects.index`, `impact.index` and `shop.index` are
-     * seeded into the header and arrive in later phases. Rendering them now
-     * would be the navigation linking into a 404 of the site's own making.
+     * A route-type item naming a route that does not exist is dropped rather
+     * than rendered — the navigation must not link into a 404 of the site's
+     * own making. Until Phase 6 the seeder itself did this to the Donate pill,
+     * the Impact link and the Divisions menu by naming routes that were never
+     * given those names.
      */
+    $item = MenuItem::where('route_name', 'shop.index')->firstOrFail();
+    $item->forceFill(['route_name' => 'shop.not-built-yet'])->save();
+
     $html = $this->get('/')->getContent();
 
-    expect(Route::has('shop.index'))->toBeFalse()
-        ->and($html)->not->toContain('>Shop</a>');
+    expect(Route::has('shop.not-built-yet'))->toBeFalse()
+        ->and($html)->not->toContain('shop.not-built-yet')
+        ->and(Menu::renderable('header')->pluck('label'))->not->toContain('Shop');
 });
 
 /**

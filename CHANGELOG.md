@@ -8,6 +8,92 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 6 Module 4 — the shop — 2026-09-11
+
+The catalogue, the stock ledger, carts, coupons, delivery zones, orders and
+invoices have all existed since Phase 3 — built and tested — with no page that
+showed a product, no admin screen that could create one, and `FEATURE_SHOP=true`
+in front of none of it.
+
+#### Added
+
+**The public shop**
+- `/shop`, category pages (a parent lists its children's products), product
+  pages with variants as real radio buttons, `/basket`, `/checkout`, and an
+  order page reached from the gateway callback. Every write is a plain form
+  POST; the basket works with JavaScript off, because that is the phone most of
+  these customers have
+- A sold-out product is still listed, marked — a shelf that hides its gaps
+  looks like a shop with three products. A product tied to an appeal says so on
+  the card and on its page: it is the reason to buy here rather than at a
+  market stall
+- The basket lives in a thirty-day cookie keyed on the cart's own token, not
+  the session; a guest who signs in keeps what they added. Nothing is created
+  until something is added, so crawlers leave no rows behind
+- Checkout collects a Ghanaian address — region, area, a landmark-style line —
+  and the phone number a courier actually uses. The delivery charge for **this
+  basket** is listed region by region beside the form, with free-above and
+  weight bands applied, and the gateway shows the exact total before taking
+  anything
+- **Nothing reads the query string about the outcome.** The order page reports
+  what the database says — paid, being confirmed, not completed, under review —
+  exactly as the donation page does
+- `feature:` middleware. `FEATURE_SHOP` has been in `.env.example` since Phase 2
+  and until now nothing on the request path read it; turning it off now makes
+  every shop route a 404, indistinguishable from a shop that was never built
+- `scghf:sweep-shop`, hourly: stock held by a checkout somebody walked away from
+  goes back on the shelf an hour later rather than at tomorrow's reconciliation
+  — twelve mugs and eleven abandoned checkouts must not read as sold out all
+  day — after one last verify with the gateway, and expired baskets are deleted
+  in the same pass
+- The header shows the basket with its count once there is something in it
+
+**The admin, in a new "Shop" group**
+- Products, with variants (prices typed in cedis, stored in pesewas, one
+  conversion in `MoneyField`), images, publishing, and two actions: **Adjust
+  stock**, which writes an inventory movement with a reason rather than a
+  number typed over a number, and **Record regulatory review**, which is the
+  only way a product that trips the FDA keyword screen goes back on sale
+- Categories with the trustees' approved-goods taxonomy visible; delivery zones
+  with rates and a heading naming any region no active zone serves; discount
+  codes typed the way they read
+- Orders: a read-only view — an order is a snapshot and is never edited — with
+  recorded transitions (being prepared, dispatched, delivered, collected), an
+  unpaid cancel that releases stock, and a resend. **Dispatched** asks for the
+  courier and sends `order.shipped` by email and SMS, both of which existed
+  since Phase 3 with nothing that sent them
+
+#### Fixed
+
+- **⚠ Settlement told nobody.** `order.confirmation` and `donation.receipt` were
+  seeded in Phase 3 with full variable sets and no caller: an order marked paid
+  by the webhook produced no invoice and no email, and a gift confirmed by the
+  webhook produced no receipt row and no acknowledgement — while the thank-you
+  page said one was on its way. `OrderNotifier` now issues the invoice and
+  queues the confirmation; `DonationNotifier` issues the receipt and queues the
+  acknowledgement email and the `donation.received` SMS. Both are idempotent on
+  the outbox key and neither can throw into the webhook path
+- **⚠ Every HTML variable in every email was escaped.** A newsletter campaign's
+  `{{content}}`, an appeal update's `{{body}}` and the acknowledgement paragraphs
+  on a receipt would all have gone out as a page of visible `&lt;p&gt;` tags.
+  `TemplateRenderer` now prints an `Htmlable` unescaped in the HTML body and as
+  plain text in the text body; a plain string that happens to contain tags is
+  still escaped, because that is where stored XSS would land. The outbox
+  preserves the distinction through `json_encode`
+- **The seeded navigation named routes that were never built.** `donate.index`,
+  `impact.index` and `divisions.index` were the seeder's names; the routes were
+  built as `donate`, `impact` and `focus-areas.index`. `isRenderable()` did
+  exactly what it should with a name that resolves to nothing — dropped the
+  item — so a fresh install had no Donate pill, no Impact link and no Divisions
+  menu, silently, with every test passing. The seeder now names the real routes
+  and repoints an install seeded with the old ones
+- Every code-backed page shipped with a doubled `<title>` — eighteen
+  controllers appended the suffix and `PageMeta::site()` appended it again. The
+  page shell stripped every occurrence before the h1, which is why nobody saw
+  it on the page, only in the tab, the search result and the share card
+- The sandbox checkout always returned to the donation callback; it now returns
+  to whichever journey started the payment
+
 ### Phase 7 — Projects, causes and impact — 2026-09-06
 
 The programmatic heart of the site, on top of the pages Phase 6 built. Every

@@ -31,6 +31,9 @@ use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Shop\CartController;
+use App\Http\Controllers\Shop\CheckoutController;
+use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TestimonialsController;
@@ -427,6 +430,52 @@ Route::get('appeals/{cause:slug}', [CauseController::class, 'show'])->name('caus
  * cannot find the merchant number gives nothing rather than reaching for a card.
  */
 Route::get('give', GivingController::class)->name('give');
+
+/*
+|--------------------------------------------------------------------------
+| The shop
+|--------------------------------------------------------------------------
+|
+| The catalogue, the stock ledger, carts, coupons, shipping zones, orders and
+| invoices have all existed since Phase 3 — built and tested, with no page that
+| showed a product, no way to put one in a basket, and `FEATURE_SHOP=true` in
+| front of none of it. These routes are what the flag has been promising.
+|
+| `feature:shop` is the switch. Turning the flag off makes every one of these a
+| 404, which is what a paused shop should look like — indistinguishable from
+| one that was never built.
+|
+| Every write is a plain form POST. The basket works on a phone with the
+| JavaScript turned off, because that is the phone most of these customers
+| have.
+*/
+Route::middleware('feature:shop')->group(function (): void {
+    Route::get('shop', [ShopController::class, 'index'])->name('shop.index');
+    Route::get('shop/category/{category:slug}', [ShopController::class, 'category'])->name('shop.category');
+
+    Route::get('basket', [CartController::class, 'show'])->name('shop.cart');
+    Route::post('basket', [CartController::class, 'add'])->middleware('throttle:30,1')->name('shop.cart.add');
+    Route::patch('basket/{variant:ulid}', [CartController::class, 'update'])->name('shop.cart.update');
+    Route::delete('basket/{variant:ulid}', [CartController::class, 'remove'])->name('shop.cart.remove');
+
+    // Throttled harder than the rest: a coupon field is a guessing target, and
+    // ten tries a minute is plenty for somebody typing a code off a flyer.
+    Route::post('basket/coupon', [CartController::class, 'applyCoupon'])->middleware('throttle:10,1')->name('shop.cart.coupon');
+    Route::delete('basket/coupon', [CartController::class, 'removeCoupon'])->name('shop.cart.coupon.remove');
+
+    Route::get('checkout', [CheckoutController::class, 'show'])->name('shop.checkout');
+    Route::post('checkout', [CheckoutController::class, 'store'])
+        // The same reasoning as the donation form: a checkout is a
+        // card-testing target, and the honeypot stops the naive version.
+        ->middleware(['throttle:6,1', ProtectAgainstSpam::class])
+        ->name('shop.checkout.store');
+
+    Route::get('checkout/callback', [CheckoutController::class, 'callback'])->name('shop.checkout.callback');
+    Route::get('shop/orders/{order:ulid}', [CheckoutController::class, 'order'])->name('shop.order');
+
+    // Last, because `{product}` would otherwise swallow `category`.
+    Route::get('shop/{product:slug}', [ShopController::class, 'show'])->name('shop.show');
+});
 
 /*
 |--------------------------------------------------------------------------

@@ -9,6 +9,7 @@ use App\Enums\DonationStatus;
 use App\Models\CauseUpdate;
 use App\Models\Donation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
 use Throwable;
 
 /**
@@ -71,7 +72,7 @@ class CauseUpdateNotifier
                     'name' => $name,
                     'cause' => $cause->title,
                     'title' => $update->title,
-                    'body' => (string) $update->body,
+                    'body' => new HtmlString((string) $update->body),
                     'cause_url' => route('causes.show', $cause),
                 ]);
 

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Casts\MoneyCast;
 use App\Contracts\Payable;
 use App\Enums\DonationStatus;
+use App\Payments\DonationNotifier;
 use App\Payments\RecurringGivingService;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -267,6 +268,14 @@ class Donation extends Model implements Payable
         });
 
         $this->establishRecurringGiftIfAsked();
+
+        /*
+         * The receipt and the thank-you, outside the transaction and unable to
+         * throw into it. See DonationNotifier — the thank-you page has
+         * promised "a receipt is on its way" since Phase 6 Module 3, and until
+         * this line nothing sent one.
+         */
+        app(DonationNotifier::class)->thank($this->refresh());
     }
 
     /**

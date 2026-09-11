@@ -67,7 +67,7 @@ class ImpactController extends Controller
             'metrics' => $this->metrics(),
 
             'meta' => PageMeta::site(
-                __('Our impact').setting('seo.title_suffix', ''),
+                __('Our impact'),
                 __('What has been given, what has been spent, and what it changed.'),
             ),
             'crumbs' => [

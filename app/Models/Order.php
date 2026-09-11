@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Casts\MoneyCast;
 use App\Contracts\Payable;
 use App\Enums\OrderStatus;
+use App\Shop\OrderNotifier;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -230,6 +231,15 @@ class Order extends Model implements Payable
 
             $this->setRawAttributes($order->getAttributes(), true);
         });
+
+        /*
+         * Outside the transaction. The invoice and the confirmation email are
+         * consequences of the order being paid, not conditions of it — and
+         * `OrderNotifier` reports rather than throws, so a broken template
+         * cannot fail the webhook and have the gateway redeliver a payment
+         * that has already been counted.
+         */
+        app(OrderNotifier::class)->confirm($this);
     }
 
     /**

@@ -40,7 +40,7 @@ class NewsController extends Controller
             'categories' => $this->categories(),
             'category' => null,
             'meta' => PageMeta::site(
-                __('News').setting('seo.title_suffix', ''),
+                __('News'),
                 __('Updates from :name.', ['name' => setting('general.short_name', config('app.name'))]),
             ),
             'crumbs' => [
@@ -63,7 +63,7 @@ class NewsController extends Controller
             'categories' => $this->categories(),
             'category' => $category,
             'meta' => PageMeta::site(
-                $category->name.setting('seo.title_suffix', ''),
+                $category->name,
                 $category->description,
             ),
             'crumbs' => [

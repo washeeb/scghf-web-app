@@ -50,7 +50,7 @@ class FaqController extends Controller
             'categories' => $categories,
             'uncategorised' => $uncategorised,
             'meta' => PageMeta::site(
-                __('Frequently asked questions').setting('seo.title_suffix', ''),
+                __('Frequently asked questions'),
                 __('Answers to the questions we are asked most often.'),
             ),
             'crumbs' => [

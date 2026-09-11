@@ -58,7 +58,7 @@ class GivingController extends Controller
                 ->values(),
 
             'meta' => PageMeta::site(
-                __('Ways to give').setting('seo.title_suffix', ''),
+                __('Ways to give'),
                 __('Bank transfer and Mobile Money details for :name.', [
                     'name' => setting('general.short_name', config('app.name')),
                 ]),

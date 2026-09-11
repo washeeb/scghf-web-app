@@ -46,7 +46,7 @@ class TeamController extends Controller
             'departments' => $departments,
             'members' => $members,
             'meta' => PageMeta::site(
-                __('Our team').setting('seo.title_suffix', ''),
+                __('Our team'),
                 __('The trustees, staff and volunteers behind :name.', [
                     'name' => setting('general.short_name', config('app.name')),
                 ]),

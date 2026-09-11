@@ -150,6 +150,13 @@ final class CheckoutService
         $transaction = $this->payments->charge($order, [
             'reference' => $order->reference,
             'channel' => $details['channel'] ?? null,
+            /*
+             * Where the gateway sends the customer back to. Passed per
+             * transaction rather than left to PAYSTACK_CALLBACK_URL, which is
+             * the donation callback — a customer returning from paying for a
+             * mug must not land on a page about a gift.
+             */
+            'callback_url' => $details['callback_url'] ?? null,
             'metadata' => [
                 'order' => $order->reference,
                 // Marked so a Paystack dashboard entry is identifiable as a

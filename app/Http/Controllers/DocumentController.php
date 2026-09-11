@@ -51,7 +51,7 @@ class DocumentController extends Controller
         return view('documents.index', [
             'documents' => $documents,
             'meta' => PageMeta::site(
-                __('Reports & policies').setting('seo.title_suffix', ''),
+                __('Reports & policies'),
                 __('Our annual reports, financial statements and the policies we work to.'),
             ),
             'crumbs' => [

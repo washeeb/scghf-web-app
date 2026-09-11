@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CountVisit;
+use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\HandleRedirects;
 use App\Http\Middleware\SetRobotsHeader;
 use App\Support\ErrorReporter;
@@ -74,6 +75,15 @@ return Application::configure(basePath: dirname(__DIR__))
          * Their account is the answer to what they were trying to reach.
          */
         $middleware->redirectUsersTo('/account');
+
+        /*
+         * `feature:shop`, `feature:events` — a flag that closes its routes.
+         * Without an alias the flags in config/features.php are read by
+         * nothing on the request path, which makes them documentation.
+         */
+        $middleware->alias([
+            'feature' => EnsureFeatureEnabled::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         /*

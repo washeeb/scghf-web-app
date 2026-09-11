@@ -159,6 +159,32 @@
         <div class="flex items-center gap-2">
             <x-site.theme-toggle />
 
+            {{--
+                The basket, when the shop is on.
+
+                Only rendered with something in it — a visitor who has never
+                shopped is not shown an empty basket on every page, and
+                `CurrentCart::itemCount()` makes no query for them. The count is
+                in the accessible name as words, so a screen reader hears
+                "Basket, 3 items" rather than "Basket 3".
+            --}}
+            @if (Route::has('shop.cart'))
+                @php $basketCount = app(App\Shop\CurrentCart::class)->itemCount(); @endphp
+
+                @if ($basketCount > 0)
+                    <a
+                        href="{{ route('shop.cart') }}"
+                        class="relative rounded-md p-2 text-[var(--text-primary)] hover:bg-[var(--surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                        aria-label="{{ trans_choice('{1}Basket, one item|[2,*]Basket, :count items', $basketCount, ['count' => $basketCount]) }}"
+                    >
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                        </svg>
+                        <span class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-[var(--brand-primary)] px-1 text-center text-xs font-semibold text-[var(--text-on-brand)]" aria-hidden="true">{{ $basketCount }}</span>
+                    </a>
+                @endif
+            @endif
+
             {{-- Signing in. Below `md` this lives inside the mobile panel
                  instead, so the corner a thumb reaches first belongs to the
                  donate button. --}}

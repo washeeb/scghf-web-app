@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Events\TwoFactorChallengeFailed;
+use App\Listeners\AttachGuestCart;
 use App\Listeners\RecordAuthenticationEvent;
 use App\Listeners\RecordBackupOutcome;
 use App\Listeners\SanitiseUploadedImage;
@@ -236,6 +237,8 @@ class AppServiceProvider extends ServiceProvider
     private function recordAuthenticationEvents(): void
     {
         Event::listen(Login::class, [RecordAuthenticationEvent::class, 'handleLogin']);
+        // A guest basket survives signing in — see App\Shop\CurrentCart.
+        Event::listen(Login::class, AttachGuestCart::class);
         Event::listen(Failed::class, [RecordAuthenticationEvent::class, 'handleFailed']);
         Event::listen(Lockout::class, [RecordAuthenticationEvent::class, 'handleLockout']);
         Event::listen(Logout::class, [RecordAuthenticationEvent::class, 'handleLogout']);

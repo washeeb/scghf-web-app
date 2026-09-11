@@ -46,7 +46,7 @@ class ContactController extends Controller
         return view('contact', [
             'departments' => $this->publicDepartments(),
             'meta' => PageMeta::site(
-                __('Contact us').setting('seo.title_suffix', ''),
+                __('Contact us'),
                 __('How to reach :name.', ['name' => setting('general.short_name', config('app.name'))]),
             ),
             'crumbs' => [

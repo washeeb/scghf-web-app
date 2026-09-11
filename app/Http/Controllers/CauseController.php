@@ -66,7 +66,7 @@ class CauseController extends Controller
             'causes' => $causes,
 
             'meta' => PageMeta::site(
-                __('Appeals').setting('seo.title_suffix', ''),
+                __('Appeals'),
                 __('What your giving pays for.'),
             ),
             'crumbs' => [

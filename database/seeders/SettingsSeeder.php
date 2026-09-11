@@ -144,6 +144,16 @@ class SettingsSeeder extends Seeder
         // that shifts thirty a week is a stockout on Thursday.
         ['shop', 'low_stock_threshold', '5', SettingType::Integer, 'Warn when stock falls to', false,
             'The dashboard flags any item with this many or fewer left to sell.'],
+        ['shop', 'intro', 'Every purchase funds our work.', SettingType::String, 'Shop introduction', true,
+            'The line under the shop heading, and its description in search results.'],
+        ['shop', 'proceeds_statement',
+            'The whole of what the shop makes, after the cost of the goods and delivery, goes to the work of the foundation.',
+            SettingType::Text, 'Where the money goes', true,
+            'Shown at the top of the shop. Say plainly what a purchase funds — it is the reason to buy here rather than anywhere else.'],
+        ['compliance', 'shop_consent_text',
+            'I understand that my details are held in order to fulfil this order.',
+            SettingType::Text, 'Checkout agreement wording', true,
+            'Shown beside the tick box at checkout.'],
 
         // ── SEO ──────────────────────────────────────────────────────────────
         ['seo', 'default_title', "St. Cecilia's Greater Hope Foundations", SettingType::String, 'Default page title', true],

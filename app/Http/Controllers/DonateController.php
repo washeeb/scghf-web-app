@@ -57,8 +57,8 @@ class DonateController extends Controller
             'presets' => $this->presets(),
             'meta' => PageMeta::site(
                 $cause !== null
-                    ? __('Give to :appeal', ['appeal' => $cause->title]).setting('seo.title_suffix', '')
-                    : __('Donate').setting('seo.title_suffix', ''),
+                    ? __('Give to :appeal', ['appeal' => $cause->title])
+                    : __('Donate'),
                 __('Support the work of :name.', ['name' => setting('general.short_name', config('app.name'))]),
             ),
             'crumbs' => [

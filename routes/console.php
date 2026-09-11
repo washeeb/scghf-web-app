@@ -54,6 +54,20 @@ Schedule::command('scghf:reconcile-payments --execute')
     ->onOneServer();
 
 /*
+ * The shop sweep, hourly.
+ *
+ * Stock held by a checkout somebody walked away from goes back on the shelf
+ * an hour later rather than at tomorrow's reconciliation — twelve mugs and
+ * eleven abandoned checkouts must not read as sold out all day. Expired
+ * baskets are deleted in the same pass. `--execute`, because it is a sweep
+ * with a verify step and nothing it does is destructive of money.
+ */
+Schedule::command('scghf:sweep-shop --execute')
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+/*
  * The retention sweep, weekly and DRY BY DEFAULT.
  *
  * Deliberately not `--execute`. This destroys records about vulnerable people,

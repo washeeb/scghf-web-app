@@ -11,6 +11,7 @@ use App\Models\Subscriber;
 use App\Models\Suppression;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 
 /**
  * Builds a campaign's recipient list, then sends it a batch at a time.
@@ -234,7 +235,7 @@ class CampaignSender
             $recipient->email,
             [
                 'subject' => $campaign->subject,
-                'content' => $campaign->body_html,
+                'content' => new HtmlString((string) $campaign->body_html),
                 'content_text' => $campaign->body_text ?? strip_tags((string) $campaign->body_html),
                 'preheader' => $campaign->preheader,
                 'subscriber_name' => $subscriber->name ?? '',
@@ -300,7 +301,7 @@ class CampaignSender
             $address,
             [
                 'subject' => '[TEST] '.$campaign->subject,
-                'content' => $campaign->body_html,
+                'content' => new HtmlString((string) $campaign->body_html),
                 'content_text' => $campaign->body_text ?? strip_tags((string) $campaign->body_html),
                 'preheader' => $campaign->preheader,
                 'subscriber_name' => 'Test recipient',

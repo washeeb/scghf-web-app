@@ -28,7 +28,7 @@ class TestimonialsController extends Controller
                 ->get(),
 
             'meta' => PageMeta::site(
-                __('Testimonials').setting('seo.title_suffix', ''),
+                __('Testimonials'),
                 __('In the words of the people we work with.'),
             ),
             'crumbs' => [

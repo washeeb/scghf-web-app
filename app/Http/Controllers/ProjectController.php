@@ -94,7 +94,7 @@ class ProjectController extends Controller
             'statuses' => $this->statusOptions(),
 
             'meta' => PageMeta::site(
-                __('Our projects').setting('seo.title_suffix', ''),
+                __('Our projects'),
                 __('What we are doing, where, and how far along it is.'),
             ),
             'crumbs' => [

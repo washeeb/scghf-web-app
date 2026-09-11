@@ -35,7 +35,7 @@ class GalleryController extends Controller
                 ->orderByDesc('taken_on')
                 ->paginate(self::PER_PAGE),
             'meta' => PageMeta::site(
-                __('Gallery').setting('seo.title_suffix', ''),
+                __('Gallery'),
                 __('Photographs from our work.'),
             ),
             'crumbs' => [

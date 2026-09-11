@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\PaymentTransaction;
 use App\Payments\FakeGateway;
 use App\Support\PageMeta;
@@ -71,7 +72,17 @@ class FakeCheckoutController extends Controller
             successful: $outcome !== 'fail',
         );
 
-        return redirect()->route('donate.callback', ['reference' => $transaction->gateway_reference]);
+        /*
+         * Back to whichever journey started the payment. The sandbox stood in
+         * for the gateway, and the gateway sends the customer to the callback
+         * the transaction was initialised with — a donor to the donation page,
+         * a shopper to their order.
+         */
+        $callback = $transaction->payable instanceof Order
+            ? route('shop.checkout.callback', ['reference' => $transaction->gateway_reference])
+            : route('donate.callback', ['reference' => $transaction->gateway_reference]);
+
+        return redirect()->to($callback);
     }
 
     private function transaction(string $reference): PaymentTransaction

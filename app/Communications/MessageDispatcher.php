@@ -13,9 +13,11 @@ use App\Models\ScheduledMessage;
 use App\Models\SmsLog;
 use App\Models\SmsTemplate;
 use App\Models\Suppression;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\HtmlString;
 use RuntimeException;
 use Throwable;
 
@@ -107,7 +109,7 @@ class MessageDispatcher
             'category' => $category,
             'to_address' => $this->normalise($channel, $to),
             'to_name' => $options['to_name'] ?? null,
-            'payload' => $variables,
+            'payload' => $this->freeze($variables),
             'related_type' => $related?->getMorphClass(),
             'related_id' => $related?->getKey(),
             'user_id' => $options['user_id'] ?? null,
@@ -137,13 +139,13 @@ class MessageDispatcher
                 ? $this->sendEmailNow(
                     (string) $message->template_key,
                     (string) $message->to_address,
-                    $message->payload ?? [],
+                    $this->thaw($message->payload ?? []),
                     $this->optionsFrom($message),
                 )
                 : $this->sendSmsNow(
                     (string) $message->template_key,
                     (string) $message->to_address,
-                    $message->payload ?? [],
+                    $this->thaw($message->payload ?? []),
                     $this->optionsFrom($message),
                 );
         } catch (Throwable $e) {
@@ -165,6 +167,43 @@ class MessageDispatcher
         };
 
         return $log;
+    }
+
+    /**
+     * Variables on their way into the outbox.
+     *
+     * An `Htmlable` — the paragraphs of a receipt, the list of lines on an
+     * order — cannot survive `json_encode`, which turns it into `{}`. It is
+     * stored as a tagged array instead, and `thaw()` turns it back into an
+     * HtmlString at delivery so the renderer still knows to print it unescaped.
+     *
+     * @param  array<string, mixed>  $variables
+     * @return array<string, mixed>
+     */
+    private function freeze(array $variables): array
+    {
+        foreach ($variables as $name => $value) {
+            if ($value instanceof Htmlable) {
+                $variables[$name] = ['__html' => $value->toHtml()];
+            }
+        }
+
+        return $variables;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function thaw(array $payload): array
+    {
+        foreach ($payload as $name => $value) {
+            if (is_array($value) && array_keys($value) === ['__html'] && is_string($value['__html'])) {
+                $payload[$name] = new HtmlString($value['__html']);
+            }
+        }
+
+        return $payload;
     }
 
     /** @return array<string, mixed> */

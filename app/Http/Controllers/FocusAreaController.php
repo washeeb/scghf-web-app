@@ -40,7 +40,7 @@ class FocusAreaController extends Controller
                 ->get(),
 
             'meta' => PageMeta::site(
-                __('What we do').setting('seo.title_suffix', ''),
+                __('What we do'),
                 __('The areas :name works in.', ['name' => setting('general.short_name', config('app.name'))]),
             ),
             'crumbs' => [
