@@ -156,6 +156,28 @@ class Page extends Model
 
     // ── Relationships ────────────────────────────────────────────────────────
 
+    /**
+     * The chain above this page, root first, for a breadcrumb.
+     *
+     * Walked one parent at a time. Pages nest two or three deep at most, and
+     * the parents are usually already loaded; a recursive query would be
+     * machinery for a problem the sitemap does not have.
+     *
+     * @return array<int, Page>
+     */
+    public function ancestors(): array
+    {
+        $chain = [];
+        $page = $this->parent;
+
+        while ($page !== null && count($chain) < 10) {
+            array_unshift($chain, $page);
+            $page = $page->parent;
+        }
+
+        return $chain;
+    }
+
     /** @return BelongsTo<Page, $this> */
     public function parent(): BelongsTo
     {

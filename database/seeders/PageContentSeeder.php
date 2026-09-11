@@ -129,9 +129,57 @@ class PageContentSeeder extends Seeder
         ];
     }
 
-    /** @return array<string, array<int, array{type: string, name?: string, data: array<string, mixed>}>> */
+    /**
+     * The policy pages.
+     *
+     * Each body lives in `database/seeders/content/legal/<slug>.html` — a file
+     * the trustees can read and mark up without touching PHP. Every draft
+     * opens with a notice saying it is a draft for review; the notice is part
+     * of the content so it cannot be published without somebody deleting it
+     * on purpose.
+     *
+     * The pages whose subject is "contact us about this" — privacy,
+     * safeguarding, raising a concern, anti-fraud — end with the contact
+     * details block, which reads the addresses from settings rather than
+     * having them typed into the policy text where they would go stale.
+     *
+     * @return array<string, array<int, array{type: string, name?: string, data: array<string, mixed>}>>
+     */
     private function legal(): array
     {
-        return [];
+        $pages = [
+            'privacy-policy' => true,
+            'terms' => false,
+            'donation-policy' => false,
+            'refund-policy' => false,
+            'shipping-and-delivery' => false,
+            'cookie-policy' => false,
+            'safeguarding' => true,
+            'accessibility' => false,
+            'whistleblowing' => true,
+            'anti-fraud' => true,
+        ];
+
+        $content = [];
+
+        foreach ($pages as $slug => $withContact) {
+            $file = __DIR__.'/content/legal/'.$slug.'.html';
+
+            if (! is_file($file)) {
+                continue;
+            }
+
+            $sections = [
+                ['type' => 'rich-text', 'data' => ['body' => trim((string) file_get_contents($file))]],
+            ];
+
+            if ($withContact) {
+                $sections[] = ['type' => 'contact-details', 'data' => ['heading' => 'How to reach us']];
+            }
+
+            $content[$slug] = $sections;
+        }
+
+        return $content;
     }
 }

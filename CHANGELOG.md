@@ -8,6 +8,36 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 6 Module 7 — the legal pages — 2026-09-11
+
+#### Added
+
+- A first draft of every policy page — privacy, terms, donation policy,
+  refunds, delivery, cookies, safeguarding, accessibility, raising a concern —
+  and the **anti-fraud statement** the brief asked for, which had not been
+  seeded at all. Each is written from what the application actually does: the
+  cookie policy lists the cookies the code sets and nothing else; the privacy
+  policy names Paystack, the retention periods in `config/compliance.php`, and
+  the safeguarding checks the software enforces; the refund policy exists
+  before the live payment keys do, because the merchant profile links to it
+- The drafts live in `database/seeders/content/legal/*.html`, where the
+  trustees can read and mark them up without touching PHP, and are seeded by
+  `PageContentSeeder` only into a page with no sections. **Every one stays a
+  draft** and opens with a notice saying so, as part of the content, so it
+  cannot be published without somebody deleting the notice on purpose. A
+  policy is the trustees' undertaking; publishing it is their decision
+- The anti-fraud statement is added to the seeded legal footer
+
+#### Fixed
+
+- **A CMS page that did not open with a hero or page-header block had no h1
+  and no breadcrumb.** A policy that is one rich-text block rendered with no
+  heading at all — the easiest accessibility mistake to make when a page is
+  assembled from parts, and the one a screen-reader user hits first. Such a
+  page now gets the standard header the code-backed pages use: the trail, the
+  title, the excerpt as a lead, and on a locked policy page the date it was
+  last changed
+
 ### Phase 6 Module 6 — getting involved — 2026-09-11
 
 Volunteering has had a table, a safeguarding-check ledger and an approval
