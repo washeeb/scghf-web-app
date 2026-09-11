@@ -95,6 +95,12 @@
     <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->organisation() !!}</script>
     <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->website() !!}</script>
 
+    {{-- The body typeface, preloaded: every page uses it and the CSS that
+         declares it arrives later than this line does. The heading face and
+         the latin-ext subsets are left to `unicode-range` — preloading a file
+         a page may not need is bytes spent on a 3G connection for nothing. --}}
+    <link rel="preload" href="{{ asset('fonts/Inter-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('head')
