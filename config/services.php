@@ -18,6 +18,18 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    /*
+     * Cloudflare Turnstile, on the donation form. Enabled only when both
+     * keys are set; with either missing the widget is not drawn and the
+     * token is not required, so a local checkout needs no Cloudflare
+     * account. See `App\Support\Turnstile`.
+     */
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+        'verify_url' => env('TURNSTILE_VERIFY_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

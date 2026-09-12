@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\Cause;
+use App\Rules\TurnstileToken;
+use App\Support\Turnstile;
 use App\ValueObjects\Money;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -115,6 +117,12 @@ class DonationRequest extends FormRequest
             'utm_term' => ['nullable', 'string', 'max:100'],
             'utm_content' => ['nullable', 'string', 'max:100'],
 
+            // The Turnstile token, only when Turnstile is configured. With no
+            // keys the field is not on the form and not asked for.
+            Turnstile::FIELD => Turnstile::enabled()
+                ? ['required', 'string', new TurnstileToken]
+                : ['nullable'],
+
             // Marketing, and optional. See the note at the top.
             'consent_email' => ['nullable', 'boolean'],
             'consent_sms' => ['nullable', 'boolean'],
@@ -211,6 +219,7 @@ class DonationRequest extends FormRequest
             'momo_provider.required_if' => __('Which network is the wallet on?'),
             'momo_phone.required_if' => __('Which number should we send the prompt to?'),
             'momo_phone.regex' => __('That does not look like a Ghanaian number. Try 024 123 4567.'),
+            Turnstile::FIELD.'.required' => __('Please complete the check above the button — it only takes a moment.'),
         ];
     }
 

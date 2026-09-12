@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\DonationStatus;
 use App\Http\Requests\DonationRequest;
 use App\Models\Cause;
 use App\Models\Donation;
 use App\Models\PaymentTransaction;
 use App\Payments\DonationService;
 use App\Payments\PaymentManager;
+use App\Payments\PaymentMode;
 use App\Support\PageMeta;
 use App\ValueObjects\Money;
 use Illuminate\Http\JsonResponse;
@@ -165,7 +167,49 @@ class DonateController extends Controller
                 )]);
         }
 
+        if ($this->popupCheckout() && $transaction->access_code !== null) {
+            return redirect()->route('donate.pay', $result['donation']);
+        }
+
         return redirect()->away($transaction->authorization_url);
+    }
+
+    /**
+     * The popup checkout: Paystack's form in a window over this page.
+     *
+     * The transaction was initialised server-side by `store()`, so this page
+     * only RESUMES it from the access code — the amount, currency and
+     * reference are ours, not the browser's, whichever way the form opens.
+     * Success goes through the same verifying callback as the redirect flow.
+     * Without a script, or with the fake driver, the donor gets a plain
+     * button to the gateway's own page instead.
+     */
+    public function pay(Donation $donation): View|RedirectResponse
+    {
+        $donation->load(['cause', 'transaction']);
+        $transaction = $donation->transaction;
+
+        if ($transaction === null || $donation->status !== DonationStatus::Pending || $transaction->authorization_url === null) {
+            return redirect()->route('donate.thanks', $donation);
+        }
+
+        return view('donate.pay', [
+            'donation' => $donation,
+            'transaction' => $transaction,
+            'inline' => PaymentMode::current() !== PaymentMode::Fake && $transaction->access_code !== null,
+            'callbackUrl' => route('donate.callback'),
+            'meta' => PageMeta::site(__('Pay'), noindex: true),
+            'crumbs' => [
+                ['label' => __('Home'), 'url' => url('/')],
+                ['label' => __('Donate'), 'url' => route('donate')],
+                ['label' => __('Pay'), 'url' => null],
+            ],
+        ]);
+    }
+
+    private function popupCheckout(): bool
+    {
+        return setting('donations.checkout_mode', 'redirect') === 'popup';
     }
 
     /**

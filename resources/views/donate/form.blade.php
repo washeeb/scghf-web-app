@@ -386,6 +386,8 @@
                  worse than none, and the gateway shows the amount regardless. --}}
             <p id="donation-summary" hidden class="rounded-md bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-primary)]" aria-live="polite"></p>
 
+            <x-site.turnstile />
+
             <button
                 type="submit"
                 class="w-full rounded-md bg-[var(--brand-secondary)] px-6 py-3 text-lg font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] sm:w-auto"

@@ -8,6 +8,38 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 8 Module 2 addendum — popup checkout and Turnstile — 2026-09-12
+
+Two decisions taken by the foundation at the Module 2 close-out.
+
+#### Added
+
+- **The popup checkout**, configurable. Settings → Donations → *Card
+  checkout* chooses between Paystack's page (the default, unchanged) and a
+  window over our own. In popup mode the transaction is still initialised
+  server-side with our amount, currency and reference; the new
+  `/donate/{ulid}/pay` page resumes it from the access code with Paystack
+  Inline v2, so nothing the browser can edit decides what is charged. Success
+  goes through the same verifying callback as the redirect flow; closing the
+  window leaves the gift pending with a button to open it again. A GET, so a
+  refresh cannot start a second payment; settled gifts redirect to the
+  thank-you. Without JavaScript, or with the fake driver, the page is a
+  summary and one button to the gateway's own page
+- **Cloudflare Turnstile on the donation form** — the one form that is a
+  card-testing target — behind the honeypot and the throttle. Drawn only when
+  both `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are set, in managed
+  mode (invisible to most people), following the site's theme. A token
+  Cloudflare rejects is refused; a verification that cannot complete because
+  Cloudflare is unreachable is allowed through with a warning in the log,
+  because an outage in their network must not stop a gift in Tamale. Not on
+  the contact form or the newsletter, deliberately
+
+#### Decided
+
+- Regular giving stays on stored authorisations charged by our own daily
+  command, not Paystack plans; `subscription.*` and `invoice.*` webhooks are
+  stored as evidence and not acted on. Confirmed by the foundation
+
 ### Phase 8 Module 2 — the finance admin — 2026-09-11
 
 Nothing here edits money. A gift's amount is written once, by the gateway,

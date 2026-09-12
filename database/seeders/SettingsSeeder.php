@@ -148,6 +148,12 @@ class SettingsSeeder extends Seeder
             .'Switch off if the gateway account does not have the charge API enabled.'],
         ['donations', 'allow_public_message', '1', SettingType::Boolean, 'Let donors leave a public message', true,
             'Shown beside their name on the donor wall of the appeal they gave to.'],
+        ['donations', 'checkout_mode', 'redirect', SettingType::Select, 'Card checkout', false,
+            'Where the donor types their card. "Paystack’s page" sends them to Paystack and back; '
+            .'"a window over our page" keeps them here with Paystack open on top. Both are Paystack’s '
+            .'own form — card details never touch this site. The window needs JavaScript; without it '
+            .'the donor gets a button to Paystack’s page instead.',
+            ['redirect' => 'Paystack’s page', 'popup' => 'A window over our page']],
 
         // ── The shop ─────────────────────────────────────────────────────────
         // A threshold rather than a hardcoded number, because "low" depends on

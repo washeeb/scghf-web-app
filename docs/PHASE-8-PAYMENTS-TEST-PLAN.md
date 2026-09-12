@@ -35,6 +35,30 @@ gateway is deterministic; the rules are in `app/Payments/FakeGateway.php`.
 | `…-PENDING` | still pending |
 | `…-SHORT` | success, but for less than expected → **needs review**, never completed |
 
+### 1.1a The popup checkout
+
+Settings → Donations → **Card checkout** → "A window over our page". The
+form now lands on `/donate/{ulid}/pay` instead of redirecting. With the
+fake driver the page shows the summary and one button to the sandbox (no
+Paystack script is loaded); on staging it loads `js.paystack.co/v2/inline.js`
+and resumes the transaction from the access code. Check:
+
+- closing the window shows "nothing has been charged" and a button that
+  reopens it; the gift stays `pending`
+- success lands on `/donate/callback?reference=…`, which verifies with the
+  gateway before the thank-you page
+- reloading `/pay` never starts a second transaction (it is a GET that only
+  resumes); once the gift is settled it redirects to the thank-you
+- with JavaScript off the button goes to Paystack's own page
+
+### 1.1b Turnstile
+
+Set `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` to Cloudflare's always-pass
+test pair (in `.env.example`) and the widget appears above **Continue to
+payment**. Remove either key and it disappears with no other change. With
+the always-**fail** pair (`2x…`) the form is refused with a message and
+nothing is charged.
+
 ### 1.2 Direct Mobile Money
 
 On the form choose **Prompt to my phone**, a network, and a number:

@@ -390,6 +390,15 @@ Route::post('donate', [DonateController::class, 'store'])
 
 Route::get('donate/callback', [DonateController::class, 'callback'])->name('donate.callback');
 
+/*
+| The popup checkout. A GET page, so a refresh cannot start a second
+| payment: the transaction was initialised by the POST that led here and
+| the page only resumes it. Once the gift is settled, the page sends the
+| donor on to the thank-you.
+*/
+Route::get('donate/{donation:ulid}/pay', [DonateController::class, 'pay'])
+    ->name('donate.pay');
+
 Route::get('donate/{donation:ulid}/thank-you', [DonateController::class, 'thanks'])
     ->name('donate.thanks');
 

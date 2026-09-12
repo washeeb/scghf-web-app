@@ -17,6 +17,8 @@ use Database\Seeders\DivisionSeeder;
 use Database\Seeders\SettingsSeeder;
 use Database\Seeders\ThemeSettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
@@ -373,4 +375,95 @@ it('draws the donation widget as a first step, with no card fields', function ()
         ->assertSee('name="amount_other"', escape: false)
         ->assertDontSee('card_number')
         ->assertDontSee('cvv');
+});
+
+// ── The popup checkout ──────────────────────────────────────────────────────
+
+it('sends the donor to Paystack\'s page by default', function () {
+    $this->post(route('donate.store'), donationPayload())
+        ->assertRedirect(Donation::first()->transaction->authorization_url);
+});
+
+it('keeps the donor on our page in popup mode and resumes the transaction it already initialised', function () {
+    setting()->set('donations.checkout_mode', 'popup');
+
+    $donation = null;
+    $this->post(route('donate.store'), donationPayload())
+        ->assertRedirect(route('donate.pay', $donation = Donation::first()));
+
+    // The fake driver: a plain button to the sandbox and no third-party script.
+    $this->get(route('donate.pay', $donation))
+        ->assertOk()
+        ->assertSee($donation->transaction->authorization_url)
+        ->assertSee($donation->reference)
+        ->assertDontSee('js.paystack.co');
+
+    // Real keys: Paystack's script, the access code, and the verifying callback.
+    config(['payments.driver' => 'paystack', 'payments.paystack.secret_key' => 'sk_test_abc']);
+
+    $this->get(route('donate.pay', $donation))
+        ->assertOk()
+        ->assertSee('https://js.paystack.co/v2/inline.js', escape: false)
+        ->assertSee($donation->transaction->access_code)
+        ->assertSee(json_encode(route('donate.callback')), escape: false);
+
+    expect(Donation::count())->toBe(1);
+});
+
+it('does not reopen the window for a gift that is no longer pending', function () {
+    setting()->set('donations.checkout_mode', 'popup');
+    $this->post(route('donate.store'), donationPayload());
+    $donation = Donation::first();
+
+    app(FakeGateway::class)->deliverWebhook($donation->transaction);
+
+    $this->get(route('donate.pay', $donation))->assertRedirect(route('donate.thanks', $donation));
+});
+
+// ── Turnstile ───────────────────────────────────────────────────────────────
+
+it('draws no challenge and asks for no token until both Turnstile keys exist', function () {
+    config(['services.turnstile.site_key' => '1x00000000000000000000AA', 'services.turnstile.secret_key' => null]);
+
+    $this->get(route('donate'))->assertOk()->assertDontSee('cf-turnstile');
+    $this->post(route('donate.store'), donationPayload())->assertSessionHasNoErrors();
+});
+
+it('requires a token Cloudflare accepts once Turnstile is configured', function () {
+    config(['services.turnstile.site_key' => '1x00000000000000000000AA', 'services.turnstile.secret_key' => '1x0000000000000000000000000000000AA']);
+
+    $this->get(route('donate'))
+        ->assertOk()
+        ->assertSee('cf-turnstile')
+        ->assertSee('challenges.cloudflare.com/turnstile/v0/api.js', escape: false);
+
+    Http::fake([
+        'challenges.cloudflare.com/*' => Http::sequence()
+            ->push(['success' => false, 'error-codes' => ['invalid-input-response']])
+            ->push(['success' => true]),
+    ]);
+
+    $this->post(route('donate.store'), donationPayload())
+        ->assertSessionHasErrors('cf-turnstile-response');
+
+    $this->post(route('donate.store'), donationPayload(['cf-turnstile-response' => 'bad']))
+        ->assertSessionHasErrors('cf-turnstile-response');
+
+    $this->post(route('donate.store'), donationPayload(['cf-turnstile-response' => 'good']))
+        ->assertSessionHasNoErrors();
+
+    expect(Donation::count())->toBe(1);
+
+    Http::assertSent(fn ($request) => $request['secret'] === '1x0000000000000000000000000000000AA' && $request['response'] === 'good');
+});
+
+it('lets a gift through when Cloudflare itself cannot be reached', function () {
+    config(['services.turnstile.site_key' => 'k', 'services.turnstile.secret_key' => 's']);
+
+    Http::fake(fn () => throw new ConnectionException('timed out'));
+
+    $this->post(route('donate.store'), donationPayload(['cf-turnstile-response' => 'anything']))
+        ->assertSessionHasNoErrors();
+
+    expect(Donation::count())->toBe(1);
 });
