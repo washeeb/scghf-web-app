@@ -122,6 +122,7 @@ function checkoutPayload(array $overrides = []): array
         'customer_phone' => '0241234567',
         'fulfilment' => 'deliver',
         'delivery_region' => 'Greater Accra',
+        'delivery_city' => 'Accra',
         'delivery_area' => 'Madina',
         'delivery_address' => '12 Ring Road, opposite the filling station',
         'consent' => '1',
@@ -425,11 +426,14 @@ it('walks the whole journey: basket, checkout, sandbox, webhook, confirmation, i
         ->and($variant->fresh()->stock_held)->toBe(0)
         ->and(Invoice::where('order_id', $order->id)->exists())->toBeTrue();
 
-    // The callback looks the reference UP and lands on the order.
-    $this->get(route('shop.checkout.callback', ['reference' => $transaction->gateway_reference]))
-        ->assertRedirect(route('shop.order', $order));
+    // The callback looks the reference UP and lands on the order, by a signed link.
+    $landing = $this->get(route('shop.checkout.callback', ['reference' => $transaction->gateway_reference]))
+        ->assertRedirect()
+        ->headers->get('Location');
 
-    $this->get(route('shop.order', $order))
+    expect($landing)->toStartWith(route('shop.order', $order))->toContain('signature=');
+
+    $this->get($landing)
         ->assertOk()
         ->assertSee('Thank you for your order')
         ->assertSee($order->reference);

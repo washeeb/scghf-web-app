@@ -68,6 +68,15 @@ final class InvoiceIssuer
             );
         }
 
+        $order->loadMissing('items.product');
+
+        if ($order->goodsTotal()->isZero()) {
+            throw new RuntimeException(sprintf(
+                'Order %s is gifts only; the donation receipt is its document and there is nothing to invoice.',
+                $order->reference,
+            ));
+        }
+
         $year = (int) ($order->paid_at ?? now())->year;
 
         return DB::transaction(function () use ($order, $year): Invoice {
@@ -91,12 +100,13 @@ final class InvoiceIssuer
                 // missing TIN is untidy rather than disqualifying.
                 'organisation_tin' => $this->settings->get('general.tin'),
 
-                'subtotal' => $order->subtotal,
+                // Goods only. The gifts on the order are receipted, not invoiced.
+                'subtotal' => $order->goodsSubtotal(),
                 'shipping' => $order->shipping,
                 'discount' => $order->discount,
-                'total' => $order->total,
+                'total' => $order->goodsTotal(),
                 'currency' => $order->currency,
-                'total_in_words' => AmountInWords::money($order->total),
+                'total_in_words' => AmountInWords::money($order->goodsTotal()),
 
                 'statement' => $this->statement(),
             ]);

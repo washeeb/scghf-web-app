@@ -161,6 +161,13 @@ class SettingsSeeder extends Seeder
         // that shifts thirty a week is a stockout on Thursday.
         ['shop', 'low_stock_threshold', '5', SettingType::Integer, 'Warn when stock falls to', false,
             'The dashboard flags any item with this many or fewer left to sell.'],
+        ['shop', 'offer_gift_at_checkout', '1', SettingType::Boolean, 'Offer a gift at checkout', true,
+            'Chips at the last step: round the basket up, or add GH₵ 5, 10 or 20. The gift goes to the '
+            .'General Fund and is receipted separately from the goods.'],
+        ['shop', 'abandoned_checkout_reminder', '0', SettingType::Boolean, 'Remind an abandoned checkout', false,
+            'Email a customer who reached the payment page and did not finish, once, an hour or more later, '
+            .'with a link back to their basket. Off by default: a reminder to somebody who decided not to '
+            .'buy reads as pressure. Only customers who agreed to email are written to.'],
         ['shop', 'intro', 'Every purchase funds our work.', SettingType::String, 'Shop introduction', true,
             'The line under the shop heading, and its description in search results.'],
         ['shop', 'proceeds_statement',

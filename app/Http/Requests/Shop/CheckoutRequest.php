@@ -57,9 +57,16 @@ class CheckoutRequest extends FormRequest
             'fulfilment' => [$this->needsDelivery() ? 'required' : 'nullable', Rule::in(['deliver', 'collect'])],
 
             'delivery_region' => [$delivering ? 'required' : 'nullable', 'string', Rule::in(ShippingZone::REGIONS)],
+            'delivery_city' => [$delivering ? 'required' : 'nullable', 'string', 'max:191'],
             'delivery_area' => [$delivering ? 'required' : 'nullable', 'string', 'max:191'],
             'delivery_address' => [$delivering ? 'required' : 'nullable', 'string', 'max:255'],
+            'delivery_landmark' => ['nullable', 'string', 'max:191'],
+            // GhanaPost GPS: two letters, three or four digits, four digits — GA-184-3456.
+            'delivery_gps' => ['nullable', 'string', 'max:16', 'regex:/^[A-Za-z]{2}-?\\d{3,4}-?\\d{4}$/'],
             'delivery_notes' => ['nullable', 'string', 'max:500'],
+
+            // The gift at the last step, in cedis; zero or empty means none.
+            'donation_amount' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
 
             'consent' => ['accepted'],
         ];
@@ -71,6 +78,8 @@ class CheckoutRequest extends FormRequest
         return [
             'customer_phone.regex' => __('That does not look like a Ghanaian number. Try 024 123 4567.'),
             'customer_phone.required' => __('The courier will call this number to find you.'),
+            'delivery_gps.regex' => __('A GhanaPost GPS address looks like GA-184-3456.'),
+            'delivery_city.required' => __('Which town or district?'),
             'consent.accepted' => __('We need your agreement to hold these details in order to fulfil the order.'),
         ];
     }

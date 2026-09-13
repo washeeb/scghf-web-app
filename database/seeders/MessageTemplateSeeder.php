@@ -451,6 +451,36 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'order.abandoned',
+                'name' => 'Checkout not completed — reminder',
+                'description' => 'Sent, only if the reminder is switched on in settings, to a customer '
+                    .'who reached the payment page and never finished. One message, once, and only to '
+                    .'somebody who has agreed to email from the foundation — a newsletter subscriber '
+                    .'or a donor who ticked the box.',
+                'category' => EmailTemplate::CATEGORY_MARKETING,
+                'variables' => ['customer_name', 'order_reference', 'order_total', 'resume_url'],
+                'required' => ['customer_name', 'resume_url'],
+                'subject' => 'Your basket at {{site_name}} is still here',
+                'html' => <<<'HTML'
+                    <p>Dear {{customer_name}},</p>
+                    <p>You started an order of {{order_total}} and the payment did not complete.
+                    Nothing has been taken. Your basket is still here if you would like to pick
+                    it up: {{resume_url}}</p>
+                    <p>If you decided not to buy, that is entirely fine — we will not write again
+                    about this.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{customer_name}},
+
+                    You started an order of {{order_total}} and the payment did not complete.
+                    Nothing has been taken. Your basket is still here if you would like to pick
+                    it up: {{resume_url}}
+
+                    If you decided not to buy, that is entirely fine — we will not write again
+                    about this.
+                    TEXT,
+            ],
+            [
                 'key' => 'order.tickets',
                 'name' => 'Your tickets',
                 'description' => 'Sent when a paid order includes event tickets. One code per admission; '

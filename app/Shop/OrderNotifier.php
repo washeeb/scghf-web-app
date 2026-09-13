@@ -7,10 +7,12 @@ namespace App\Shop;
 use App\Communications\MessageDispatcher;
 use App\Enums\OrderStatus;
 use App\Models\DigitalDownloadToken;
+use App\Models\Donor;
 use App\Models\Invoice;
 use App\Models\IssuedTicket;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Subscriber;
 use Illuminate\Support\HtmlString;
 use Throwable;
 
@@ -49,11 +51,14 @@ final class OrderNotifier
         }
 
         $invoice = null;
+        $order->loadMissing('items.product');
 
-        try {
-            $invoice = $this->invoices->issue($order);
-        } catch (Throwable $e) {
-            report($e);
+        if (! $order->goodsTotal()->isZero()) {
+            try {
+                $invoice = $this->invoices->issue($order);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         try {
@@ -181,7 +186,7 @@ final class OrderNotifier
                 'order_reference' => $order->reference,
                 'status_label' => __($status->label()),
                 'status_message' => __($status->customerMessage()),
-                'order_url' => route('shop.order', $order),
+                'order_url' => $order->trackingUrl(),
             ], [
                 'to_name' => $order->customer_name,
                 'related' => $order,
@@ -204,6 +209,49 @@ final class OrderNotifier
             } catch (Throwable $e) {
                 report($e);
             }
+        }
+    }
+
+    /**
+     * The customer reached the payment page and never came back.
+     *
+     * ⚠ OFF unless `shop.abandoned_checkout_reminder` is switched on, and
+     * then only to somebody who has agreed to email from the foundation — a
+     * confirmed newsletter subscriber or a donor who ticked the box. A
+     * checkout tick is consent to hold details for the order, not to be
+     * written to about it afterwards. Once per order.
+     */
+    public function abandoned(Order $order): void
+    {
+        if (! setting('shop.abandoned_checkout_reminder', false) || $order->reminded_at !== null || blank($order->customer_email)) {
+            return;
+        }
+
+        $email = mb_strtolower(trim((string) $order->customer_email));
+
+        $consented = Donor::query()->where('email', $email)->where('consent_email', true)->exists()
+            || Subscriber::query()->where('email', $email)->where('status', Subscriber::STATUS_CONFIRMED)->exists();
+
+        if (! $consented) {
+            return;
+        }
+
+        try {
+            $this->dispatcher->queueEmail('order.abandoned', $order->customer_email, [
+                'customer_name' => $order->customer_name ?: __('friend'),
+                'order_reference' => $order->reference,
+                'order_total' => $order->total,
+                'resume_url' => route('shop.cart'),
+            ], [
+                'to_name' => $order->customer_name,
+                'related' => $order,
+                'user_id' => $order->user_id,
+                'idempotency_key' => 'order.abandoned:'.$order->reference,
+            ]);
+
+            $order->forceFill(['reminded_at' => now()])->save();
+        } catch (Throwable $e) {
+            report($e);
         }
     }
 
@@ -261,11 +309,13 @@ final class OrderNotifier
             'order_reference' => $order->reference,
             'order_total' => $order->total,
             'order_items' => $this->lines($order),
-            'delivery_address' => $order->is_pickup
-                ? __('Collection — we will let you know when it is ready.')
-                : collect([$order->delivery_address, $order->delivery_area, $order->delivery_region])->filter()->implode(', '),
+            'delivery_address' => match (true) {
+                $order->is_pickup => __('Collection — we will let you know when it is ready.').($order->shippingZone?->pickup_address ? ' '.$order->shippingZone->pickup_address : ''),
+                ! $order->requiresDelivery() => __('Nothing to deliver.'),
+                default => $order->deliveryAddressLine(),
+            },
             'invoice_number' => $invoice?->invoice_number,
-            'order_url' => route('shop.order', $order),
+            'order_url' => $order->trackingUrl(),
         ], [
             'to_name' => $order->customer_name,
             'related' => $order,

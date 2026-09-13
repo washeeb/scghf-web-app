@@ -104,19 +104,28 @@
                 @if ($order->discount->isPositive())
                     <div class="flex justify-between gap-4"><dt class="text-[var(--text-secondary)]">{{ __('Discount') }}</dt><dd class="text-[var(--text-primary)]">− {{ $order->discount->format() }}</dd></div>
                 @endif
-                <div class="flex justify-between gap-4"><dt class="text-[var(--text-secondary)]">{{ $order->is_pickup ? __('Collection') : __('Delivery') }}@if ($order->shipping_method) ({{ $order->shipping_method }})@endif</dt><dd class="text-[var(--text-primary)]">{{ $order->shipping->isZero() ? __('free') : $order->shipping->format() }}</dd></div>
+                @if ($order->requiresDelivery())
+                    <div class="flex justify-between gap-4"><dt class="text-[var(--text-secondary)]">{{ $order->is_pickup ? __('Collection') : __('Delivery') }}@if ($order->shipping_method) ({{ $order->shipping_method }})@endif</dt><dd class="text-[var(--text-primary)]">{{ $order->shipping->isZero() ? __('free') : $order->shipping->format() }}</dd></div>
+                @endif
+                @if ($order->donation->isPositive())
+                    <div class="flex justify-between gap-4"><dt class="text-[var(--text-secondary)]">{{ __('Your gift') }}</dt><dd class="text-[var(--text-primary)]">{{ $order->donation->format() }}</dd></div>
+                @endif
                 <div class="flex justify-between gap-4 font-semibold"><dt class="text-[var(--text-primary)]">{{ __('Total') }}</dt><dd class="text-[var(--text-primary)]">{{ $order->total->format() }}</dd></div>
             </dl>
 
-            @unless ($order->is_pickup)
+            @if ($order->is_pickup && $order->shippingZone?->pickup_address)
                 <p class="mt-3 border-t border-[var(--border)] pt-3 text-[var(--text-secondary)]">
-                    {{ __('Delivering to') }}: {{ collect([$order->delivery_address, $order->delivery_area, $order->delivery_region])->filter()->implode(', ') }}
+                    {{ __('Collect from') }}: {{ $order->shippingZone->pickup_address }}@if ($order->shippingZone->pickup_hours) · {{ $order->shippingZone->pickup_hours }}@endif
                 </p>
-            @endunless
+            @elseif (! $order->is_pickup && $order->requiresDelivery())
+                <p class="mt-3 border-t border-[var(--border)] pt-3 text-[var(--text-secondary)]">
+                    {{ __('Delivering to') }}: {{ $order->deliveryAddressLine() }}
+                </p>
+            @endif
         </div>
 
         <p class="text-xs text-[var(--text-muted)]">
-            {{ __('A purchase is not a donation. No charitable receipt is issued for it, and none is needed — the whole of what the shop makes goes to the foundation\'s work.') }}
+            {{ __('A purchase is not a donation. No charitable receipt is issued for goods, and none is needed — the whole of what the shop makes goes to the foundation\'s work. A gift made through the shop is receipted separately.') }}
         </p>
     </div>
 </x-site.page-shell>

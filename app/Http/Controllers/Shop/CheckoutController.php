@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Shop;
 
+use App\Communications\PhoneNumber;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Shop\CheckoutRequest;
 use App\Models\Order;
@@ -78,6 +79,7 @@ class CheckoutController extends Controller
             'discount' => $cart->coupon?->discountFor($cart->subtotal()),
             'delivery' => $this->deliveryOptions($cart->subtotal(), $cart->totalWeightGrams()),
             'pickup' => ShippingZone::query()->active()->where('is_pickup', true)->first(),
+            'giftOptions' => $this->giftOptions($cart->subtotal()->minus($cart->coupon?->discountFor($cart->subtotal()) ?? Money::zero())),
             'prefill' => [
                 'customer_name' => $user?->name,
                 'customer_email' => $user?->email,
@@ -112,8 +114,12 @@ class CheckoutController extends Controller
                 'is_pickup' => $request->isCollection(),
                 'delivery_region' => $request->isCollection() ? null : $request->string('delivery_region')->toString(),
                 'delivery_area' => $request->string('delivery_area')->toString() ?: null,
+                'delivery_city' => $request->string('delivery_city')->toString() ?: null,
                 'delivery_address' => $request->string('delivery_address')->toString() ?: null,
+                'delivery_landmark' => $request->string('delivery_landmark')->toString() ?: null,
+                'delivery_gps' => $request->string('delivery_gps')->toString() ?: null,
                 'delivery_notes' => $request->string('delivery_notes')->toString() ?: null,
+                'donation' => $request->input('donation_amount'),
                 'callback_url' => route('shop.checkout.callback'),
             ]);
         } catch (RuntimeException $e) {
@@ -132,6 +138,7 @@ class CheckoutController extends Controller
         $transaction = $result['transaction'];
 
         $this->current->finish();
+        $this->remember($request, $order);
 
         if ($transaction->authorization_url === null) {
             /*
@@ -169,7 +176,7 @@ class CheckoutController extends Controller
 
         return $order === null
             ? redirect()->route('shop.index')
-            : redirect()->route('shop.order', $order);
+            : redirect()->to($order->trackingUrl(days: 1));
     }
 
     /**
@@ -180,9 +187,23 @@ class CheckoutController extends Controller
      * reference, so somebody who never receives the email has something to
      * quote.
      */
-    public function order(Order $order): View
+    public function order(Request $request, Order $order): View
     {
-        $order->load(['items', 'transaction']);
+        /*
+         * Who may look: the signed link from the email or the tracking form,
+         * the account that placed it, or the browser that placed it in this
+         * session. A ULID is not guessable, but "not guessable" is not a
+         * permission, and an order page carries a name, a phone number and
+         * an address.
+         */
+        abort_unless(
+            $request->hasValidSignature()
+                || ($request->user() !== null && $order->user_id === $request->user()->getKey())
+                || in_array($order->ulid, (array) $request->session()->get('shop.orders', []), true),
+            403,
+        );
+
+        $order->load(['items.product', 'transaction', 'shippingZone']);
 
         return view('shop.order', [
             'order' => $order,
@@ -194,6 +215,86 @@ class CheckoutController extends Controller
                 ['label' => __('Your order'), 'url' => null],
             ],
         ]);
+    }
+
+    /** The form for a guest looking for their order. */
+    public function track(): View
+    {
+        return view('shop.track', [
+            'meta' => PageMeta::site(__('Find your order'), noindex: true),
+            'crumbs' => [
+                ['label' => __('Home'), 'url' => url('/')],
+                ['label' => __('Shop'), 'url' => route('shop.index')],
+                ['label' => __('Find your order'), 'url' => null],
+            ],
+        ]);
+    }
+
+    /**
+     * Reference plus the email or phone it was placed with, and nothing less.
+     *
+     * The reference alone is on a packing slip anybody in the house can
+     * read; the pair is what proves it is the customer asking. A miss is one
+     * message whichever half was wrong, so the form does not confirm that a
+     * reference exists.
+     */
+    public function lookup(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'reference' => ['required', 'string', 'max:32'],
+            'contact' => ['required', 'string', 'max:191'],
+        ]);
+
+        $contact = trim((string) $data['contact']);
+        $order = Order::query()->where('reference', strtoupper(trim((string) $data['reference'])))->first();
+
+        $matches = $order !== null && (
+            mb_strtolower($contact) === mb_strtolower((string) $order->customer_email)
+            || (PhoneNumber::tryNormalise($contact) !== null && PhoneNumber::tryNormalise($contact) === PhoneNumber::tryNormalise((string) $order->customer_phone))
+        );
+
+        if (! $matches) {
+            return back()->withInput()->withErrors(['reference' => __('We could not find an order with that reference and contact. Check both against your confirmation email.')]);
+        }
+
+        return redirect()->to($order->trackingUrl(days: 1));
+    }
+
+    private function remember(Request $request, Order $order): void
+    {
+        $orders = (array) $request->session()->get('shop.orders', []);
+        $orders[] = $order->ulid;
+        $request->session()->put('shop.orders', array_slice(array_unique($orders), -10));
+    }
+
+    /**
+     * The add-a-gift chips: round the basket up, or add a round sum.
+     *
+     * Computed here, on the server, so the chips are real amounts with no
+     * script: "round up to GH₵ 100" is a radio worth GH₵ 3.50, not a promise
+     * the browser has to keep.
+     *
+     * @return array<string, Money> label => amount
+     */
+    private function giftOptions(Money $basket): array
+    {
+        $options = [];
+
+        foreach ([1_000, 5_000, 10_000] as $step) {
+            $remainder = $basket->toMinor() % $step;
+
+            if ($remainder > 0 && $basket->toMinor() >= $step) {
+                $options[__('Round up to :amount', ['amount' => Money::ofMinor($basket->toMinor() - $remainder + $step, $basket->currency)->format()])] = Money::ofMinor($step - $remainder, $basket->currency);
+
+                break;
+            }
+        }
+
+        foreach ([500, 1_000, 2_000] as $add) {
+            $options[__('Add :amount', ['amount' => Money::ofMinor($add, $basket->currency)->format()])] = Money::ofMinor($add, $basket->currency);
+        }
+
+        return $options;
     }
 
     /**

@@ -529,6 +529,14 @@ Route::middleware('feature:shop')->group(function (): void {
         ->name('shop.checkout.store');
 
     Route::get('checkout/callback', [CheckoutController::class, 'callback'])->name('shop.checkout.callback');
+
+    // A guest finding their order: reference plus the email or phone it was
+    // placed with. Throttled, because it is a lookup against personal data.
+    Route::get('shop/orders/track', [CheckoutController::class, 'track'])->name('shop.track');
+    Route::post('shop/orders/track', [CheckoutController::class, 'lookup'])
+        ->middleware('throttle:10,1')
+        ->name('shop.track.lookup');
+
     Route::get('shop/orders/{order:ulid}', [CheckoutController::class, 'order'])->name('shop.order');
 
     // A paid file. The token is the whole credential; the file is on a disk

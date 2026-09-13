@@ -75,6 +75,16 @@ class ShippingZoneForm
                     ? __('Shown at checkout: the address, the hours, who to ask for.')
                     : __('Optional. For your own records.')),
 
+            Grid::make(3)
+                ->visible(fn (Get $get): bool => (bool) $get('is_pickup'))
+                ->schema([
+                    TextInput::make('pickup_address')->label(__('Collect from'))->maxLength(255)
+                        ->helperText(__('The address, as a courier would need it. On the order page and in the confirmation.')),
+                    TextInput::make('pickup_hours')->label(__('When'))->maxLength(191)
+                        ->helperText(__('Mon–Fri 9–4, Saturdays by arrangement…')),
+                    TextInput::make('pickup_phone')->label(__('Phone to call'))->type('tel')->maxLength(32),
+                ]),
+
             CheckboxList::make('regions')
                 ->label(__('Regions in this zone'))
                 ->options(array_combine(ShippingZone::REGIONS, ShippingZone::REGIONS))

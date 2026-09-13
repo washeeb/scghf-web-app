@@ -86,10 +86,14 @@ final class CheckoutService
             $details['customer_email'] ?? null,
         );
 
-        $total = $subtotal->plus($shipping)->minus($discount);
+        // The gift added at the last step. Not a line — it is not goods —
+        // and never discounted by a coupon; the customer said what to give.
+        $donation = $this->resolveDonation($details, $subtotal->currency);
+
+        $total = $subtotal->plus($shipping)->minus($discount)->plus($donation);
 
         return DB::transaction(function () use (
-            $cart, $details, $subtotal, $shipping, $discount, $total, $zone, $rate, $coupon
+            $cart, $details, $subtotal, $shipping, $discount, $donation, $total, $zone, $rate, $coupon
         ): Order {
             $order = Order::create([
                 'user_id' => $details['user_id'] ?? $cart->user_id,
@@ -100,6 +104,7 @@ final class CheckoutService
                 'subtotal' => $subtotal,
                 'shipping' => $shipping,
                 'discount' => $discount,
+                'donation' => $donation,
                 'total' => $total,
                 'currency' => $subtotal->currency,
                 'coupon_id' => $coupon?->getKey(),
@@ -113,7 +118,10 @@ final class CheckoutService
                 'delivery_phone' => $details['delivery_phone'] ?? $details['customer_phone'] ?? null,
                 'delivery_address' => $details['delivery_address'] ?? null,
                 'delivery_area' => $details['delivery_area'] ?? null,
+                'delivery_city' => $details['delivery_city'] ?? null,
                 'delivery_region' => $details['delivery_region'] ?? null,
+                'delivery_landmark' => $details['delivery_landmark'] ?? null,
+                'delivery_gps' => isset($details['delivery_gps']) ? strtoupper(trim((string) $details['delivery_gps'])) ?: null : null,
                 'delivery_notes' => $details['delivery_notes'] ?? null,
                 'is_pickup' => (bool) ($zone?->is_pickup ?? false),
                 'channel' => $details['channel'] ?? null,
@@ -217,6 +225,35 @@ final class CheckoutService
         }
 
         return [$zone, $rate, $rate->priceFor($subtotal)];
+    }
+
+    /**
+     * The gift, if any, within the donation limits the giving form uses.
+     *
+     * @param  array<string, mixed>  $details
+     */
+    private function resolveDonation(array $details, string $currency): Money
+    {
+        $amount = $details['donation'] ?? null;
+
+        if ($amount instanceof Money) {
+            return $amount;
+        }
+
+        $minor = (int) round(((float) ($amount ?? 0)) * 100);
+
+        if ($minor <= 0) {
+            return Money::zero($currency);
+        }
+
+        $max = setting('donations.max_amount', 10_000_000);
+        $max = $max instanceof Money ? $max->toMinor() : (int) $max;
+
+        if ($minor > $max) {
+            throw new RuntimeException('That gift is larger than the shop can take at once. Please give it on the donation page.');
+        }
+
+        return Money::ofMinor($minor, $currency);
     }
 
     /**

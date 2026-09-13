@@ -41,7 +41,8 @@ class ShippingZone extends Model
     ];
 
     protected $fillable = [
-        'name', 'slug', 'description', 'regions', 'is_pickup', 'sort_order', 'is_active',
+        'name', 'slug', 'description', 'regions', 'is_pickup',
+        'pickup_address', 'pickup_hours', 'pickup_phone', 'sort_order', 'is_active',
     ];
 
     /** @var array<string, mixed> */

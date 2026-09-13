@@ -85,6 +85,12 @@
                                 @if ($pickup->description)
                                     <span class="block text-sm text-[var(--text-secondary)]">{{ $pickup->description }}</span>
                                 @endif
+                                @if ($pickup->pickup_address)
+                                    <span class="block text-sm text-[var(--text-secondary)]">{{ $pickup->pickup_address }}</span>
+                                @endif
+                                @if ($pickup->pickup_hours)
+                                    <span class="block text-sm text-[var(--text-muted)]">{{ $pickup->pickup_hours }}</span>
+                                @endif
                             </span>
                         </label>
                     @endif
@@ -114,9 +120,16 @@
                             @enderror
                         </div>
 
-                        <x-site.field name="delivery_area" :label="__('Town or area')" autocomplete="address-level2" :hint="__('Madina, Tamale, Bolgatanga…')" />
-                        <x-site.field name="delivery_address" :label="__('Address or directions')" autocomplete="street-address"
-                            :hint="__('A street, a house number, a landmark — whatever a courier needs. A GhanaPost GPS address works well here.')" />
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <x-site.field name="delivery_city" :label="__('Town or district')" autocomplete="address-level2" :hint="__('Tamale, Bolgatanga, Tema…')" />
+                            <x-site.field name="delivery_area" :label="__('Area or suburb')" autocomplete="address-level3" :hint="__('Madina, Sakumono, Nyankpala…')" />
+                        </div>
+                        <x-site.field name="delivery_address" :label="__('House, street or directions')" autocomplete="street-address"
+                            :hint="__('A house number and street where there is one; otherwise directions a courier can follow.')" />
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <x-site.field name="delivery_landmark" :label="__('Nearest landmark')" :hint="__('Optional. Opposite the filling station, behind the market…')" />
+                            <x-site.field name="delivery_gps" :label="__('GhanaPost GPS address')" placeholder="GA-184-3456" :hint="__('Optional. The digital address from the GhanaPost GPS app.')" />
+                        </div>
                         <x-site.field name="delivery_notes" type="textarea" :rows="2" :label="__('Delivery notes')" :hint="__('Optional. Best time to call, a gate to use.')" />
                     </div>
                 @endif
@@ -125,6 +138,30 @@
                 <p class="rounded-md border border-[var(--border)] p-4 text-sm text-[var(--text-secondary)]">
                     {{ __('Nothing in this basket needs delivering. Downloads, tickets and receipts arrive by email.') }}
                 </p>
+            @endif
+
+            @if ((bool) setting('shop.offer_gift_at_checkout', true) && $giftOptions !== [])
+                <fieldset class="space-y-3">
+                    <legend class="text-lg font-semibold text-[var(--text-primary)]">{{ __('Add a gift?') }}</legend>
+                    <p class="text-sm text-[var(--text-secondary)]">{{ __('Optional. A gift on top of your order goes to our work wherever it is needed most, and is receipted separately.') }}</p>
+
+                    <div class="flex flex-wrap gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="donation_amount" value="" @checked(old('donation_amount', '') === '') class="peer sr-only">
+                            <span class="block rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] peer-checked:border-[var(--brand-primary)] peer-checked:bg-[var(--brand-primary)] peer-checked:text-[var(--text-on-brand)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus-ring)]">{{ __('No gift') }}</span>
+                        </label>
+                        @foreach ($giftOptions as $label => $amount)
+                            <label class="cursor-pointer">
+                                <input type="radio" name="donation_amount" value="{{ $amount->toMajorString() }}" @checked(old('donation_amount') === $amount->toMajorString()) class="peer sr-only">
+                                <span class="block rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] peer-checked:border-[var(--brand-primary)] peer-checked:bg-[var(--brand-primary)] peer-checked:text-[var(--text-on-brand)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus-ring)]">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+
+                    @error('donation_amount')
+                        <p role="alert" class="text-sm text-[var(--danger)]">{{ $message }}</p>
+                    @enderror
+                </fieldset>
             @endif
 
             <fieldset class="space-y-4">

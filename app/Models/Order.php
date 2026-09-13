@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
@@ -52,8 +53,9 @@ class Order extends Model implements Payable
         'reference', 'user_id', 'customer_name', 'customer_email', 'customer_phone',
         'status', 'subtotal', 'shipping', 'discount', 'total', 'currency',
         'coupon_id', 'coupon_code', 'shipping_zone_id', 'shipping_rate_id', 'shipping_method',
-        'delivery_name', 'delivery_phone', 'delivery_address', 'delivery_area',
-        'delivery_region', 'delivery_notes', 'is_pickup', 'channel', 'notes', 'recorded_by',
+        'delivery_name', 'delivery_phone', 'delivery_address', 'delivery_area', 'delivery_city',
+        'delivery_region', 'delivery_landmark', 'delivery_gps', 'delivery_notes', 'is_pickup',
+        'donation', 'channel', 'notes', 'recorded_by',
     ];
 
     /** @var array<string, mixed> */
@@ -63,6 +65,7 @@ class Order extends Model implements Payable
         'shipping_minor' => 0,
         'discount_minor' => 0,
         'fee_minor' => 0,
+        'donation_minor' => 0,
         'is_pickup' => false,
         'stock_held' => false,
         'stock_committed' => false,
@@ -85,6 +88,8 @@ class Order extends Model implements Payable
             'discount' => MoneyCast::class.':discount_minor,currency',
             'total' => MoneyCast::class.':total_minor,currency',
             'fee' => MoneyCast::class.':fee_minor,currency',
+            'donation' => MoneyCast::class.':donation_minor,currency',
+            'reminded_at' => 'datetime',
         ];
     }
 
@@ -181,6 +186,12 @@ class Order extends Model implements Payable
     }
 
     /** @return HasMany<DigitalDownloadToken, $this> */
+    /** @return BelongsTo<ShippingZone, $this> */
+    public function shippingZone(): BelongsTo
+    {
+        return $this->belongsTo(ShippingZone::class);
+    }
+
     /** @return HasMany<IssuedTicket, $this> */
     public function issuedTickets(): HasMany
     {
@@ -310,6 +321,8 @@ class Order extends Model implements Payable
         ])->save();
 
         $this->recordStatusChange($from, null, 'Checkout abandoned; stock released.');
+
+        app(OrderNotifier::class)->abandoned($this);
     }
 
     /**
@@ -436,15 +449,16 @@ class Order extends Model implements Payable
             ));
         }
 
-        $expected = $this->subtotal_minor + $this->shipping_minor - $this->discount_minor;
+        $expected = $this->subtotal_minor + $this->shipping_minor - $this->discount_minor + $this->donation_minor;
 
         if ($expected !== $this->total_minor) {
             throw new RuntimeException(sprintf(
-                'Order %s does not reconcile: %s + %s − %s should be %s, but the total is %s.',
+                'Order %s does not reconcile: %s + %s − %s + gift %s should be %s, but the total is %s.',
                 $this->reference,
                 $this->subtotal->format(),
                 $this->shipping->format(),
                 $this->discount->format(),
+                $this->donation->format(),
                 Money::ofMinor($expected, $this->currency)->format(),
                 $this->total->format(),
             ));
@@ -454,6 +468,61 @@ class Order extends Model implements Payable
     public function totalWeightGrams(): int
     {
         return (int) $this->items->sum(fn (OrderItem $item): int => (int) $item->weight_grams * $item->quantity);
+    }
+
+    /**
+     * The link to this order that works without an account.
+     *
+     * Signed and long-lived: it goes in the confirmation email, and an email
+     * is where somebody looks for their order three months later. The page
+     * itself refuses a bare URL from anybody but the owner or the browser
+     * that placed the order.
+     */
+    public function trackingUrl(int $days = 90): string
+    {
+        return URL::temporarySignedRoute('shop.order', now()->addDays($days), ['order' => $this->ulid]);
+    }
+
+    /**
+     * The goods, apart from the gifts.
+     *
+     * A "sponsor a meal" line and the gift added at checkout are donations,
+     * receipted as such. An invoice is a sales document and lists only what
+     * was sold; these figures are what it lists.
+     */
+    public function goodsSubtotal(): Money
+    {
+        $gifts = (int) $this->items->sum(fn (OrderItem $item): int => ($item->product?->isDonation() ?? false) ? (int) $item->line_total_minor : 0);
+
+        return Money::ofMinor($this->subtotal_minor - $gifts, $this->currency);
+    }
+
+    public function goodsTotal(): Money
+    {
+        return $this->goodsSubtotal()->plus($this->shipping)->minus($this->discount);
+    }
+
+    /** Everything on the order that is a gift rather than goods. */
+    public function giftTotal(): Money
+    {
+        return $this->subtotal->minus($this->goodsSubtotal())->plus($this->donation);
+    }
+
+    /** The delivery address as one line, for an email or a slip. */
+    public function deliveryAddressLine(): string
+    {
+        if ($this->is_pickup) {
+            return __('Collection');
+        }
+
+        return collect([
+            $this->delivery_address,
+            $this->delivery_landmark ? __('near :landmark', ['landmark' => $this->delivery_landmark]) : null,
+            $this->delivery_area,
+            $this->delivery_city,
+            $this->delivery_region,
+            $this->delivery_gps,
+        ])->filter()->implode(', ');
     }
 
     /** Whether anything in the order has to be carried somewhere. */

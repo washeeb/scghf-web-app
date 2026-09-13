@@ -6,6 +6,7 @@ namespace App\Shop;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Models\Cause;
 use App\Models\DigitalDownloadToken;
 use App\Models\Donation;
 use App\Models\Order;
@@ -75,6 +76,14 @@ final class OrderFulfilment
             }
         }
 
+        if ($order->donation_minor > 0) {
+            try {
+                $this->recordAddedGift($order);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
         /*
          * Nothing to pack: the order is done the moment it is paid. Quietly —
          * the confirmation, the download or the tickets are the message, and
@@ -111,6 +120,22 @@ final class OrderFulfilment
     }
 
     /**
+     * The gift added at checkout, to the General Fund, once.
+     *
+     * Keyed on the order with no line: a "sponsor a meal" line has its own
+     * row by `order_item_id`, and this one is the row with `order_id` set and
+     * `order_item_id` null.
+     */
+    private function recordAddedGift(Order $order): void
+    {
+        if (Donation::query()->where('order_id', $order->getKey())->whereNull('order_item_id')->exists()) {
+            return;
+        }
+
+        $this->settleShopDonation($order, null, $order->donation, null, 'GIFT');
+    }
+
+    /**
      * "Sponsor a meal" becomes a donation the moment the order is paid.
      *
      * A settled transaction row of its own, on the offline gateway — the money
@@ -127,13 +152,16 @@ final class OrderFulfilment
             return;
         }
 
-        $product = $item->product;
-        $lineTotal = Money::ofMinor((int) $item->line_total_minor, $item->currency);
+        $this->settleShopDonation($order, $item, Money::ofMinor((int) $item->line_total_minor, $item->currency), $item->product->cause, (string) $item->getKey());
+    }
 
-        DB::transaction(function () use ($order, $item, $product, $lineTotal): void {
+    /** One settled donation, from the order's own payment. */
+    private function settleShopDonation(Order $order, ?OrderItem $item, Money $amount, ?Cause $cause, string $suffix): void
+    {
+        DB::transaction(function () use ($order, $item, $amount, $cause, $suffix): void {
             $donation = $this->donations->create([
-                'amount' => $lineTotal,
-                'cause' => $product->cause,
+                'amount' => $amount,
+                'cause' => $cause,
                 'channel' => 'shop',
                 'source' => 'shop',
                 'user_id' => $order->user_id,
@@ -146,7 +174,7 @@ final class OrderFulfilment
 
             $donation->forceFill([
                 'order_id' => $order->getKey(),
-                'order_item_id' => $item->getKey(),
+                'order_item_id' => $item?->getKey(),
                 'public_message' => null,
             ])->save();
 
@@ -154,7 +182,7 @@ final class OrderFulfilment
                 'payable_type' => $donation->getMorphClass(),
                 'payable_id' => $donation->getKey(),
                 'gateway' => PaymentTransaction::GATEWAY_OFFLINE,
-                'gateway_reference' => 'ORDER-'.$order->reference.'-'.$item->getKey(),
+                'gateway_reference' => 'ORDER-'.$order->reference.'-'.$suffix,
                 'amount' => $donation->amount,
                 'currency' => $donation->currency,
                 'status' => PaymentStatus::Pending,
@@ -166,7 +194,7 @@ final class OrderFulfilment
             $transaction->settle(
                 amountPaid: $donation->amount,
                 paidAt: $order->paid_at ?? now(),
-                payload: ['shop' => true, 'order' => $order->reference, 'product' => $product->slug, 'quantity' => $item->quantity],
+                payload: ['shop' => true, 'order' => $order->reference, 'product' => $item?->product?->slug, 'quantity' => $item?->quantity],
                 fee: Money::zero($donation->currency),
             );
 
