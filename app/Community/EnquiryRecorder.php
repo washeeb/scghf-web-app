@@ -61,6 +61,32 @@ final class EnquiryRecorder
             // See the class note.
         }
 
+        /*
+         * The staff side. To the department's own address, or the general
+         * contact address: the inbox screen exists, and nobody sits watching
+         * it. Its failure is swallowed for the same reason the acknowledgement's
+         * is — the message is already saved, and that is the part that matters.
+         */
+        $to = (string) ($department?->email ?: setting('contact.email_general', ''));
+
+        if ($to !== '' && ! str_contains($to, '{{')) {
+            try {
+                $this->dispatcher->queueEmail('contact.admin_alert', $to, [
+                    'name' => $message->name,
+                    'email' => $message->email,
+                    'department' => $department?->name ?? __('General enquiries'),
+                    'subject' => $message->subject ?: __('(no subject)'),
+                    'message' => $message->message,
+                    'admin_url' => route('filament.admin.resources.contact-messages.edit', $message),
+                ], [
+                    'related' => $message,
+                    'idempotency_key' => 'contact.admin_alert:'.$message->reference,
+                ]);
+            } catch (Throwable) {
+                // The message is saved; the inbox shows it.
+            }
+        }
+
         return $message;
     }
 }

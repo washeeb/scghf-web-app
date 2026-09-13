@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Communications\MnotifyGateway;
+use App\Communications\Contracts\ReportsBalance;
+use App\Communications\Contracts\SmsGateway;
 use App\Models\BackupLogEntry;
 use App\Models\Media;
 use App\Models\ThemeSetting;
+use App\Providers\CommunicationServiceProvider;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -307,29 +309,32 @@ class SiteHealth
             return HealthCheck::ok('sms', __('SMS credits'), __('SMS is switched off'));
         }
 
-        if (config('communications.sms.driver', 'log') !== 'mnotify') {
-            return HealthCheck::ok('sms', __('SMS credits'), __('Not sending real messages (:driver)', [
-                'driver' => (string) config('communications.sms.driver', 'log'),
-            ]));
+        $driver = CommunicationServiceProvider::smsDriver();
+
+        if ($driver === 'log') {
+            return HealthCheck::ok('sms', __('SMS credits'), __('Not sending real messages (log)'));
         }
 
-        $balance = app(MnotifyGateway::class)->balance();
+        $gateway = app(SmsGateway::class);
+
+        if (! $gateway instanceof ReportsBalance) {
+            return HealthCheck::ok('sms', __('SMS credits'), __(':driver does not report a balance; check the provider dashboard', ['driver' => $driver]));
+        }
+
+        $balance = $gateway->balance();
 
         if ($balance === null) {
             return HealthCheck::unknown('sms', __('SMS credits'), __('Could not be read'),
-                __('The balance request to mNotify failed. That is not the same as having no credits '
-                    .'— check the API key and whether the service is reachable.'));
+                __('The balance request to :driver failed. That is not the same as having no credits '
+                    .'— check the API key and whether the service is reachable.', ['driver' => $driver]));
         }
 
-        $floor = (int) config('communications.sms.mnotify.low_balance_credits', 50);
-
-        if ($balance <= $floor) {
-            return HealthCheck::warning('sms', __('SMS credits'),
-                trans_choice('{1}:count credit left|[2,*]:count credits left', $balance, ['count' => $balance]),
+        if ($balance->isLow((float) config('communications.sms.low_balance', 50))) {
+            return HealthCheck::warning('sms', __('SMS credits'), $balance->format(),
                 __('Top up before they run out. When they do, messages stop with no error anywhere.'));
         }
 
-        return HealthCheck::ok('sms', __('SMS credits'), number_format($balance));
+        return HealthCheck::ok('sms', __('SMS credits'), $balance->format());
     }
 
     private function https(): HealthCheck

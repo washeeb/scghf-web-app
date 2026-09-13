@@ -198,6 +198,18 @@ class SettingsSeeder extends Seeder
             SettingType::Text, 'Safeguarding statement', true,
             'Shown at the top of the volunteer page.'],
 
+        // ── Communications, Phase 10 ─────────────────────────────────────────
+        ['communications', 'sms_driver', '', SettingType::Select, 'SMS provider', false,
+            'Which gateway sends texts. Empty = the SMS_DRIVER in .env. The keys for each provider live '
+            .'in .env; choose one whose keys are set, or "log", which records every text and sends none.',
+            ['' => 'As configured on the server', 'log' => 'Log only (send nothing)', 'mnotify' => 'mNotify', 'arkesel' => 'Arkesel', 'hubtel' => 'Hubtel', 'twilio' => 'Twilio (fallback)']],
+        ['communications', 'alert_email', '', SettingType::Email, 'Alerts go to', false,
+            'Low SMS credit, the weekly summary, a new large gift. Empty = the general contact email.'],
+        ['communications', 'new_donation_alert_minor', '0', SettingType::Money, 'Tell me about a gift of at least', false,
+            'Pesewas. 0 = never. 50000 = GH₵ 500.00: an email to the alerts address for every completed gift of that size or more.'],
+        ['communications', 'weekly_summary', '1', SettingType::Boolean, 'Weekly summary email', false,
+            'Monday 07:00 to the alerts address: last week’s giving, shop, subscribers, messages and anything needing attention.'],
+
         // ── SEO ──────────────────────────────────────────────────────────────
         ['seo', 'default_title', "St. Cecilia's Greater Hope Foundations", SettingType::String, 'Default page title', true],
         ['seo', 'title_suffix', ' | Greater Hope Foundations', SettingType::String, 'Title suffix', true],

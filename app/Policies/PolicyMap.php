@@ -149,6 +149,7 @@ final class PolicyMap
             Models\NewsletterCampaign::class => NewsletterPolicy::class,
             Models\CampaignRecipient::class => NewsletterPolicy::class,
             Models\Subscriber::class => NewsletterPolicy::class,
+            Models\SmsBroadcast::class => NewsletterPolicy::class,
 
             Models\PrayerRequest::class => PrayerRequestPolicy::class,
 

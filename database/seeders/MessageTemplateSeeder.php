@@ -510,6 +510,97 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'sms.low_credit',
+                'name' => 'SMS credit running low — to the alerts address',
+                'description' => 'Sent once a day while the SMS account is at or below the low-balance line, '
+                    .'so it is topped up before receipts stop going.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['balance', 'threshold', 'provider'],
+                'required' => ['balance', 'provider'],
+                'subject' => 'SMS credit is running low ({{balance}})',
+                'html' => <<<'HTML'
+                    <p>The SMS account with {{provider}} is down to <strong>{{balance}}</strong>
+                    (the warning line is {{threshold}}).</p>
+                    <p>When it runs out, receipts, order updates and reminders stop going by text
+                    with no error anywhere. Top it up on the provider's dashboard.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    The SMS account with {{provider}} is down to {{balance}} (the warning line is
+                    {{threshold}}).
+
+                    When it runs out, receipts, order updates and reminders stop going by text with
+                    no error anywhere. Top it up on the provider's dashboard.
+                    TEXT,
+            ],
+            [
+                'key' => 'admin.new_donation',
+                'name' => 'A large gift — to the alerts address',
+                'description' => 'Sent to the alerts address when a gift completes at or above the amount set '
+                    .'in Settings → Email & SMS. Zero there means never.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['amount', 'donor_name', 'cause_name', 'reference', 'admin_url'],
+                'required' => ['amount', 'reference'],
+                'subject' => 'A gift of {{amount}} has just come in',
+                'html' => <<<'HTML'
+                    <p>{{donor_name}} has given <strong>{{amount}}</strong> towards {{cause_name}}.</p>
+                    <p>Reference {{reference}}. See it here: {{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    {{donor_name}} has given {{amount}} towards {{cause_name}}.
+
+                    Reference {{reference}}. See it here: {{admin_url}}
+                    TEXT,
+            ],
+            [
+                'key' => 'admin.weekly_summary',
+                'name' => 'The week — to the alerts address',
+                'description' => 'Monday 07:00: last week\'s giving, shop, subscribers, messages sent, and '
+                    .'anything needing a person. Switched off in Settings → Email & SMS.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['week', 'summary', 'attention', 'admin_url'],
+                'required' => ['week', 'summary'],
+                'subject' => 'Your week at {{site_name}}: {{week}}',
+                'html' => <<<'HTML'
+                    <p>Here is {{week}} in numbers.</p>
+                    {{summary}}
+                    <p><strong>Needing a person:</strong></p>
+                    {{attention}}
+                    <p>The office: {{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Here is {{week}} in numbers.
+
+                    {{summary}}
+
+                    Needing a person:
+                    {{attention}}
+
+                    The office: {{admin_url}}
+                    TEXT,
+            ],
+            [
+                'key' => 'contact.admin_alert',
+                'name' => 'New enquiry — to the department inbox',
+                'description' => 'Sent to the department\'s email address when somebody uses the contact '
+                    .'form, so the message is seen without anybody watching the inbox screen.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['name', 'email', 'department', 'subject', 'message', 'admin_url'],
+                'required' => ['name', 'message'],
+                'subject' => 'New enquiry: {{subject}}',
+                'html' => <<<'HTML'
+                    <p><strong>{{name}}</strong> ({{email}}) wrote to {{department}}:</p>
+                    <blockquote>{{message}}</blockquote>
+                    <p>Reply from the office, where it is tracked: {{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    {{name}} ({{email}}) wrote to {{department}}:
+
+                    {{message}}
+
+                    Reply from the office, where it is tracked: {{admin_url}}
+                    TEXT,
+            ],
+            [
                 'key' => 'stock.low',
                 'name' => 'Low stock — to the shop email',
                 'description' => 'One digest a morning, to the shop email, listing what has fallen to '
@@ -1187,6 +1278,19 @@ class MessageTemplateSeeder extends Seeder
                 'required' => ['order_reference', 'status_label'],
                 'max_segments' => 1,
                 'body' => 'Order {{order_reference}}: {{status_label}}. {{site_name}}',
+            ],
+            [
+                'key' => 'sms.broadcast',
+                'name' => 'Broadcast',
+                'description' => 'The frame for a text sent to many people from Communications → SMS '
+                    .'broadcasts. The message is what was typed; the sender name is added by the network. '
+                    .'Marketing: quiet hours apply and the STOP list is honoured.',
+                'category' => SmsTemplate::CATEGORY_MARKETING,
+                'locked' => true,
+                'variables' => ['message'],
+                'required' => ['message'],
+                'max_segments' => 3,
+                'body' => '{{message}}',
             ],
             [
                 'key' => 'event.reminder',

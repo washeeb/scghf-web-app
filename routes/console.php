@@ -76,6 +76,19 @@ Schedule::command('scghf:stock-alerts --execute')
     ->onOneServer();
 
 /*
+ * The SMS balance, daily, so a low account is noticed before receipts stop
+ * going by text; and the week in numbers, Monday morning, for the director
+ * who does not open the admin every day.
+ */
+Schedule::command('scghf:sms-balance --execute')
+    ->dailyAt('07:05')
+    ->onOneServer();
+
+Schedule::command('scghf:weekly-summary --execute')
+    ->weeklyOn(1, '07:00')
+    ->onOneServer();
+
+/*
  * The retention sweep, weekly and DRY BY DEFAULT.
  *
  * Deliberately not `--execute`. This destroys records about vulnerable people,

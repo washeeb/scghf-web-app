@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Communications\ArkeselGateway;
 use App\Communications\Contracts\SmsGateway;
+use App\Communications\HubtelGateway;
 use App\Communications\LogSmsGateway;
 use App\Communications\MessageDispatcher;
 use App\Communications\MnotifyGateway;
 use App\Communications\SendThrottle;
 use App\Communications\SmsSegmenter;
 use App\Communications\TemplateRenderer;
+use App\Communications\TwilioGateway;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -22,6 +25,24 @@ use RuntimeException;
  */
 class CommunicationServiceProvider extends ServiceProvider
 {
+    /**
+     * The driver: Settings → Communications first, `.env` as the default.
+     *
+     * The keys stay in `.env` — a secret is not a setting — but which
+     * provider is live is an operational choice the foundation makes when
+     * one goes dark, and it should not need a deploy.
+     */
+    public static function smsDriver(): string
+    {
+        try {
+            $chosen = (string) setting('communications.sms_driver', '');
+        } catch (\Throwable) {
+            $chosen = '';
+        }
+
+        return $chosen !== '' ? $chosen : (string) config('communications.sms.driver', 'log');
+    }
+
     public function register(): void
     {
         $this->app->singleton(SmsSegmenter::class);
@@ -29,17 +50,14 @@ class CommunicationServiceProvider extends ServiceProvider
         $this->app->singleton(SendThrottle::class);
 
         $this->app->singleton(SmsGateway::class, function ($app): SmsGateway {
-            return match ($driver = (string) config('communications.sms.driver', 'log')) {
+            return match ($driver = self::smsDriver()) {
                 'log' => $app->make(LogSmsGateway::class),
                 'mnotify' => $app->make(MnotifyGateway::class),
-                /*
-                 * Arkesel and Hubtel are deliberately NOT stubbed. An empty
-                 * implementation that silently succeeds is worse than no
-                 * implementation, because `log` at least tells the truth about
-                 * what it did.
-                 */
+                'arkesel' => $app->make(ArkeselGateway::class),
+                'hubtel' => $app->make(HubtelGateway::class),
+                'twilio' => $app->make(TwilioGateway::class),
                 default => throw new RuntimeException(
-                    "Unknown SMS driver [{$driver}]. Use 'mnotify' (the Foundation's provider) "
+                    "Unknown SMS driver [{$driver}]. Use 'mnotify', 'arkesel', 'hubtel', 'twilio', "
                     ."or 'log', which costs and records every message and sends none."
                 ),
             };

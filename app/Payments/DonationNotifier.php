@@ -7,6 +7,7 @@ namespace App\Payments;
 use App\Communications\MessageDispatcher;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
+use App\ValueObjects\Money;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\HtmlString;
 use Throwable;
@@ -90,6 +91,40 @@ final class DonationNotifier
                 report($e);
             }
         }
+
+        try {
+            $this->alertStaffIfLarge($donation);
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * A gift big enough that somebody should know today.
+     *
+     * The line is Settings → Email & SMS → "tell me about a gift of at
+     * least"; zero means never. To the alerts address, once per gift.
+     */
+    private function alertStaffIfLarge(Donation $donation): void
+    {
+        $line = setting('communications.new_donation_alert_minor', 0);
+        $line = $line instanceof Money ? $line->toMinor() : (int) $line;
+        $to = (string) (setting('communications.alert_email') ?: setting('contact.email_general', ''));
+
+        if ($line <= 0 || $donation->amount->toMinor() < $line || $to === '' || str_contains($to, '{{')) {
+            return;
+        }
+
+        $this->dispatcher->queueEmail('admin.new_donation', $to, [
+            'amount' => $donation->amount,
+            'donor_name' => $donation->is_anonymous ? __('An anonymous donor') : ($donation->donor_name ?: __('A donor')),
+            'cause_name' => $donation->cause?->title ?? __('the General Fund'),
+            'reference' => $donation->reference,
+            'admin_url' => route('filament.admin.resources.donations.view', $donation),
+        ], [
+            'related' => $donation,
+            'idempotency_key' => 'admin.new_donation:'.$donation->reference,
+        ]);
     }
 
     /**

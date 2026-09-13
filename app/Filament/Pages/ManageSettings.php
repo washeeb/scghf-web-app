@@ -103,6 +103,7 @@ class ManageSettings extends Page
         'shop' => 'Shop',
         'events' => 'Events',
         'volunteering' => 'Volunteering',
+        'communications' => 'Email & SMS',
         'header' => 'Header',
         'site' => 'Site & footer',
         'seo' => 'Search engines',

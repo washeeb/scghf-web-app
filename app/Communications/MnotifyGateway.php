@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Communications;
 
+use App\Communications\Contracts\ReportsBalance;
 use App\Communications\Contracts\ReportsDelivery;
 use App\Communications\Contracts\SmsGateway;
 use App\Models\SmsLog;
@@ -47,7 +48,7 @@ use RuntimeException;
  * current shape against mNotify's documentation before the first live send;
  * the `log` driver remains the default until somebody has.
  */
-class MnotifyGateway implements ReportsDelivery, SmsGateway
+class MnotifyGateway implements ReportsBalance, ReportsDelivery, SmsGateway
 {
     /**
      * mNotify's documented result codes.
@@ -218,7 +219,15 @@ class MnotifyGateway implements ReportsDelivery, SmsGateway
      * silent, so this is the difference between topping up on a Tuesday and
      * discovering on a Friday that a week of receipts never went.
      */
-    public function balance(): ?int
+    public function balance(): ?SmsBalance
+    {
+        $credits = $this->credits();
+
+        return $credits === null ? null : SmsBalance::credits($credits);
+    }
+
+    /** The raw credit count, as mNotify reports it. */
+    public function credits(): ?int
     {
         try {
             $response = $this->client()->get('/balance/sms');

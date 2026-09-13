@@ -364,6 +364,38 @@ return [
         ],
 
         /*
+         * The other three gateways behind the same `SmsGateway` contract.
+         * Every one of these keys is read by its gateway class and nothing
+         * else; the driver is chosen in Settings → Communications, with the
+         * `.env` value as the default.
+         */
+        'arkesel' => [
+            'api_key' => env('ARKESEL_API_KEY'),
+            'base_url' => env('ARKESEL_BASE_URL', 'https://sms.arkesel.com/api/v2'),
+            'timeout' => (int) env('ARKESEL_TIMEOUT', 15),
+        ],
+
+        'hubtel' => [
+            'client_id' => env('HUBTEL_CLIENT_ID'),
+            'client_secret' => env('HUBTEL_CLIENT_SECRET'),
+            'base_url' => env('HUBTEL_BASE_URL', 'https://smsc.hubtel.com/v1'),
+            'timeout' => (int) env('HUBTEL_TIMEOUT', 15),
+        ],
+
+        'twilio' => [
+            'account_sid' => env('TWILIO_ACCOUNT_SID'),
+            'auth_token' => env('TWILIO_AUTH_TOKEN'),
+            'from' => env('TWILIO_FROM'),
+            'messaging_service_sid' => env('TWILIO_MESSAGING_SERVICE_SID'),
+            'base_url' => env('TWILIO_BASE_URL', 'https://api.twilio.com/2010-04-01'),
+            'timeout' => (int) env('TWILIO_TIMEOUT', 15),
+        ],
+
+        // In whichever unit the chosen driver reports: credits for mNotify
+        // and Arkesel, money for Twilio. Hubtel reports none.
+        'low_balance' => (float) env('SMS_LOW_BALANCE_THRESHOLD', 50),
+
+        /*
          * How long to keep asking mNotify whether a message arrived.
          *
          * A report that has not appeared within a day is not going to. The
