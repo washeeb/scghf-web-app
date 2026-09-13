@@ -305,6 +305,9 @@ class MessageDispatcher
             'status' => EmailLog::STATUS_SENDING,
         ])->save();
 
+        // Only marketing mail, and only when the trustees switched it on.
+        $rendered['html'] = app(EmailTracking::class)->instrument($rendered['html'], $log, $template);
+
         try {
             Mail::to($address, $options['to_name'] ?? null)
                 ->send(new RenderedMessage(
@@ -313,6 +316,7 @@ class MessageDispatcher
                     bodyText: $rendered['text'],
                     preheader: $rendered['preheader'],
                     unsubscribeUrl: $unsubscribeUrl,
+                    preferencesUrl: $options['preferences_url'] ?? null,
                     fromAddressOverride: $template->from_address,
                     fromNameOverride: $template->from_name,
                     replyToOverride: $template->reply_to,

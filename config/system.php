@@ -162,6 +162,12 @@ return [
              */
             'report.generated' => ['category' => 'data_export', 'severity' => 'info'],
 
+            // A newsletter is a message to thousands of people that cannot be
+            // recalled; who approved it and who scheduled it are facts worth keeping.
+            'newsletter.approved' => ['category' => 'content', 'severity' => 'notice'],
+            'newsletter.scheduled' => ['category' => 'content', 'severity' => 'notice'],
+            'sms.broadcast_sent' => ['category' => 'content', 'severity' => 'notice'],
+
             // --- Money -----------------------------------------------------
             'donation.recorded_offline' => ['category' => 'money', 'severity' => 'notice'],
             'donation.marked_needs_review' => ['category' => 'money', 'severity' => 'warning'],

@@ -152,6 +152,7 @@ class AdminPanelProvider extends PanelProvider
                 'Community',
                 'Content',
                 'Inbox',
+                'Communications',
                 'Library',
                 'System',
             ])

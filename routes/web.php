@@ -43,6 +43,7 @@ use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TestimonialsController;
+use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\VolunteerController;
 use Illuminate\Support\Facades\Route;
 use Spatie\Honeypot\ProtectAgainstSpam;
@@ -361,6 +362,22 @@ Route::get('newsletter/confirm/{token}', [NewsletterController::class, 'confirm'
 
 Route::get('newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])
     ->name('newsletter.unsubscribe');
+
+// The preference centre: the same token as the unsubscribe link, so it can
+// be reached from any email without an account. GET shows, POST changes.
+Route::get('newsletter/preferences/{token}', [NewsletterController::class, 'preferences'])
+    ->name('newsletter.preferences');
+Route::post('newsletter/preferences/{token}', [NewsletterController::class, 'updatePreferences'])
+    ->middleware('throttle:10,1')
+    ->name('newsletter.preferences.update');
+
+/*
+| Open and click tracking, only when switched on in .env and only on
+| marketing mail. The pixel answers whatever happens; the click redirect
+| accepts only a signed, absolute destination.
+*/
+Route::get('t/o/{log}', [TrackingController::class, 'open'])->name('track.open');
+Route::get('t/c/{log}', [TrackingController::class, 'click'])->name('track.click');
 
 /*
 |--------------------------------------------------------------------------

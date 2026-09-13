@@ -245,6 +245,7 @@ class CampaignSender
                 'to_name' => $recipient->name,
                 'related' => $campaign,
                 'unsubscribe_url' => $unsubscribeUrl,
+                'preferences_url' => route('newsletter.preferences', $subscriber->unsubscribe_token),
             ],
         );
 

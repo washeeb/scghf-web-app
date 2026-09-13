@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Communications\CampaignComposer;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -69,7 +70,7 @@ class NewsletterCampaign extends Model
 
     protected $fillable = [
         'newsletter_id', 'title', 'subject', 'preheader',
-        'body_html', 'body_text', 'email_template_id',
+        'body_html', 'body_text', 'blocks', 'email_template_id',
         'scheduled_for', 'division_id', 'topics', 'created_by',
     ];
 
@@ -87,6 +88,7 @@ class NewsletterCampaign extends Model
     {
         return [
             'topics' => 'array',
+            'blocks' => 'array',
             'scheduled_for' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
@@ -102,6 +104,17 @@ class NewsletterCampaign extends Model
 
     protected static function booted(): void
     {
+        // Blocks compile to the body on every save, so the sender, the test
+        // send and the preview all read one thing. A campaign with no blocks
+        // keeps whatever HTML was typed by hand.
+        static::saving(function (self $campaign): void {
+            if (! empty($campaign->blocks)) {
+                $compiled = app(CampaignComposer::class)->compile($campaign->blocks);
+                $campaign->body_html = $compiled['html'];
+                $campaign->body_text = $compiled['text'];
+            }
+        });
+
         static::updating(function (self $campaign): void {
             /*
              * Content changed after approval? The approval no longer describes

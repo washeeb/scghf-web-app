@@ -35,6 +35,7 @@ class RenderedMessage extends Mailable
         public ?string $bodyText = null,
         public ?string $preheader = null,
         public ?string $unsubscribeUrl = null,
+        public ?string $preferencesUrl = null,
         public ?string $fromAddressOverride = null,
         public ?string $fromNameOverride = null,
         public ?string $replyToOverride = null,

@@ -86,6 +86,17 @@ class ThemeTokens
      * as the logo. Cleared by `ThemeSetting`'s own save hook, so an editor sees
      * their change immediately rather than whenever a TTL happens to expire.
      */
+    /**
+     * One token's value for one theme, for the places that cannot use CSS —
+     * an email, a PDF. Falls back to the built-in palette.
+     */
+    public function value(string $token, string $theme = 'light'): string
+    {
+        $tokens = $this->tokens();
+
+        return $tokens[$token][$theme] ?? self::FALLBACK[$token][$theme === 'dark' ? 1 : 0] ?? '#000000';
+    }
+
     public function css(): HtmlString
     {
         $css = Cache::rememberForever(self::CACHE_KEY, fn (): string => $this->build());

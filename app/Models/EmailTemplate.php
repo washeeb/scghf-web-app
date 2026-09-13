@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Communications\SampleVariables;
 use App\Communications\TemplateRenderer;
 use App\Models\Concerns\RecordsAuthor;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use RuntimeException;
 
@@ -117,6 +119,12 @@ class EmailTemplate extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    /** Every message sent from this template. @return HasMany<EmailLog, $this> */
+    public function logs(): HasMany
+    {
+        return $this->hasMany(EmailLog::class, 'template_key', 'key');
+    }
+
     // ── Lookup ───────────────────────────────────────────────────────────────
 
     /**
@@ -176,6 +184,28 @@ class EmailTemplate extends Model
                 ? null
                 : $this->stripNewlines($renderer->render($this->preheader, $variables)),
         ];
+    }
+
+    /**
+     * The whole message as a browser would show it, with sample values.
+     *
+     * For the editor's preview: the same layout the mailer wraps the body
+     * in, so what is on the screen is what lands in the inbox.
+     *
+     * @param  array<string, mixed>|null  $variables  null for samples
+     */
+    public function preview(?array $variables = null): string
+    {
+        $variables ??= SampleVariables::for($this->available_variables ?? []);
+        $rendered = $this->render($variables);
+
+        return view('mail.layouts.default', [
+            'subjectLine' => $rendered['subject'],
+            'bodyHtml' => $rendered['html'],
+            'preheader' => $rendered['preheader'],
+            'unsubscribeUrl' => $this->requiresUnsubscribe() ? url('/example') : null,
+            'preferencesUrl' => $this->requiresUnsubscribe() ? url('/example') : null,
+        ])->render();
     }
 
     /**

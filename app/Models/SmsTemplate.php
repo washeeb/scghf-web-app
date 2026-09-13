@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use RuntimeException;
 
@@ -149,6 +150,12 @@ class SmsTemplate extends Model
     public function editor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /** Every message sent from this template. @return HasMany<SmsLog, $this> */
+    public function logs(): HasMany
+    {
+        return $this->hasMany(SmsLog::class, 'template_key', 'key');
     }
 
     public static function forKey(string $key): self

@@ -9,4 +9,7 @@
 @if ($unsubscribeUrl)
 
 Unsubscribe: {{ $unsubscribeUrl }}
+@if ($preferencesUrl ?? null)
+Email preferences: {{ $preferencesUrl }}
+@endif
 @endif

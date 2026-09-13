@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Communications\MessageDispatcher;
+use App\Models\Newsletter;
 use App\Models\Subscriber;
 use App\Models\Suppression;
 use App\Support\PageMeta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -105,6 +107,61 @@ class NewsletterController extends Controller
             'subscriber' => $subscriber,
             'meta' => PageMeta::site(__('Unsubscribed'), noindex: true),
         ]);
+    }
+
+    /**
+     * The preference centre.
+     *
+     * Which of the foundation's lists to hear from, or none. Reached by the
+     * token in every email, so it needs no account; a stale token shows the
+     * same page as a used unsubscribe link rather than an error.
+     */
+    public function preferences(string $token): View
+    {
+        $subscriber = Subscriber::query()->where('unsubscribe_token', $token)->first();
+
+        return view('newsletter.preferences', [
+            'subscriber' => $subscriber,
+            'token' => $token,
+            'newsletters' => Newsletter::query()->where('is_active', true)->orderBy('sort_order')->get(),
+            'meta' => PageMeta::site(__('Your email preferences'), noindex: true),
+        ]);
+    }
+
+    public function updatePreferences(Request $request, string $token): RedirectResponse
+    {
+        $subscriber = Subscriber::query()->where('unsubscribe_token', $token)->first();
+
+        if ($subscriber === null) {
+            return redirect()->route('newsletter.preferences', $token);
+        }
+
+        $data = $request->validate([
+            'topics' => ['nullable', 'array'],
+            'topics.*' => ['string', Rule::in(Newsletter::query()->pluck('topic')->all())],
+            'name' => ['nullable', 'string', 'max:191'],
+            'stop' => ['nullable', 'boolean'],
+        ]);
+
+        if ($request->boolean('stop')) {
+            $subscriber->unsubscribe('preference centre');
+
+            return redirect()->route('newsletter.preferences', $token)->with('status', __('Done. We will not send you any more updates.'));
+        }
+
+        $subscriber->forceFill([
+            'topics' => array_values($data['topics'] ?? []),
+            'name' => filled($data['name'] ?? null) ? $data['name'] : $subscriber->name,
+        ])->save();
+
+        if ($subscriber->status === Subscriber::STATUS_UNSUBSCRIBED) {
+            // Choosing a topic after unsubscribing is asking to come back. The
+            // consent is the tick on this page, recorded like the first one.
+            $subscriber->forceFill(['status' => Subscriber::STATUS_CONFIRMED, 'unsubscribed_at' => null, 'unsubscribe_reason' => null])->save();
+            $subscriber->recordConsent(__('Resubscribed from the preference centre.'), $request->ip(), $request->fullUrl());
+        }
+
+        return redirect()->route('newsletter.preferences', $token)->with('status', __('Saved. You will hear from us about what you chose.'));
     }
 
     /**

@@ -106,6 +106,16 @@ Schedule::command('scghf:send-messages')
     ->onOneServer();
 
 /*
+ * Newsletter campaigns, one batch every five minutes, within the same
+ * hourly allowance the outbox draws on. Written in Phase 3, scheduled by
+ * nothing until Phase 10: a campaign approved for Tuesday stayed "scheduled".
+ */
+Schedule::command('scghf:send-campaigns')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+/*
  * SMS delivery reports, hourly.
  *
  * Hourly rather than every minute because a network takes minutes to report,
