@@ -171,6 +171,8 @@ return [
             // A receipt leaving the application as a PDF: a name and an amount
             // on a document. Recorded like a CSV export, because it is one.
             'receipt.downloaded' => ['category' => 'data_export', 'severity' => 'info'],
+            'invoice.downloaded' => ['category' => 'data_export', 'severity' => 'info'],
+            'packing_slips.printed' => ['category' => 'data_export', 'severity' => 'info'],
             'receipt.resent' => ['category' => 'money', 'severity' => 'notice'],
             'refund.processed' => ['category' => 'money', 'severity' => 'critical'],
             'refund.failed' => ['category' => 'money', 'severity' => 'warning'],

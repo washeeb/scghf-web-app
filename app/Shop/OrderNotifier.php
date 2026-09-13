@@ -315,6 +315,7 @@ final class OrderNotifier
                 default => $order->deliveryAddressLine(),
             },
             'invoice_number' => $invoice?->invoice_number,
+            'invoice_url' => $invoice?->downloadUrl(),
             'order_url' => $order->trackingUrl(),
         ], [
             'to_name' => $order->customer_name,

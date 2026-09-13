@@ -7,12 +7,18 @@ namespace App\Filament\Resources\Orders\Tables;
 use App\Enums\OrderStatus;
 use App\Filament\Support\ExportAction;
 use App\Models\Order;
+use App\Shop\OrderDocuments;
+use App\Support\AuditLogger;
+use Filament\Actions\BulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The orders.
@@ -94,6 +100,41 @@ class OrdersTable
             ])
             ->recordActions([ViewAction::make()])
             ->toolbarActions([
+                /*
+                 * A packing morning is a stack: tick the paid orders and print
+                 * every slip as one PDF, a page each. Unpaid and delivered
+                 * orders in the selection are left out rather than refused.
+                 */
+                BulkAction::make('packingSlips')
+                    ->label(__('Print packing slips'))
+                    ->icon('heroicon-o-printer')
+                    ->action(function (Collection $records): ?StreamedResponse {
+                        $orders = $records
+                            ->filter(fn (Order $o): bool => $o->status->isPaid() && $o->status->isOpen())
+                            ->load('items.product', 'shippingZone')
+                            ->filter(fn (Order $o): bool => $o->requiresDelivery())
+                            ->values();
+
+                        if ($orders->isEmpty()) {
+                            Notification::make()->title(__('Nothing to pack in that selection.'))->warning()->send();
+
+                            return null;
+                        }
+
+                        app(AuditLogger::class)->recordExport('packing_slips.printed', 'packing slips', $orders->count(), auth()->user(), [
+                            'orders' => $orders->pluck('reference')->all(),
+                        ]);
+
+                        $documents = app(OrderDocuments::class);
+
+                        return response()->streamDownload(
+                            fn () => print ($documents->packingSlips($orders)),
+                            'packing-slips-'.now()->format('Y-m-d').'.pdf',
+                            ['Content-Type' => 'application/pdf'],
+                        );
+                    })
+                    ->deselectRecordsAfterCompletion(),
+
                 ExportAction::make('report.generated', __('orders'), [
                     'Order' => 'reference',
                     'Placed' => fn (Order $record) => $record->created_at->format('Y-m-d H:i'),

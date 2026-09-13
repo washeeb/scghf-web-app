@@ -341,7 +341,7 @@ class MessageTemplateSeeder extends Seeder
                 'locked' => true,
                 'variables' => [
                     'customer_name', 'order_reference', 'order_total', 'order_items',
-                    'delivery_address', 'invoice_number', 'order_url',
+                    'delivery_address', 'invoice_number', 'invoice_url', 'order_url',
                 ],
                 'required' => ['customer_name', 'order_reference', 'order_total'],
                 'subject' => 'Your order {{order_reference}}',
@@ -354,7 +354,8 @@ class MessageTemplateSeeder extends Seeder
                     <p>Delivery to: {{delivery_address}}</p>
                     <p>You can see this order at any time here: {{order_url}}</p>
                     <p>This is a purchase, and no charitable receipt is issued for goods. A gift
-                    made through the shop is receipted separately. Invoice number: {{invoice_number}}</p>
+                    made through the shop is receipted separately. Invoice number: {{invoice_number}}
+                    — download it here: {{invoice_url}}</p>
                     HTML,
                 'text' => <<<'TEXT'
                     Dear {{customer_name}},
@@ -371,6 +372,7 @@ class MessageTemplateSeeder extends Seeder
 
                     This is a purchase, and no charitable receipt is issued for goods. A gift
                     made through the shop is receipted separately. Invoice number: {{invoice_number}}
+                    Download it here: {{invoice_url}}
                     TEXT,
             ],
             [

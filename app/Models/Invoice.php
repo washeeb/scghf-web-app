@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use RuntimeException;
 
 /**
@@ -99,6 +100,12 @@ class Invoice extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** The signed link to the PDF, for the confirmation email. */
+    public function downloadUrl(int $days = 90): string
+    {
+        return URL::temporarySignedRoute('invoices.download', now()->addDays($days), ['invoice' => $this->ulid]);
     }
 
     /** @return BelongsTo<Media, $this> */

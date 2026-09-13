@@ -140,6 +140,7 @@ final class PolicyMap
             Models\Event::class => EventPolicy::class,
             Models\EventRegistration::class => EventPolicy::class,
             Models\EventTicket::class => EventPolicy::class,
+            Models\IssuedTicket::class => EventPolicy::class,
 
             Models\ContactMessage::class => ContactPolicy::class,
             Models\ContactDepartment::class => ContactPolicy::class,

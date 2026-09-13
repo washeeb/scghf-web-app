@@ -6,14 +6,20 @@ namespace App\Filament\Resources\Orders\Pages;
 
 use App\Enums\OrderStatus;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Support\MoneyField;
 use App\Models\Order;
+use App\Payments\RefundService;
+use App\Shop\OrderDocuments;
 use App\Shop\OrderNotifier;
+use App\Support\AuditLogger;
+use App\ValueObjects\Money;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Fulfilling an order.
@@ -36,9 +42,15 @@ class ViewOrder extends ViewRecord
     {
         return [
             $this->statusAction('processing', __('Being prepared'), OrderStatus::Processing, [OrderStatus::Paid], 'heroicon-o-cube'),
+            $this->statusAction('packed', __('Packed'), OrderStatus::Packed, [OrderStatus::Paid, OrderStatus::Processing], 'heroicon-o-archive-box'),
             $this->dispatchedAction(),
-            $this->statusAction('delivered', __('Delivered'), OrderStatus::Delivered, [OrderStatus::Shipped, OrderStatus::Processing, OrderStatus::Paid], 'heroicon-o-check-circle', collectionOnly: false),
-            $this->statusAction('collected', __('Collected'), OrderStatus::Collected, [OrderStatus::Paid, OrderStatus::Processing], 'heroicon-o-hand-raised', collectionOnly: true),
+            $this->statusAction('out_for_delivery', __('Out for delivery'), OrderStatus::OutForDelivery, [OrderStatus::Shipped], 'heroicon-o-map-pin', collectionOnly: false),
+            $this->statusAction('delivered', __('Delivered'), OrderStatus::Delivered, [OrderStatus::OutForDelivery, OrderStatus::Shipped, OrderStatus::Packed, OrderStatus::Processing, OrderStatus::Paid], 'heroicon-o-check-circle', collectionOnly: false),
+            $this->statusAction('collected', __('Collected'), OrderStatus::Collected, [OrderStatus::Paid, OrderStatus::Processing, OrderStatus::Packed], 'heroicon-o-hand-raised', collectionOnly: true),
+            $this->statusAction('completed', __('Completed'), OrderStatus::Completed, [OrderStatus::Delivered, OrderStatus::Collected], 'heroicon-o-flag'),
+            $this->packingSlipAction(),
+            $this->invoiceAction(),
+            $this->refundAction(),
             $this->cancelAction(),
             $this->resendConfirmationAction(),
         ];
@@ -80,7 +92,7 @@ class ViewOrder extends ViewRecord
                 /** @var Order $order */
                 $order = $this->getRecord();
 
-                return ! $order->is_pickup && in_array($order->status, [OrderStatus::Paid, OrderStatus::Processing], true);
+                return ! $order->is_pickup && in_array($order->status, [OrderStatus::Paid, OrderStatus::Processing, OrderStatus::Packed], true);
             })
             ->modalHeading(__('Mark as dispatched and tell the customer'))
             ->schema([
@@ -107,6 +119,100 @@ class ViewOrder extends ViewRecord
 
                 $this->getRecord()->refresh();
                 $this->fillForm();
+            });
+    }
+
+    private function packingSlipAction(): Action
+    {
+        return Action::make('packingSlip')
+            ->label(__('Packing slip'))
+            ->icon('heroicon-o-printer')
+            ->color('gray')
+            ->visible(fn (): bool => $this->getRecord()->status->isPaid() && $this->getRecord()->requiresDelivery())
+            ->action(function (): StreamedResponse {
+                /** @var Order $order */
+                $order = $this->getRecord();
+                $documents = app(OrderDocuments::class);
+
+                app(AuditLogger::class)->recordExport('packing_slips.printed', 'packing slip', 1, auth()->user(), ['orders' => [$order->reference]]);
+
+                return response()->streamDownload(
+                    fn () => print ($documents->packingSlips([$order])),
+                    $documents->packingSlipFilename($order),
+                    ['Content-Type' => 'application/pdf'],
+                );
+            });
+    }
+
+    private function invoiceAction(): Action
+    {
+        return Action::make('invoice')
+            ->label(__('Invoice PDF'))
+            ->icon('heroicon-o-document-text')
+            ->color('gray')
+            ->visible(fn (): bool => $this->getRecord()->invoice !== null)
+            ->action(function (): StreamedResponse {
+                /** @var Order $order */
+                $order = $this->getRecord();
+                $documents = app(OrderDocuments::class);
+
+                app(AuditLogger::class)->recordExport('invoice.downloaded', 'shop invoice', 1, auth()->user(), ['invoice' => $order->invoice->invoice_number]);
+
+                return response()->streamDownload(
+                    fn () => print ($documents->renderInvoice($order->invoice)),
+                    $documents->invoiceFilename($order->invoice),
+                    ['Content-Type' => 'application/pdf'],
+                );
+            });
+    }
+
+    /**
+     * A refund is requested here and approved by somebody else on the
+     * Refunds screen — the same two-person rule as a donation. When the
+     * gateway confirms a full refund, the goods go back on the shelf.
+     */
+    private function refundAction(): Action
+    {
+        return Action::make('refund')
+            ->label(__('Request a refund'))
+            ->icon('heroicon-o-receipt-refund')
+            ->color('danger')
+            ->visible(fn (): bool => $this->getRecord()->status->isPaid()
+                && $this->getRecord()->status !== OrderStatus::Refunded
+                && $this->getRecord()->transaction?->status->isSettled()
+                && $this->getRecord()->transaction->refundableAmount()->isPositive()
+                && auth()->user()->can('orders.refund_request'))
+            ->modalHeading(__('Request a refund'))
+            ->modalDescription(fn (): string => __('Up to :amount can be returned. A second person approves it on the Refunds screen before anything is sent to the gateway. A full refund puts the goods back in stock when the gateway confirms it.', [
+                'amount' => $this->getRecord()->transaction->refundableAmount()->format(),
+            ]))
+            ->schema([
+                MoneyField::make('amount')
+                    ->label(__('Amount to refund'))
+                    ->required()
+                    ->default(fn (): string => $this->getRecord()->transaction->refundableAmount()->toMajorString()),
+                Textarea::make('reason')->label(__('Why'))->required()->rows(3),
+            ])
+            ->action(function (array $data): void {
+                /** @var Order $order */
+                $order = $this->getRecord();
+
+                try {
+                    $refund = app(RefundService::class)->request(
+                        $order->transaction,
+                        Money::ofMinor((int) $data['amount']),
+                        (string) $data['reason'],
+                        auth()->user(),
+                    );
+                } catch (RuntimeException $e) {
+                    Notification::make()->title($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                app(AuditLogger::class)->record('refund.requested', 'Refund of '.$refund->amount->format().' requested on order '.$order->reference, $refund, auth()->user(), ['amount' => $refund->amount->format(), 'order' => $order->reference]);
+
+                Notification::make()->title(__('Refund requested. It needs approval by somebody else before it is sent.'))->success()->send();
             });
     }
 

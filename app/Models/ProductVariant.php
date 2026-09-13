@@ -275,6 +275,19 @@ class ProductVariant extends Model
         });
     }
 
+    /** A refunded sale: the goods are back, and the ledger says so. */
+    public function returnToStock(int $quantity, string $reference): InventoryMovement
+    {
+        return DB::transaction(function () use ($quantity, $reference): InventoryMovement {
+            static::whereKey($this->getKey())->update([
+                'stock_on_hand' => DB::raw('stock_on_hand + '.$quantity),
+                'low_stock_alerted_at' => null,
+            ]);
+
+            return $this->recordMovement(InventoryMovement::REASON_RETURN, $quantity, $reference, 'Refunded order returned to stock.');
+        });
+    }
+
     /**
      * Correct the count after a stock take.
      *

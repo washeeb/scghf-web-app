@@ -361,12 +361,42 @@ class Order extends Model implements Payable
             && $refund->transaction->refundedAmount()->greaterThanOrEqual($this->total);
 
         if ($full && $this->status !== OrderStatus::Refunded) {
+            $this->restockAfterRefund();
             $this->transitionTo(OrderStatus::Refunded, null, 'Refunded in full via the gateway.');
         }
 
         if (! $full) {
             $this->forceFill(['notes' => trim((string) $this->notes."\nPartial refund of ".$refund->amount->format().' processed.')])->save();
         }
+    }
+
+    /**
+     * The goods come back on the shelf when the money goes back.
+     *
+     * Only what was actually taken off it — `stock_committed` — and only for
+     * lines that sit on a shelf. Written as a `return` movement with the order
+     * reference, so the ledger says why twelve mugs became thirteen. Once:
+     * the flag is cleared so a second full-refund event cannot restock twice.
+     */
+    public function restockAfterRefund(): void
+    {
+        if (! $this->stock_committed) {
+            return;
+        }
+
+        DB::transaction(function (): void {
+            $this->loadMissing('items.variant', 'items.product');
+
+            foreach ($this->items as $item) {
+                if ($item->variant !== null && ($item->product?->requiresDelivery() ?? true)) {
+                    $item->variant->returnToStock($item->quantity, $this->reference);
+                }
+            }
+
+            static::whereKey($this->getKey())->update(['stock_committed' => false]);
+        });
+
+        $this->refresh();
     }
 
     // ── Stock ────────────────────────────────────────────────────────────────

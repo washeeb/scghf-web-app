@@ -38,6 +38,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Shop\CartController;
 use App\Http\Controllers\Shop\CheckoutController;
 use App\Http\Controllers\Shop\DownloadController;
+use App\Http\Controllers\Shop\InvoiceController;
 use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TeamController;
@@ -426,6 +427,11 @@ Route::post('donate/{donation:ulid}/otp', [DonateController::class, 'otp'])
  */
 Route::get('receipts/{receipt:ulid}/download', [ReceiptController::class, 'download'])
     ->name('receipts.download');
+
+// The invoice, by the same rule: the signed link from the confirmation, or
+// the account that placed the order.
+Route::get('invoices/{invoice:ulid}/download', [InvoiceController::class, 'download'])
+    ->name('invoices.download');
 
 /*
 | The sandbox checkout.
