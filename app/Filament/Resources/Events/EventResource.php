@@ -8,6 +8,7 @@ use App\Filament\Resources\Events\Pages\CreateEvent;
 use App\Filament\Resources\Events\Pages\EditEvent;
 use App\Filament\Resources\Events\Pages\ListEvents;
 use App\Filament\Resources\Events\RelationManagers\RegistrationsRelationManager;
+use App\Filament\Resources\Events\RelationManagers\TicketsRelationManager;
 use App\Filament\Resources\Events\Schemas\EventForm;
 use App\Filament\Resources\Events\Tables\EventsTable;
 use App\Models\Event;
@@ -58,6 +59,7 @@ class EventResource extends Resource
     {
         return [
             RegistrationsRelationManager::class,
+            TicketsRelationManager::class,
         ];
     }
 

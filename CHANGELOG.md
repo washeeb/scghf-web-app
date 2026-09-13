@@ -8,6 +8,110 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 9 — the shop, completed — 2026-09-13
+
+The catalogue, basket, checkout, orders and admin were built in Phase 6.
+This phase is what the brief asked for and Phase 6 did not have.
+
+#### Module 1 — the catalogue
+
+- **Four kinds of product, four consequences of paying.** A *physical*
+  product is packed. A *download* becomes a token — sixty-four random
+  characters, expiring after the product's number of days, refusing after
+  its number of uses, counted with the address it went to — emailed as
+  `order.download`; the file lives on a new `downloads` disk that nothing
+  serves but `DownloadController`, because a paid file one guessed path from
+  free is not a paid file. A *gift* ("sponsor a meal") becomes a real
+  donation to the product's appeal the moment the order is paid — receipted,
+  matched to the donor, counted as giving, and never counted again as shop
+  sales. A *ticket* becomes one code per admission (`issued_tickets`), a
+  registration found or made for the buyer, and `order.tickets`; a door list
+  on the event checks codes in. Each is issued exactly once however often
+  settlement is replayed
+- Specifications as label/value pairs, dimensions, editor-chosen related
+  products (falling back to the category's neighbours), bulk quantity breaks
+  and a signed-in price — the customer gets the lower — decided by the basket
+  and snapshotted onto the order line, so the order's lines add up to what
+  was charged
+- `scghf:stock-alerts`, 07:00: one digest to the shop email listing what has
+  fallen to the low-stock level, each item once until it is restocked
+- Three more order states — packed, out for delivery, completed — and a
+  customer sentence for every state
+
+#### Module 2 — the checkout
+
+- The rest of a Ghanaian address: town or district, area, house or
+  directions, the nearest landmark, the GhanaPost GPS code (validated as
+  `GA-184-3456`), printed as one line a courier can use. Collection points
+  carry an address, hours and a phone, shown at checkout, on the order and
+  in the confirmation
+- **A gift at the last step.** Chips computed on the server — round the
+  basket up to the next GH₵ 10, 50 or 100, or add GH₵ 5, 10, 20 — that
+  become a donation to the General Fund when the order is paid, receipted
+  separately and kept off the invoice, which lists goods. Switchable
+- A basket of downloads, tickets or gifts asks for no address and is
+  completed the moment it is paid
+- **Finding an order.** `/shop/orders/track`: reference plus the email or
+  phone it was placed with, refused as one sentence whichever half is wrong.
+  Every order link in every email is signed for ninety days; the order page
+  refuses a bare URL from anybody but the account or the browser that placed
+  it, because a ULID is unguessable and unguessable is not a permission
+- An abandoned-checkout reminder, **off** by default, once, and only to
+  somebody who has agreed to email from the foundation — a checkout tick is
+  consent to hold details for the order, not to be written to afterwards
+
+#### Module 3 — managing orders
+
+- Every change of state after payment sends `order.status` — the frame from
+  the CMS, the sentence from the state — and an SMS when a courier is coming
+  or the parcel has arrived. Dispatch keeps its own message with the courier
+- **The paper.** An invoice PDF, rendered from the frozen invoice row, goods
+  only, cached under its number on the private disk, linked (signed) from the
+  confirmation and downloadable from the order in the admin. A packing slip —
+  address, landmark, GPS code, phone, notes, a box to tick per line, and no
+  prices, because a slip in a box that turns out to be a present should not
+  say what it cost — for one order or, from the order list, a selection as
+  one file with a page each. Both audited as exports
+- **Refunds from the order.** Requested on the order (`orders.refund_request`),
+  approved by a second person on the Refunds screen, sent to the gateway, and
+  when the gateway confirms a full refund the goods go back on the shelf as a
+  `return` movement with the order reference — once, whatever the webhook does
+
+#### Module 4 — the numbers
+
+- Shop → Reports: goods sold, delivery, discounts, fees and net proceeds;
+  by day, week or month; by product, by category, best sellers by units,
+  goods revenue by appeal; the shelf valued at selling price (and saying so);
+  refunds on their own line; and **total funds raised** — donations plus net
+  shop proceeds — with the two halves shown so nobody adds them again.
+  `ShopReports` computes in integer pesewas in SQL and is tested on its own
+- A door list on each ticketed event: search by code or name, check in,
+  undo within ten minutes
+
+#### Fixed
+
+- **⚠ An order with two lines could not commit its stock.** `holdStock()`,
+  `commitStock()` and `releaseStock()` read each line's variant lazily, which
+  strict mode refuses for a collection — and every test had ordered one
+  thing. Loaded up front
+- The invoice listed gifts as goods and the confirmation said no receipt
+  would be issued for any of it; both now say goods, and a gift made through
+  the shop is receipted separately
+
+#### Decided
+
+- Product types are the four in the brief. "Configurable statuses" is the
+  fixed set with a CMS-editable message per state, not user-defined states:
+  stock and refunds depend on what the states mean
+- Net shop proceeds are goods plus delivery less discounts and gateway fees.
+  There is no cost price on merchandise, so this is what reached the bank,
+  not a profit; the report says so
+- A member price is for any signed-in customer. There is no membership
+  scheme to be stricter about
+- Tickets stay behind `FEATURE_EVENT_TICKETING` (off). The type, the codes,
+  the door list and the email exist and are tested; the flag is the
+  foundation's decision to sell tickets, which nobody has taken yet
+
 ### Phase 8 Module 2 addendum — popup checkout and Turnstile — 2026-09-12
 
 Two decisions taken by the foundation at the Module 2 close-out.

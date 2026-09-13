@@ -135,6 +135,12 @@ class Event extends Model
         return $this->hasMany(EventRegistration::class);
     }
 
+    /** @return HasMany<IssuedTicket, $this> */
+    public function issuedTickets(): HasMany
+    {
+        return $this->hasMany(IssuedTicket::class);
+    }
+
     /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
     {

@@ -404,6 +404,10 @@ class Order extends Model implements Payable
     /** Reserve the shelf while the customer is on the payment page. */
     public function holdStock(): void
     {
+        // Loaded up front: an order with two lines is a collection, and a
+        // collection lazy-loading its variants is a strict-mode violation.
+        $this->loadMissing('items.variant');
+
         if ($this->stock_held) {
             return;
         }
@@ -421,6 +425,10 @@ class Order extends Model implements Payable
 
     public function releaseStock(): void
     {
+        // Loaded up front: an order with two lines is a collection, and a
+        // collection lazy-loading its variants is a strict-mode violation.
+        $this->loadMissing('items.variant');
+
         if (! $this->stock_held || $this->stock_committed) {
             return;
         }
@@ -438,6 +446,10 @@ class Order extends Model implements Payable
 
     public function commitStock(): void
     {
+        // Loaded up front: an order with two lines is a collection, and a
+        // collection lazy-loading its variants is a strict-mode violation.
+        $this->loadMissing('items.variant');
+
         if ($this->stock_committed) {
             return;
         }
