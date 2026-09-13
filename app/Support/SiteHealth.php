@@ -48,6 +48,8 @@ class SiteHealth
     /** Where the scheduler stamps that it ran. */
     public const HEARTBEAT_KEY = 'scghf.heartbeat.scheduler';
 
+    public const QUEUE_HEARTBEAT_KEY = 'scghf.heartbeat.queue';
+
     /**
      * A job sitting unclaimed for longer than this means nothing is working it.
      *
@@ -149,11 +151,23 @@ class SiteHealth
     private function queue(): HealthCheck
     {
         $pending = DB::table('jobs')->count();
+        $pulse = Cache::get(self::QUEUE_HEARTBEAT_KEY);
+        $pulseAt = $pulse === null ? null : Carbon::parse((string) $pulse);
 
         if ($pending === 0) {
-            return HealthCheck::unknown('queue', __('Background queue'), __('Nothing waiting'),
-                __('An empty queue looks the same whether the worker is running or not. The scheduled '
-                    .'jobs check above is the one that tells you cron is alive.'));
+            if ($pulseAt !== null && $pulseAt->gte(now()->subMinutes(self::QUEUE_STALE_MINUTES))) {
+                return HealthCheck::ok('queue', __('Background queue'), __('Worker alive, nothing waiting (:when)', ['when' => $pulseAt->diffForHumans()]));
+            }
+
+            if ($pulseAt !== null) {
+                return HealthCheck::warning('queue', __('Background queue'), __('Worker last seen :when', ['when' => $pulseAt->diffForHumans()]),
+                    __('Nothing is waiting, but the worker has not reported in. Check the queue:work cron line before something does.'));
+            }
+
+            return HealthCheck::unknown('queue', __('Background queue'), __('Nothing waiting, worker never seen'),
+                __('An empty queue looks the same whether the worker is running or not, and no worker has '
+                    .'reported in since the cache was last cleared. The scheduled jobs check above is the '
+                    .'one that tells you cron is alive.'));
         }
 
         $oldest = DB::table('jobs')->whereNull('reserved_at')->min('available_at');

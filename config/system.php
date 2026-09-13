@@ -167,6 +167,8 @@ return [
             'newsletter.approved' => ['category' => 'content', 'severity' => 'notice'],
             'newsletter.scheduled' => ['category' => 'content', 'severity' => 'notice'],
             'sms.broadcast_sent' => ['category' => 'content', 'severity' => 'notice'],
+            'queue.job_retried' => ['category' => 'config', 'severity' => 'notice'],
+            'queue.job_discarded' => ['category' => 'config', 'severity' => 'warning'],
 
             // --- Money -----------------------------------------------------
             'donation.recorded_offline' => ['category' => 'money', 'severity' => 'notice'],

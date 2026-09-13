@@ -30,6 +30,7 @@ use App\Support\Features;
 use App\Support\ImageSanitiser;
 use App\Support\RetentionRunner;
 use App\Support\Settings;
+use App\Support\SiteHealth;
 use App\Support\TaxDeductibility;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
@@ -40,8 +41,10 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -50,6 +53,7 @@ use Spatie\Backup\Events\BackupHasFailed;
 use Spatie\Backup\Events\BackupWasSuccessful;
 use Spatie\Backup\Events\BackupZipWasCreated;
 use Spatie\MediaLibrary\MediaCollections\Events\MediaHasBeenAddedEvent;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -146,6 +150,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->registerRetentionSubjects();
         $this->recordBackupOutcomes();
+        $this->recordQueueHeartbeat();
 
         /*
          * Strip camera metadata the moment a file is added.
@@ -275,6 +280,26 @@ class AppServiceProvider extends ServiceProvider
      * is read once by whoever happened to open it, and a backup that has been
      * failing for three weeks looks exactly like one nobody is emailing about.
      */
+    /**
+     * The queue worker's pulse.
+     *
+     * `queue:work --stop-when-empty` fires `Looping` once per pass, empty
+     * queue included, so a cron line that is running leaves a timestamp
+     * every minute even when there is nothing to do. Site Health reads it:
+     * an empty queue and a fresh pulse is a working system; an empty queue
+     * and no pulse is a missing cron line, which used to look identical.
+     */
+    private function recordQueueHeartbeat(): void
+    {
+        Queue::looping(function (): void {
+            try {
+                Cache::put(SiteHealth::QUEUE_HEARTBEAT_KEY, now()->toIso8601String(), now()->addHours(6));
+            } catch (Throwable) {
+                // A cache that cannot be written is Site Health's own problem to report.
+            }
+        });
+    }
+
     private function recordBackupOutcomes(): void
     {
         Event::listen(BackupZipWasCreated::class, [RecordBackupOutcome::class, 'handleZipCreated']);

@@ -164,6 +164,7 @@ final class PolicyMap
             Models\NotificationLog::class => EmailLogPolicy::class,
             Models\Suppression::class => SuppressionPolicy::class,
             Models\ScheduledMessage::class => ScheduledMessagePolicy::class,
+            Models\FailedJob::class => FailedJobPolicy::class,
             Models\InboundWebhookEvent::class => PaymentPolicy::class,
 
             // ── System ───────────────────────────────────────────────────────
