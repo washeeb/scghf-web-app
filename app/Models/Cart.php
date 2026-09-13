@@ -67,7 +67,9 @@ class Cart extends Model
     /** @return HasMany<CartItem, $this> */
     public function items(): HasMany
     {
-        return $this->hasMany(CartItem::class);
+        // Chaperoned: a line prices itself by who owns the basket, and must
+        // not lazy-load the basket to find out.
+        return $this->hasMany(CartItem::class)->chaperone();
     }
 
     /** @return BelongsTo<Coupon, $this> */
@@ -138,6 +140,12 @@ class Cart extends Model
     public function isEmpty(): bool
     {
         return $this->items->isEmpty();
+    }
+
+    /** Whether anything in the basket has to be carried somewhere. */
+    public function requiresDelivery(): bool
+    {
+        return $this->items->contains(fn (CartItem $item): bool => $item->variant?->product?->requiresDelivery() ?? true);
     }
 
     /**

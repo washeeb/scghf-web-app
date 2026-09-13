@@ -353,8 +353,8 @@ class MessageTemplateSeeder extends Seeder
                     {{order_items}}
                     <p>Delivery to: {{delivery_address}}</p>
                     <p>You can see this order at any time here: {{order_url}}</p>
-                    <p>This is a purchase, not a donation, and no charitable receipt is issued
-                    for it. Invoice number: {{invoice_number}}</p>
+                    <p>This is a purchase, and no charitable receipt is issued for goods. A gift
+                    made through the shop is receipted separately. Invoice number: {{invoice_number}}</p>
                     HTML,
                 'text' => <<<'TEXT'
                     Dear {{customer_name}},
@@ -369,8 +369,8 @@ class MessageTemplateSeeder extends Seeder
 
                     You can see this order at any time here: {{order_url}}
 
-                    This is a purchase, not a donation, and no charitable receipt is issued
-                    for it. Invoice number: {{invoice_number}}
+                    This is a purchase, and no charitable receipt is issued for goods. A gift
+                    made through the shop is receipted separately. Invoice number: {{invoice_number}}
                     TEXT,
             ],
             [
@@ -392,6 +392,111 @@ class MessageTemplateSeeder extends Seeder
                     Your order {{order_reference}} has been dispatched with {{courier}}.
 
                     Tracking reference: {{tracking_reference}}
+                    TEXT,
+            ],
+            [
+                'key' => 'order.download',
+                'name' => 'Your download',
+                'description' => 'Sent when a paid order includes a digital product. The link is '
+                    .'the whole credential: it expires and stops working after a number of uses, '
+                    .'both set on the product.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['customer_name', 'order_reference', 'download_links', 'expires_on', 'download_limit'],
+                'required' => ['customer_name', 'order_reference', 'download_links'],
+                'subject' => 'Your download from {{site_name}} — order {{order_reference}}',
+                'html' => <<<'HTML'
+                    <p>Dear {{customer_name}},</p>
+                    <p>Thank you. Here is what you bought:</p>
+                    {{download_links}}
+                    <p>Each link works {{download_limit}} times and until {{expires_on}}. If it
+                    stops working, reply to this email quoting {{order_reference}} and we will
+                    send a fresh one.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{customer_name}},
+
+                    Thank you. Here is what you bought:
+
+                    {{download_links}}
+
+                    Each link works {{download_limit}} times and until {{expires_on}}. If it
+                    stops working, reply to this email quoting {{order_reference}} and we will
+                    send a fresh one.
+                    TEXT,
+            ],
+            [
+                'key' => 'order.status',
+                'name' => 'Order status update',
+                'description' => 'Sent on every change of an order\'s status after payment — being '
+                    .'prepared, packed, out for delivery, delivered, collected, cancelled, refunded — '
+                    .'except dispatch, which has its own message with the courier.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['customer_name', 'order_reference', 'status_label', 'status_message', 'order_url'],
+                'required' => ['customer_name', 'order_reference', 'status_label'],
+                'subject' => 'Order {{order_reference}}: {{status_label}}',
+                'html' => <<<'HTML'
+                    <p>Dear {{customer_name}},</p>
+                    <p>Your order <strong>{{order_reference}}</strong> is now: <strong>{{status_label}}</strong>.</p>
+                    <p>{{status_message}}</p>
+                    <p>You can see the order here: {{order_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{customer_name}},
+
+                    Your order {{order_reference}} is now: {{status_label}}.
+
+                    {{status_message}}
+
+                    You can see the order here: {{order_url}}
+                    TEXT,
+            ],
+            [
+                'key' => 'order.tickets',
+                'name' => 'Your tickets',
+                'description' => 'Sent when a paid order includes event tickets. One code per admission; '
+                    .'the door list checks codes, not names.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['customer_name', 'order_reference', 'event_name', 'event_date', 'event_venue', 'tickets'],
+                'required' => ['customer_name', 'event_name', 'tickets'],
+                'subject' => 'Your tickets for {{event_name}}',
+                'html' => <<<'HTML'
+                    <p>Dear {{customer_name}},</p>
+                    <p>Here are your tickets for <strong>{{event_name}}</strong>, {{event_date}},
+                    {{event_venue}}. Show a code at the door — on your phone is fine.</p>
+                    {{tickets}}
+                    <p>Order reference: {{order_reference}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{customer_name}},
+
+                    Here are your tickets for {{event_name}}, {{event_date}}, {{event_venue}}.
+                    Show a code at the door — on your phone is fine.
+
+                    {{tickets}}
+
+                    Order reference: {{order_reference}}
+                    TEXT,
+            ],
+            [
+                'key' => 'stock.low',
+                'name' => 'Low stock — to the shop email',
+                'description' => 'One digest a morning, to the shop email, listing what has fallen to '
+                    .'the low-stock level — each item once, until it is restocked.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['items', 'threshold', 'admin_url'],
+                'required' => ['items'],
+                'subject' => 'Low stock in the shop',
+                'html' => <<<'HTML'
+                    <p>These have fallen to {{threshold}} or fewer:</p>
+                    {{items}}
+                    <p>Adjust stock or take them off sale here: {{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    These have fallen to {{threshold}} or fewer:
+
+                    {{items}}
+
+                    Adjust stock or take them off sale here: {{admin_url}}
                     TEXT,
             ],
             [
@@ -1039,6 +1144,17 @@ class MessageTemplateSeeder extends Seeder
                 'max_segments' => 1,
                 'body' => 'Your order {{order_reference}} has been dispatched with {{courier}}. '
                     .'{{site_name}}',
+            ],
+            [
+                'key' => 'order.status',
+                'name' => 'Order status update',
+                'description' => 'One line when an order is out for delivery, delivered or collected. '
+                    .'The text is the message a customer waiting on a courier actually reads.',
+                'category' => SmsTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['order_reference', 'status_label'],
+                'required' => ['order_reference', 'status_label'],
+                'max_segments' => 1,
+                'body' => 'Order {{order_reference}}: {{status_label}}. {{site_name}}',
             ],
             [
                 'key' => 'event.reminder',

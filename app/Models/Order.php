@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Casts\MoneyCast;
 use App\Contracts\Payable;
 use App\Enums\OrderStatus;
+use App\Shop\OrderFulfilment;
 use App\Shop\OrderNotifier;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -180,6 +181,18 @@ class Order extends Model implements Payable
     }
 
     /** @return HasMany<DigitalDownloadToken, $this> */
+    /** @return HasMany<IssuedTicket, $this> */
+    public function issuedTickets(): HasMany
+    {
+        return $this->hasMany(IssuedTicket::class);
+    }
+
+    /** The gifts a "donation product" line became. @return HasMany<Donation, $this> */
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class);
+    }
+
     public function downloadTokens(): HasMany
     {
         return $this->hasMany(DigitalDownloadToken::class);
@@ -239,6 +252,9 @@ class Order extends Model implements Payable
          * cannot fail the webhook and have the gateway redeliver a payment
          * that has already been counted.
          */
+        // Downloads, donations and tickets first, so the confirmation can
+        // carry the links and the receipt can be issued for the meal.
+        app(OrderFulfilment::class)->fulfil($this);
         app(OrderNotifier::class)->confirm($this);
     }
 
@@ -440,6 +456,12 @@ class Order extends Model implements Payable
         return (int) $this->items->sum(fn (OrderItem $item): int => (int) $item->weight_grams * $item->quantity);
     }
 
+    /** Whether anything in the order has to be carried somewhere. */
+    public function requiresDelivery(): bool
+    {
+        return $this->items->contains(fn (OrderItem $item): bool => $item->product?->requiresDelivery() ?? true);
+    }
+
     public function hasDigitalItems(): bool
     {
         return $this->items->contains(fn (OrderItem $item): bool => $item->product?->isDigital() ?? false);
@@ -461,6 +483,15 @@ class Order extends Model implements Payable
         ], fn ($value): bool => $value !== null))->save();
 
         $this->recordStatusChange($from, $by, $note);
+
+        /*
+         * The customer is told on every change after payment. Dispatch has
+         * its own message, sent by the action that knows the courier; a
+         * transition that changes nothing sends nothing.
+         */
+        if ($from !== $status && $status !== OrderStatus::Shipped) {
+            app(OrderNotifier::class)->status($this, $status);
+        }
     }
 
     /**
@@ -489,6 +520,12 @@ class Order extends Model implements Payable
         ])->save();
 
         $this->recordStatusChange($from, $by, $reason);
+
+        // An unpaid checkout that was abandoned is swept, not written to; a
+        // customer who was still deciding is told nothing they did not ask.
+        if ($from !== OrderStatus::Pending) {
+            app(OrderNotifier::class)->status($this, OrderStatus::Cancelled);
+        }
     }
 
     public function recordStatusChange(?OrderStatus $from, ?User $by = null, string $note = ''): void

@@ -110,6 +110,7 @@ class ShopController extends Controller
             'featuredImage',
             'category',
             'cause',
+            'eventTicket.event',
         ]);
 
         return view('shop.show', [
@@ -172,8 +173,21 @@ class ShopController extends Controller
     }
 
     /** @return Collection<int, Product> */
+    /**
+     * What the editor chose, and only if they chose nothing, the category's
+     * neighbours.
+     */
     private function related(Product $product): Collection
     {
+        $chosen = $product->related()
+            ->live()
+            ->with(['featuredImage', 'variants', 'cause'])
+            ->get();
+
+        if ($chosen->isNotEmpty()) {
+            return $chosen;
+        }
+
         if ($product->product_category_id === null) {
             return collect();
         }

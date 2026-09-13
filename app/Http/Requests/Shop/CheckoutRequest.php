@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Shop;
 
 use App\Models\ShippingZone;
+use App\Shop\CurrentCart;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -43,7 +44,7 @@ class CheckoutRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $delivering = $this->input('fulfilment') === 'deliver';
+        $delivering = $this->needsDelivery() && $this->input('fulfilment') === 'deliver';
 
         return [
             'customer_name' => ['required', 'string', 'max:191'],
@@ -53,7 +54,7 @@ class CheckoutRequest extends FormRequest
                 'string', 'max:20', 'regex:/^(\+?233|0)[2345][0-9]{8}$/',
             ],
 
-            'fulfilment' => ['required', Rule::in(['deliver', 'collect'])],
+            'fulfilment' => [$this->needsDelivery() ? 'required' : 'nullable', Rule::in(['deliver', 'collect'])],
 
             'delivery_region' => [$delivering ? 'required' : 'nullable', 'string', Rule::in(ShippingZone::REGIONS)],
             'delivery_area' => [$delivering ? 'required' : 'nullable', 'string', 'max:191'],
@@ -78,6 +79,10 @@ class CheckoutRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
+                if (! $this->needsDelivery()) {
+                    return;
+                }
+
                 if ($this->input('fulfilment') === 'collect') {
                     if (ShippingZone::query()->active()->where('is_pickup', true)->doesntExist()) {
                         $validator->errors()->add('fulfilment', __('Collection is not available at the moment.'));
@@ -104,6 +109,23 @@ class CheckoutRequest extends FormRequest
 
     public function isCollection(): bool
     {
-        return $this->input('fulfilment') === 'collect';
+        return $this->needsDelivery() && $this->input('fulfilment') === 'collect';
+    }
+
+    /**
+     * Whether the basket has anything to carry. A basket of downloads,
+     * tickets or gifts is not asked where to send them.
+     */
+    public function needsDelivery(): bool
+    {
+        $cart = app(CurrentCart::class)->current();
+
+        if ($cart === null) {
+            return true;
+        }
+
+        $cart->loadMissing('items.variant.product');
+
+        return $cart->requiresDelivery();
     }
 }

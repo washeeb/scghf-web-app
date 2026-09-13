@@ -37,7 +37,9 @@ class ProductVariant extends Model
 
     protected $fillable = [
         'product_id', 'sku', 'name', 'options', 'price', 'compare_at_price',
+        'member_price', 'price_tiers',
         'currency', 'tracks_stock', 'allow_backorder', 'weight_grams',
+        'length_mm', 'width_mm', 'height_mm',
         'sort_order', 'is_active',
     ];
 
@@ -62,6 +64,9 @@ class ProductVariant extends Model
             'is_active' => 'boolean',
             'price' => MoneyCast::class.':price_minor,currency',
             'compare_at_price' => MoneyCast::class.':compare_at_price_minor,currency',
+            'member_price' => MoneyCast::class.':member_price_minor,currency',
+            'price_tiers' => 'array',
+            'low_stock_alerted_at' => 'datetime',
         ];
     }
 
@@ -70,6 +75,17 @@ class ProductVariant extends Model
         static::saving(function (self $variant): void {
             if ($variant->price_minor !== null && $variant->price_minor < 0) {
                 throw new RuntimeException('A price cannot be negative.');
+            }
+
+            // Only a physical thing sits on a shelf or weighs anything. A
+            // download, a ticket or a sponsored meal cannot run out and cannot
+            // be posted, whatever the form was told.
+            $product = $variant->product ?? ($variant->product_id ? Product::find($variant->product_id) : null);
+
+            if ($product !== null && ! $product->requiresDelivery()) {
+                $variant->tracks_stock = false;
+                $variant->allow_backorder = false;
+                $variant->weight_grams = null;
             }
         });
     }
@@ -95,6 +111,44 @@ class ProductVariant extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(InventoryMovement::class)->orderByDesc('id');
+    }
+
+    // ── Pricing ──────────────────────────────────────────────────────────────
+
+    /**
+     * The unit price for this many, for this customer.
+     *
+     * Bulk tiers are by quantity: the highest `min_quantity` the order reaches
+     * sets the unit price. The member price is for a signed-in customer.
+     * Where both apply the customer gets the lower, because a price list that
+     * charges a member more for buying ten is a price list nobody trusts.
+     */
+    public function priceFor(int $quantity = 1, bool $member = false): Money
+    {
+        $price = $this->price;
+
+        foreach ($this->sortedTiers() as $tier) {
+            if ($quantity >= $tier['min_quantity']) {
+                $price = Money::ofMinor($tier['price_minor'], $this->currency);
+            }
+        }
+
+        if ($member && $this->member_price !== null && $this->member_price->lessThan($price)) {
+            $price = $this->member_price;
+        }
+
+        return $price;
+    }
+
+    /** @return list<array{min_quantity: int, price_minor: int}> */
+    public function sortedTiers(): array
+    {
+        return collect($this->price_tiers ?? [])
+            ->filter(fn ($t): bool => is_array($t) && (int) ($t['min_quantity'] ?? 0) > 1 && (int) ($t['price_minor'] ?? -1) >= 0)
+            ->map(fn (array $t): array => ['min_quantity' => (int) $t['min_quantity'], 'price_minor' => (int) $t['price_minor']])
+            ->sortBy('min_quantity')
+            ->values()
+            ->all();
     }
 
     // ── Stock ────────────────────────────────────────────────────────────────
@@ -239,6 +293,8 @@ class ProductVariant extends Model
         return DB::transaction(function () use ($delta, $note, $by): InventoryMovement {
             static::whereKey($this->getKey())->update([
                 'stock_on_hand' => DB::raw('stock_on_hand + '.$delta),
+                // Restocked above the line: the next time it runs low is news again.
+                'low_stock_alerted_at' => $delta > 0 ? null : $this->low_stock_alerted_at,
             ]);
 
             return $this->recordMovement(InventoryMovement::REASON_ADJUSTMENT, $delta, null, $note, $by);

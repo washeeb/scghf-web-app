@@ -33,12 +33,16 @@ class CartItem extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
+    /** The live unit price for this quantity and this customer. */
+    public function unitPrice(): Money
+    {
+        return $this->variant?->priceFor($this->quantity, $this->cart?->user_id !== null) ?? Money::zero();
+    }
+
     /** The live price, times the quantity. */
     public function lineTotal(): Money
     {
-        $price = $this->variant?->price;
-
-        return $price === null ? Money::zero() : $price->times($this->quantity);
+        return $this->variant === null ? Money::zero() : $this->unitPrice()->times($this->quantity);
     }
 
     /**

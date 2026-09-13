@@ -7,11 +7,15 @@ namespace App\Filament\Resources\Products\Schemas;
 use App\Filament\Support\MediaPicker;
 use App\Filament\Support\MoneyField;
 use App\Models\Cause;
+use App\Models\EventTicket;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Shop\RegulatoryScreener;
+use App\Support\Features;
+use App\ValueObjects\Money;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -22,7 +26,9 @@ use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 /**
@@ -86,12 +92,16 @@ class ProductForm
 
                         Select::make('product_type')
                             ->label(__('Kind'))
-                            ->options([
+                            ->options(array_filter([
                                 Product::TYPE_PHYSICAL => __('Something posted or collected'),
                                 Product::TYPE_DIGITAL => __('A download'),
-                            ])
+                                Product::TYPE_DONATION => __('A gift — "sponsor a meal"'),
+                                Product::TYPE_TICKET => app(Features::class)->enabled('event_ticketing') ? __('A ticket to an event') : null,
+                            ]))
                             ->default(Product::TYPE_PHYSICAL)
-                            ->required(),
+                            ->required()
+                            ->live()
+                            ->helperText(__('A download is delivered by an expiring link. A gift becomes a real donation to the appeal when the order is paid, receipted like any other. Neither is posted or stocked.')),
 
                         Select::make('cause_id')
                             ->label(__('Proceeds fund'))
@@ -111,6 +121,66 @@ class ProductForm
                         ->toolbarButtons(['bold', 'italic', 'link', 'bulletList', 'orderedList', 'h3', 'undo', 'redo']),
 
                     MediaPicker::image('featured_image_id')->label(__('Main image')),
+
+                    KeyValue::make('specifications')
+                        ->label(__('Specifications'))
+                        ->keyLabel(__('Label'))
+                        ->valueLabel(__('Value'))
+                        ->addActionLabel(__('Add a line'))
+                        ->helperText(__('Shown as a table on the product page: Material → cotton, Size → 40 × 30 cm, Made in → Bolgatanga.')),
+
+                    Select::make('related')
+                        ->label(__('You might also like'))
+                        ->relationship('related', 'name', fn (Builder $query, ?Product $record) => $query
+                            ->when($record, fn (Builder $q) => $q->whereKeyNot($record->getKey()))
+                            ->orderBy('name'))
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->helperText(__('Chosen by you, in this order. Three is plenty.')),
+
+                    Grid::make(3)
+                        ->visible(fn (Get $get): bool => $get('product_type') === Product::TYPE_DIGITAL)
+                        ->schema([
+                            FileUpload::make('download_upload')
+                                ->label(__('The file'))
+                                ->disk('downloads')
+                                ->directory('incoming')
+                                ->visibility('private')
+                                ->maxSize(51200)
+                                ->helperText(fn (?Product $record): string => $record?->downloadMedia
+                                    ? __('Currently: :file. Upload to replace.', ['file' => $record->downloadMedia->file_name])
+                                    : __('Up to 50 MB. Kept on a private disk and handed out only through expiring links.'))
+                                ->dehydrated(false),
+
+                            TextInput::make('download_limit')
+                                ->label(__('Downloads per copy'))
+                                ->numeric()->minValue(1)->maxValue(100)->default(5),
+
+                            TextInput::make('download_days')
+                                ->label(__('Link lasts'))
+                                ->suffix(__('days'))
+                                ->numeric()->minValue(1)->maxValue(365)->default(30),
+                        ]),
+
+                    Select::make('event_ticket_id')
+                        ->label(__('Which ticket'))
+                        ->visible(fn (Get $get): bool => $get('product_type') === Product::TYPE_TICKET)
+                        ->required(fn (Get $get): bool => $get('product_type') === Product::TYPE_TICKET)
+                        ->options(fn (): array => EventTicket::query()
+                            ->with('event')
+                            ->whereHas('event', fn (Builder $q) => $q->where('starts_at', '>', now()))
+                            ->get()
+                            ->mapWithKeys(fn (EventTicket $t): array => [$t->getKey() => ($t->event?->title ?? '').' — '.$t->name])
+                            ->all())
+                        ->searchable()
+                        ->helperText(__('Paying registers the buyer for the event and issues one code per ticket bought. The price is the product\'s price; the ticket\'s own cap and sale dates still apply.')),
+
+                    TextEntry::make('donation_note')
+                        ->hiddenLabel()
+                        ->visible(fn (Get $get): bool => $get('product_type') === Product::TYPE_DONATION)
+                        ->state(__('When an order with this line is paid, the line becomes a donation to the appeal chosen under "Proceeds fund" (or the General Fund), receipted to the customer. It is counted as giving, not as shop sales.'))
+                        ->color('info'),
 
                     TextEntry::make('regulatory')
                         ->label(__('Regulatory screen'))
@@ -174,12 +244,35 @@ class ProductForm
                                     ->label(__('Was'))
                                     ->helperText(__('Optional. Shown struck through beside the price.')),
 
+                                MoneyField::make('member_price')
+                                    ->label(__('Signed-in price'))
+                                    ->helperText(__('Optional. For a customer with an account. Never higher than the price.')),
+                            ]),
+
+                            Repeater::make('price_tiers')
+                                ->label(__('Bulk prices'))
+                                ->defaultItems(0)
+                                ->addActionLabel(__('Add a quantity break'))
+                                ->helperText(__('"10 or more at GH₵ 45 each". The highest break the quantity reaches sets the unit price; a signed-in customer gets the lower of the two.'))
+                                ->schema([
+                                    TextInput::make('min_quantity')->label(__('From'))->numeric()->minValue(2)->required(),
+                                    // A raw integer in a JSON column, not a cast: shown in cedis by hand.
+                                    MoneyField::make('price_minor')->label(__('Each'))->required()
+                                        ->formatStateUsing(fn (mixed $state): ?string => is_numeric($state) ? Money::ofMinor((int) $state)->toMajorString() : null),
+                                ])
+                                ->columns(2)
+                                ->reorderable(false),
+
+                            Grid::make(4)->schema([
                                 TextInput::make('weight_grams')
                                     ->label(__('Weight'))
                                     ->suffix('g')
                                     ->numeric()
                                     ->minValue(0)
                                     ->helperText(__('Used to pick the delivery rate.')),
+                                TextInput::make('length_mm')->label(__('Length'))->suffix('mm')->numeric()->minValue(0),
+                                TextInput::make('width_mm')->label(__('Width'))->suffix('mm')->numeric()->minValue(0),
+                                TextInput::make('height_mm')->label(__('Height'))->suffix('mm')->numeric()->minValue(0),
                             ]),
 
                             Grid::make(3)->schema([

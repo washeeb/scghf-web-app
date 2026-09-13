@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Shop;
 
 use App\Communications\MessageDispatcher;
+use App\Enums\OrderStatus;
+use App\Models\DigitalDownloadToken;
 use App\Models\Invoice;
+use App\Models\IssuedTicket;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Support\HtmlString;
@@ -58,6 +61,9 @@ final class OrderNotifier
         } catch (Throwable $e) {
             report($e);
         }
+
+        $this->downloads($order);
+        $this->tickets($order);
     }
 
     /**
@@ -78,6 +84,127 @@ final class OrderNotifier
             $order->invoice ?? $this->invoices->issue($order),
             'order.confirmation:'.$order->reference.':'.now()->timestamp,
         );
+    }
+
+    /**
+     * The files somebody paid for, as expiring links.
+     *
+     * Sent once per order and only when a token exists — which is only when
+     * the order is paid, because that is when tokens are made.
+     */
+    public function downloads(Order $order): void
+    {
+        $order->load('downloadTokens.item');
+
+        if ($order->downloadTokens->isEmpty()) {
+            return;
+        }
+
+        $links = $order->downloadTokens->map(fn (DigitalDownloadToken $t): string => sprintf(
+            '<li><a href="%s">%s</a></li>',
+            e(route('shop.download', $t)),
+            e($t->item?->product_name ?? __('Download')),
+        ))->implode("\n");
+
+        try {
+            $this->dispatcher->queueEmail('order.download', $order->customer_email, [
+                'customer_name' => $order->customer_name,
+                'order_reference' => $order->reference,
+                'download_links' => new HtmlString('<ul>'.$links.'</ul>'),
+                'expires_on' => $order->downloadTokens->min('expires_at')?->format('j F Y'),
+                'download_limit' => (string) $order->downloadTokens->min('max_downloads'),
+            ], [
+                'to_name' => $order->customer_name,
+                'related' => $order,
+                'user_id' => $order->user_id,
+                'idempotency_key' => 'order.download:'.$order->reference,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** The tickets somebody paid for, one code per admission, grouped by event. */
+    public function tickets(Order $order): void
+    {
+        $order->load('issuedTickets.event');
+
+        if ($order->issuedTickets->isEmpty()) {
+            return;
+        }
+
+        foreach ($order->issuedTickets->groupBy('event_id') as $tickets) {
+            $event = $tickets->first()->event;
+
+            $list = $tickets->map(fn (IssuedTicket $t): string => sprintf(
+                '<li><strong>%s</strong> — %s</li>',
+                e($t->code),
+                e($t->holder_name),
+            ))->implode("\n");
+
+            try {
+                $this->dispatcher->queueEmail('order.tickets', $order->customer_email, [
+                    'customer_name' => $order->customer_name,
+                    'order_reference' => $order->reference,
+                    'event_name' => $event?->title ?? '',
+                    'event_date' => $event?->starts_at?->format('l j F Y, H:i') ?? '',
+                    'event_venue' => $event?->venue_name ?? '',
+                    'tickets' => new HtmlString('<ul>'.$list.'</ul>'),
+                ], [
+                    'to_name' => $order->customer_name,
+                    'related' => $order,
+                    'user_id' => $order->user_id,
+                    'idempotency_key' => 'order.tickets:'.$order->reference.':'.$event?->getKey(),
+                ]);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
+    /**
+     * Every other change of state, in one template.
+     *
+     * The status line and the sentence come from the enum; the frame comes
+     * from the CMS. Dispatch keeps its own message because it carries the
+     * courier and the tracking reference.
+     */
+    public function status(Order $order, OrderStatus $status): void
+    {
+        if (! $status->isPaid() && $status !== OrderStatus::Cancelled) {
+            return;
+        }
+
+        try {
+            $this->dispatcher->queueEmail('order.status', $order->customer_email, [
+                'customer_name' => $order->customer_name,
+                'order_reference' => $order->reference,
+                'status_label' => __($status->label()),
+                'status_message' => __($status->customerMessage()),
+                'order_url' => route('shop.order', $order),
+            ], [
+                'to_name' => $order->customer_name,
+                'related' => $order,
+                'user_id' => $order->user_id,
+                'idempotency_key' => 'order.status:'.$order->reference.':'.$status->value.':'.now()->format('YmdHi'),
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        if (filled($order->customer_phone) && in_array($status, [OrderStatus::OutForDelivery, OrderStatus::Delivered, OrderStatus::Collected], true)) {
+            try {
+                $this->dispatcher->queueSms('order.status', $order->customer_phone, [
+                    'order_reference' => $order->reference,
+                    'status_label' => __($status->label()),
+                ], [
+                    'related' => $order,
+                    'idempotency_key' => 'order.status.sms:'.$order->reference.':'.$status->value,
+                ]);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     /**

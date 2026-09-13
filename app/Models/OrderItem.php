@@ -94,7 +94,7 @@ class OrderItem extends Model
      * The one place an order line is created from a live product, so there is
      * one definition of what gets snapshotted.
      */
-    public static function fromVariant(Order $order, ProductVariant $variant, int $quantity): self
+    public static function fromVariant(Order $order, ProductVariant $variant, int $quantity, ?Money $unitPrice = null): self
     {
         return self::create([
             'order_id' => $order->getKey(),
@@ -104,7 +104,7 @@ class OrderItem extends Model
             'variant_name' => $variant->name,
             'sku' => $variant->sku,
             'quantity' => $quantity,
-            'unit_price' => $variant->price,
+            'unit_price' => $unitPrice ?? $variant->price,
             'currency' => $variant->currency,
             'weight_grams' => $variant->weight_grams,
         ]);

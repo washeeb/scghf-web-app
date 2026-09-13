@@ -37,6 +37,7 @@ use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Shop\CartController;
 use App\Http\Controllers\Shop\CheckoutController;
+use App\Http\Controllers\Shop\DownloadController;
 use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TeamController;
@@ -529,6 +530,12 @@ Route::middleware('feature:shop')->group(function (): void {
 
     Route::get('checkout/callback', [CheckoutController::class, 'callback'])->name('shop.checkout.callback');
     Route::get('shop/orders/{order:ulid}', [CheckoutController::class, 'order'])->name('shop.order');
+
+    // A paid file. The token is the whole credential; the file is on a disk
+    // nothing else serves.
+    Route::get('downloads/{token:token}', [DownloadController::class, 'show'])
+        ->middleware('throttle:30,1')
+        ->name('shop.download');
 
     // Last, because `{product}` would otherwise swallow `category`.
     Route::get('shop/{product:slug}', [ShopController::class, 'show'])->name('shop.show');

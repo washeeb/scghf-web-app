@@ -58,6 +58,7 @@
                     :hint="__('The courier calls this number to find you. 024 123 4567 or +233 24 123 4567.')" />
             </fieldset>
 
+            @if ($cart->requiresDelivery())
             <fieldset class="space-y-5">
                 <legend class="text-lg font-semibold text-[var(--text-primary)]">{{ __('Delivery or collection') }}</legend>
 
@@ -120,6 +121,11 @@
                     </div>
                 @endif
             </fieldset>
+            @else
+                <p class="rounded-md border border-[var(--border)] p-4 text-sm text-[var(--text-secondary)]">
+                    {{ __('Nothing in this basket needs delivering. Downloads, tickets and receipts arrive by email.') }}
+                </p>
+            @endif
 
             <fieldset class="space-y-4">
                 <legend class="sr-only">{{ __('Agreement') }}</legend>

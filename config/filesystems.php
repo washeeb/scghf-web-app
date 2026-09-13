@@ -38,6 +38,19 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Paid digital goods. Not under `public`, where a file is one guessed
+         * path from free, and not the served `local` disk either: nothing
+         * hands these out but `DownloadController`, which counts and expires.
+         */
+        'downloads' => [
+            'driver' => 'local',
+            'root' => storage_path('app/downloads'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

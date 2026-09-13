@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
@@ -48,9 +49,23 @@ class Product extends Model
 
     public const TYPE_DIGITAL = 'digital';
 
+    /** A ticket to an event: paying registers the buyer and issues the tickets. */
+    public const TYPE_TICKET = 'ticket';
+
+    /**
+     * "Sponsor a meal": nothing is shipped and nothing is stocked. When the
+     * order is paid, each line becomes a real donation to the product's
+     * appeal, receipted and counted as giving — and therefore NOT counted
+     * again as shop proceeds.
+     */
+    public const TYPE_DONATION = 'donation';
+
+    public const TYPES = [self::TYPE_PHYSICAL, self::TYPE_DIGITAL, self::TYPE_TICKET, self::TYPE_DONATION];
+
     protected $fillable = [
         'product_category_id', 'cause_id', 'division_id', 'name', 'slug',
-        'summary', 'description', 'product_type', 'featured_image_id',
+        'summary', 'description', 'specifications', 'product_type', 'featured_image_id',
+        'download_media_id', 'download_limit', 'download_days', 'event_ticket_id',
         'is_featured', 'is_published', 'published_at', 'sort_order', 'created_by',
     ];
 
@@ -68,6 +83,9 @@ class Product extends Model
     {
         return [
             'requires_regulatory_review' => 'boolean',
+            'specifications' => 'array',
+            'download_limit' => 'integer',
+            'download_days' => 'integer',
             'is_featured' => 'boolean',
             'is_published' => 'boolean',
             'published_at' => 'datetime',
@@ -148,6 +166,34 @@ class Product extends Model
     public function featuredImage(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'featured_image_id');
+    }
+
+    /**
+     * The file a digital product delivers.
+     *
+     * @return BelongsTo<Media, $this>
+     */
+    public function downloadMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'download_media_id');
+    }
+
+    /** @return BelongsTo<EventTicket, $this> */
+    public function eventTicket(): BelongsTo
+    {
+        return $this->belongsTo(EventTicket::class);
+    }
+
+    /**
+     * "You might also like", chosen by the editor rather than guessed.
+     *
+     * @return BelongsToMany<Product, $this>
+     */
+    public function related(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_related', 'product_id', 'related_product_id')
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
     }
 
     // ── Regulatory screening ─────────────────────────────────────────────────
@@ -239,6 +285,22 @@ class Product extends Model
     public function isDigital(): bool
     {
         return $this->product_type === self::TYPE_DIGITAL;
+    }
+
+    public function isTicket(): bool
+    {
+        return $this->product_type === self::TYPE_TICKET;
+    }
+
+    public function isDonation(): bool
+    {
+        return $this->product_type === self::TYPE_DONATION;
+    }
+
+    /** Only a physical product has to be carried somewhere. */
+    public function requiresDelivery(): bool
+    {
+        return $this->product_type === self::TYPE_PHYSICAL;
     }
 
     public function isLive(): bool

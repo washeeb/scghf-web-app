@@ -68,6 +68,14 @@ Schedule::command('scghf:sweep-shop --execute')
     ->onOneServer();
 
 /*
+ * What has run low, once a morning, to the shop email — each item once until
+ * it is restocked. `--execute` because an alert is not destructive.
+ */
+Schedule::command('scghf:stock-alerts --execute')
+    ->dailyAt('07:00')
+    ->onOneServer();
+
+/*
  * The retention sweep, weekly and DRY BY DEFAULT.
  *
  * Deliberately not `--execute`. This destroys records about vulnerable people,

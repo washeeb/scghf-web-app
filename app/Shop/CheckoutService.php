@@ -73,7 +73,11 @@ final class CheckoutService
         $subtotal = $cart->subtotal();
         $weight = $cart->totalWeightGrams();
 
-        [$zone, $rate, $shipping] = $this->resolveShipping($details, $subtotal, $weight);
+        // A basket of downloads, tickets or gifts has nowhere to go: no zone,
+        // no rate, no charge, and no address asked for.
+        [$zone, $rate, $shipping] = $cart->requiresDelivery()
+            ? $this->resolveShipping($details, $subtotal, $weight)
+            : [null, null, Money::zero($subtotal->currency)];
 
         [$coupon, $discount] = $this->resolveCoupon(
             $cart,
@@ -104,7 +108,7 @@ final class CheckoutService
                 'shipping_rate_id' => $rate?->getKey(),
                 // Snapshotted: a rate renamed or repriced later must not change
                 // what this customer was told they were paying.
-                'shipping_method' => $rate?->name ?? ($zone?->is_pickup ? 'Collection' : null),
+                'shipping_method' => $rate?->name ?? ($zone?->is_pickup ? 'Collection' : ($cart->requiresDelivery() ? null : 'Nothing to deliver')),
                 'delivery_name' => $details['delivery_name'] ?? $details['customer_name'],
                 'delivery_phone' => $details['delivery_phone'] ?? $details['customer_phone'] ?? null,
                 'delivery_address' => $details['delivery_address'] ?? null,
@@ -116,7 +120,10 @@ final class CheckoutService
             ]);
 
             foreach ($cart->items as $item) {
-                OrderItem::fromVariant($order, $item->variant, $item->quantity);
+                // The unit price the basket showed — tiers and member price
+                // included — so the order's lines add up to the subtotal it
+                // was charged on.
+                OrderItem::fromVariant($order, $item->variant, $item->quantity, $item->unitPrice());
             }
 
             $order->load('items');

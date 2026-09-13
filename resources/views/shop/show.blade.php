@@ -81,11 +81,18 @@
                             <input type="hidden" name="variant" value="{{ $single->ulid }}">
 
                             <p class="text-2xl font-semibold text-[var(--text-primary)]">
-                                {{ $single->price->format() }}
+                                {{ $single->priceFor(1, auth()->check())->format() }}
                                 @if ($single->compare_at_price && $single->compare_at_price->greaterThan($single->price))
                                     <s class="ml-2 text-base font-normal text-[var(--text-muted)]">{{ $single->compare_at_price->format() }}</s>
                                 @endif
                             </p>
+
+                            @foreach ($single->sortedTiers() as $tier)
+                                <p class="text-sm text-[var(--text-muted)]">{{ __(':from or more: :price each', ['from' => $tier['min_quantity'], 'price' => App\ValueObjects\Money::ofMinor($tier['price_minor'], $single->currency)->format()]) }}</p>
+                            @endforeach
+                            @if ($single->member_price && ! auth()->check() && $single->member_price->lessThan($single->price))
+                                <p class="text-sm text-[var(--text-muted)]">{{ __(':price when signed in', ['price' => $single->member_price->format()]) }}</p>
+                            @endif
 
                             @unless ($single->isSellable())
                                 <p class="font-semibold text-[var(--text-muted)]">{{ __('Sold out') }}</p>
@@ -111,7 +118,16 @@
                                                 </span>
 
                                                 <span class="text-right text-sm">
-                                                    <span class="font-semibold text-[var(--text-primary)]">{{ $variant->price->format() }}</span>
+                                                    <span class="font-semibold text-[var(--text-primary)]">{{ $variant->priceFor(1, auth()->check())->format() }}</span>
+                                                    @if ($variant->compare_at_price && $variant->compare_at_price->greaterThan($variant->price))
+                                                        <s class="ml-1 text-xs text-[var(--text-muted)]">{{ $variant->compare_at_price->format() }}</s>
+                                                    @endif
+                                                    @foreach ($variant->sortedTiers() as $tier)
+                                                        <span class="block text-xs text-[var(--text-muted)]">{{ __(':from or more: :price each', ['from' => $tier['min_quantity'], 'price' => App\ValueObjects\Money::ofMinor($tier['price_minor'], $variant->currency)->format()]) }}</span>
+                                                    @endforeach
+                                                    @if ($variant->member_price && ! auth()->check() && $variant->member_price->lessThan($variant->price))
+                                                        <span class="block text-xs text-[var(--text-muted)]">{{ __(':price when signed in', ['price' => $variant->member_price->format()]) }}</span>
+                                                    @endif
                                                     @unless ($variant->isSellable())
                                                         <span class="block text-xs uppercase tracking-wide text-[var(--text-muted)]">{{ __('Sold out') }}</span>
                                                     @endunless
@@ -161,8 +177,26 @@
                     <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">{!! $product->description !!}</div>
                 @endif
 
+                @if (filled($product->specifications))
+                    <section class="mt-8" aria-labelledby="specs-heading">
+                        <h2 id="specs-heading" class="text-lg font-semibold text-[var(--text-primary)]">{{ __('Details') }}</h2>
+                        <dl class="mt-3 divide-y divide-[var(--border)] border-y border-[var(--border)] text-sm">
+                            @foreach ($product->specifications as $label => $value)
+                                <div class="grid grid-cols-3 gap-4 py-2">
+                                    <dt class="text-[var(--text-muted)]">{{ $label }}</dt>
+                                    <dd class="col-span-2 text-[var(--text-primary)]">{{ $value }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    </section>
+                @endif
+
                 @if ($product->isDigital())
                     <p class="mt-6 text-sm text-[var(--text-muted)]">{{ __('A download. Nothing is posted — the link arrives by email once the payment is confirmed.') }}</p>
+                @elseif ($product->isDonation())
+                    <p class="mt-6 text-sm text-[var(--text-muted)]">{{ __('A gift, not goods. Nothing is posted: when you pay, this becomes a donation to :cause and you receive a receipt for it.', ['cause' => $product->cause?->title ?? __('our work')]) }}</p>
+                @elseif ($product->isTicket() && $product->eventTicket?->event)
+                    <p class="mt-6 text-sm text-[var(--text-muted)]">{{ __('A ticket to :event on :date. Your codes arrive by email once the payment is confirmed; show one at the door.', ['event' => $product->eventTicket->event->title, 'date' => $product->eventTicket->event->starts_at?->format('j F Y')]) }}</p>
                 @endif
             </div>
         </div>

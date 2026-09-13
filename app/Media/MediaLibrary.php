@@ -54,6 +54,7 @@ class MediaLibrary
         ?MediaFolder $folder = null,
         array $attributes = [],
         ?User $actor = null,
+        bool $private = false,
     ): Media {
         if ($reason = $this->policy->reject($file)) {
             throw new RuntimeException($reason);
@@ -82,7 +83,10 @@ class MediaLibrary
                 'height' => $dimensions === false ? null : $dimensions[1],
                 'decorative' => ($attributes['decorative'] ?? false) === true ?: null,
             ], static fn (mixed $v): bool => $v !== null))
-            ->toMediaCollection('library');
+            // A private file — a paid download — lives on the `downloads`
+            // disk, which nothing serves. It is still a library row, so the
+            // usage report and the inode count know it exists.
+            ->toMediaCollection($private ? 'private' : 'library', $private ? 'downloads' : '');
 
         $media->forceFill(array_filter([
             'folder_id' => $folder->getKey(),
