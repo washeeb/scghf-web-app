@@ -8,6 +8,151 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 10 — email and SMS, completed — 2026-09-13
+
+Phase 3 built the engine: templates, an outbox with quiet hours and a
+throttle, a suppression list, a delivery webhook, mNotify. Nothing reached
+it from a screen and no cron line drove it. This phase is the screens, the
+cron lines, the providers, and the decision about where mail leaves from.
+
+#### Module 1 — the templates
+
+- Email and SMS templates editable in the admin (`templates.edit`), with a
+  menu of the variables each template declares, validation that refuses a
+  placeholder nobody provides, a **preview inside the real mail layout**
+  with sample values (`SampleVariables`), and a **send-a-test** that goes
+  through `MessageDispatcher::sendEmailNow` — the real path, not a shortcut.
+  SMS templates have a live meter (encoding, characters, segments, the
+  characters forcing UCS-2) and are refused past the segment budget.
+  Templates are never created from the screen; the seeder owns the set
+- The mail layout redrawn from the theme tokens: logo from
+  `header.logo_light`, light and dark palettes, a `prefers-color-scheme`
+  block, the unsubscribe and preferences links. The plain-text layout gets
+  the preferences line
+
+#### Module 2 — the newsletter
+
+- Campaigns composed from six email-safe blocks (heading, paragraph,
+  button, image, divider, **appeal** — drawn live from the appeal's progress
+  at send time), compiled by `CampaignComposer` into table-based HTML and a
+  plain-text twin on save. Preview, send-a-test, build the audience,
+  approve (a second person, `newsletter.send`), schedule, pause, resume,
+  cancel — each a gate, each audited
+- `scghf:send-campaigns` every five minutes, in batches sized by the mail
+  throttle, marking a campaign failed **with the reason** when its gate
+  fails rather than leaving it "sending" for ever
+- Subscribers as a screen with their consent evidence (when, from where,
+  which IP), resend confirmation, unsubscribe, and **Erase**, which
+  suppresses the address as an erasure and audits `erasure.completed`
+- A preference centre on the unsubscribe token — choose topics, stop
+  everything, come back — with no account
+- Open and click tracking: **off** by default (`communications.tracking.*`),
+  marketing mail only, never a receipt; the click redirect is signed
+- **Fixed:** `NewsletterPolicy` looked for `newsletter.create`, a
+  permission that does not exist, so nobody but Super Admin could have
+  opened the composer. It now maps to `newsletter.draft`
+
+#### Module 3 — the SMS providers, the broadcast, the alerts
+
+- **Arkesel, Hubtel and Twilio** behind the same `SmsGateway` contract as
+  mNotify, each reporting acceptance (not delivery — the webhook does
+  that), Arkesel and Twilio reporting a balance through the new
+  `ReportsBalance` contract in **their own unit** (credits or money), so
+  the health page and the low-credit alert say "1,240 credits" or
+  "USD 12.40" rather than pretending both are pesewas. Chosen in *Settings →
+  Email & SMS*, with `SMS_DRIVER` as the default
+- `scghf:sms-balance` at 07:05 daily emails `sms.low_credit` to the alert
+  address, once a day at most
+- **SMS broadcast**: a text to every donor who ticked SMS updates, or to
+  pasted numbers (normalised, deduplicated, suppression applied). The
+  screen shows segments × recipients × rate **before** anybody presses
+  send; the drafter cannot approve; approval queues one outbox message per
+  number with an idempotency key, so the ordinary throttle, quiet hours and
+  suppression list apply to every one of them. `sms.broadcast_sent` audited
+- **Suppressions** as a screen: the do-not-contact list with the provider's
+  reason, add by hand, release only with `suppressions.release` and a
+  reason
+- The three admin alerts the brief named and Phase 3 seeded templates for
+  with nothing sending them: `contact.admin_alert` to the department's
+  mailbox on a new enquiry, `admin.new_donation` above a settable amount,
+  and `admin.weekly_summary` on Monday at 07:00 (`scghf:weekly-summary`)
+- `docs/PHASE-10-SMS-SENDER-ID.md` — registering the sender ID with the
+  NCA through the provider, and the provider comparison
+
+#### Module 4 — reliability without a terminal
+
+- **The worker has a pulse.** `Queue::looping` writes a timestamp on every
+  pass; the health page reads it — *alive*, *last seen 40 minutes ago*, or
+  *never seen*. An empty queue used to look the same whether the cron line
+  existed or not
+- **Failed jobs** as a screen (`queue.manage`): the job's class, the first
+  line of the exception, retry and discard through Laravel's own
+  `queue:retry` / `queue:forget`, audited
+- **The outbox** (`messages.view`, `messages.cancel`): every waiting,
+  claimed, sent, failed, suppressed or expired message, the last error, the
+  hourly allowance in the heading, cancel with a reason
+- **Email and SMS logs** (`logs.email.view`, `logs.sms.view`) as lists and
+  views. The email body shows only where it was stored; otherwise the
+  screen says it was not, rather than showing nothing. The SMS list heads
+  with the month's estimated cost
+
+#### Module 5 — where mail leaves from
+
+- **Decision: Resend**, over its API, from `mail.greaterhopefoundations.com`
+  with SPF, DKIM and DMARC. `resend/resend-php` installed — the transport
+  ships in Laravel but does nothing without it. Reasons, the comparison
+  with Postmark, Brevo, Mailgun and cPanel SMTP, the DNS records, warm-up,
+  and the setup in order: `docs/PHASE-10-EMAIL-DELIVERABILITY.md`
+- **The Resend webhook verified the way Resend signs it.** Phase 3's
+  verifier computed a hex HMAC over the body; Resend uses Svix — a
+  `whsec_` base64 secret, `{id}.{timestamp}.{body}` as the signed string,
+  several `v1,…` signatures during rotation, and a five-minute tolerance
+  that stops a genuine old bounce being replayed to re-suppress a released
+  address. `DeliveryEventProcessor` now reads Resend's shape too (`type`,
+  `data.to[]`, `data.email_id`, `data.bounce.type` — Permanent suppresses,
+  Transient does not)
+- **Email sending** row on Site Health: *Resend* / *Resend chosen, no key*
+  (critical) / *Not sending (log)* (critical on production) / *cPanel SMTP*
+  (warning: the shared IP) / *SMTP relay*
+- **The `.env.example` sweep** — every documented key is now read by
+  something, or gone. Gone: `POSTMARK_TOKEN` (the config reads
+  `POSTMARK_API_KEY`), `BREVO_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_SECRET`,
+  `MAIL_ENCRYPTION` (Laravel 11+ reads `MAIL_SCHEME`), `ALLOW_SEARCH_INDEXING`
+  and `VITE_ALLOW_INDEXING` (indexing has been the `seo.allow_indexing`
+  setting since Phase 6), `SITE_ANALYTICS_*` (nothing built — recorded as an
+  open question), `SITEMAP_ENABLED`, `CURRENCY_CODE`/`CURRENCY_SYMBOL` (GHS
+  is fixed in `Money`), `S3_ENABLED` (the switch is the disk name). Wired:
+  `MAIL_REPLY_TO_ADDRESS` now the default Reply-To on every message
+  (`config/mail.php` `reply_to`), `APP_RELEASE` shown on Site Health →
+  Environment and stamped into `shared/.env` by `activate.sh` on every
+  deploy. `SMS_DRIVER` lists all five drivers
+
+#### Tests
+
+`CommunicationsAdminTest` (11), `SmsGatewaysTest` (9),
+`QueueReliabilityTest` (7), `DeliveryWebhookTest` +4 for Resend.
+
+#### Decided
+
+- Bounce webhooks for Postmark and Mailgun: the endpoints exist from
+  Phase 3 but neither provider signs the way the generic verifier expects
+  (Postmark: HTTP Basic credentials in the URL; Mailgun: a signature inside
+  the JSON body). Neither is the provider in use, so neither verifier was
+  written; an event from either is stored and never acted on, which is the
+  safe direction. Recorded in the deliverability doc as the work needed if
+  the provider ever changes
+- Volunteer shift reminders by SMS wait for Phase 11, which owns shifts.
+  There is no shift table yet to remind anybody about
+- SMS one-time codes for account actions were not built. Every admin
+  account already has TOTP; an SMS second factor is weaker than the one in
+  place and would spend credits on every sign-in
+- Web analytics: no provider chosen, nothing built, and the two `.env`
+  keys that implied otherwise are gone. When one is chosen it is a setting
+  (the cookie policy already describes the category), not an `.env` key
+- Newsletter list cleaning (drop addresses that have not opened in a year)
+  is not built: with tracking off by default there is no open data to
+  clean by. Bounces and complaints clean the list instead
+
 ### Phase 9 — the shop, completed — 2026-09-13
 
 The catalogue, basket, checkout, orders and admin were built in Phase 6.

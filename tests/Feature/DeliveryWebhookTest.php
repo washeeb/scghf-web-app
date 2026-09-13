@@ -307,3 +307,82 @@ it('records an SMS the network refused to deliver', function () {
 
     expect($log->fresh()->status)->toBe(SmsLog::STATUS_UNDELIVERED);
 });
+
+// ── Resend, the provider actually chosen ────────────────────────────────────
+
+const RESEND_SECRET = 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw'; // Svix docs' own example value
+
+function postResend(array $payload, ?string $secret = RESEND_SECRET, ?int $timestamp = null, string $id = 'msg_1'): TestResponse
+{
+    config()->set('communications.webhooks.providers.resend.secret', RESEND_SECRET);
+
+    $body = json_encode($payload, JSON_THROW_ON_ERROR);
+    $timestamp ??= time();
+    $headers = ['svix-id' => $id, 'svix-timestamp' => (string) $timestamp];
+
+    if ($secret !== null) {
+        $key = base64_decode(substr($secret, 6), true);
+        $headers['svix-signature'] = 'v1,'.base64_encode(hash_hmac('sha256', $id.'.'.$timestamp.'.'.$body, $key, true));
+    }
+
+    return test()->call(
+        'POST',
+        '/webhooks/delivery/resend',
+        [], [], [],
+        collect($headers)->mapWithKeys(fn ($v, $k) => ['HTTP_'.strtoupper(str_replace('-', '_', $k)) => $v])->all()
+        + ['CONTENT_TYPE' => 'application/json'],
+        $body,
+    );
+}
+
+it('verifies a Resend webhook the way Svix signs it', function () {
+    postResend(['type' => 'email.delivered', 'data' => ['email_id' => 'r1', 'to' => ['donor@example.com']]])->assertOk();
+
+    $event = InboundWebhookEvent::first();
+
+    expect($event->signature_valid)->toBeTrue()
+        ->and($event->event_type)->toBe(InboundWebhookEvent::TYPE_DELIVERED)
+        ->and($event->subject_address)->toBe('donor@example.com')
+        ->and($event->event_id)->toBe('resend:r1');
+});
+
+it('refuses a Resend signature made with another secret, or one that is too old to be live', function () {
+    postResend(['type' => 'email.bounced', 'data' => ['email_id' => 'r2', 'to' => ['a@example.com']]], secret: 'whsec_'.base64_encode('wrong-key'));
+    postResend(['type' => 'email.bounced', 'data' => ['email_id' => 'r3', 'to' => ['a@example.com']]], timestamp: time() - 3600, id: 'msg_2');
+
+    expect(InboundWebhookEvent::where('signature_valid', true)->count())->toBe(0)
+        ->and(Suppression::count())->toBe(0);
+});
+
+it('accepts any one of several rotating Resend signatures', function () {
+    config()->set('communications.webhooks.providers.resend.secret', RESEND_SECRET);
+    $body = json_encode(['type' => 'email.delivered', 'data' => ['email_id' => 'r4', 'to' => ['a@example.com']]]);
+    $ts = time();
+    $good = base64_encode(hash_hmac('sha256', 'msg_3.'.$ts.'.'.$body, base64_decode(substr(RESEND_SECRET, 6), true), true));
+
+    test()->call('POST', '/webhooks/delivery/resend', [], [], [], [
+        'HTTP_SVIX_ID' => 'msg_3', 'HTTP_SVIX_TIMESTAMP' => (string) $ts,
+        'HTTP_SVIX_SIGNATURE' => 'v1,'.base64_encode('stale-key-signature').' v1,'.$good,
+        'CONTENT_TYPE' => 'application/json',
+    ], $body)->assertOk();
+
+    expect(InboundWebhookEvent::first()->signature_valid)->toBeTrue();
+});
+
+it('suppresses on a permanent Resend bounce and only notes a transient one', function () {
+    $processor = app(DeliveryEventProcessor::class);
+    $dead = EmailLog::factory()->create(['to_address' => 'gone@example.com', 'status' => EmailLog::STATUS_SENT, 'sent_at' => now()]);
+    $full = EmailLog::factory()->create(['to_address' => 'full@example.com', 'status' => EmailLog::STATUS_SENT, 'sent_at' => now()]);
+
+    postResend(['type' => 'email.bounced', 'data' => ['email_id' => 'r5', 'to' => ['gone@example.com'], 'bounce' => ['type' => 'Permanent', 'message' => 'The recipient address does not exist.']]], id: 'msg_5');
+    postResend(['type' => 'email.bounced', 'data' => ['email_id' => 'r6', 'to' => ['full@example.com'], 'bounce' => ['type' => 'Transient', 'message' => 'Mailbox full.']]], id: 'msg_6');
+    postResend(['type' => 'email.delivery_delayed', 'data' => ['email_id' => 'r7', 'to' => ['full@example.com']]], id: 'msg_7');
+
+    InboundWebhookEvent::all()->each(fn ($e) => $processor->process($e));
+
+    expect(Suppression::blocks(Suppression::CHANNEL_EMAIL, 'gone@example.com', 'transactional'))->toBeTrue()
+        ->and(Suppression::blocks(Suppression::CHANNEL_EMAIL, 'full@example.com', 'transactional'))->toBeFalse()
+        ->and($dead->fresh()->status)->toBe(EmailLog::STATUS_BOUNCED)
+        ->and($dead->fresh()->error)->toContain('does not exist')
+        ->and(InboundWebhookEvent::where('event_id', 'resend:r7')->value('event_type'))->toBe(InboundWebhookEvent::TYPE_SOFT_BOUNCE);
+});

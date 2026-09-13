@@ -29,6 +29,12 @@ return [
     'env' => env('APP_ENV', 'production'),
 
     /*
+     * A human-readable build marker — the short commit hash or a tag — written
+     * by the deploy step so Site Health can say which build is running.
+     */
+    'release' => env('APP_RELEASE', 'local'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------

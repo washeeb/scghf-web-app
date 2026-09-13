@@ -470,11 +470,22 @@ return [
                 'algorithm' => 'sha256',
             ],
 
+            /*
+             * Resend — the chosen provider (Phase 10). Its webhooks are
+             * signed by Svix: the secret is `whsec_` + base64, the signed
+             * string is `{svix-id}.{svix-timestamp}.{body}`, and the header
+             * may carry several `v1,<base64>` signatures during a key
+             * rotation. `scheme => svix` selects that verifier; the default
+             * scheme is a plain hex HMAC over the body.
+             */
             'resend' => [
                 'channel' => 'email',
+                'scheme' => 'svix',
                 'secret' => env('RESEND_WEBHOOK_SECRET'),
                 'signature_header' => 'svix-signature',
                 'timestamp_header' => 'svix-timestamp',
+                'id_header' => 'svix-id',
+                'tolerance_seconds' => 300,
                 'algorithm' => 'sha256',
             ],
         ],

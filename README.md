@@ -31,6 +31,9 @@ It accepts one-off and recurring donations in Ghanaian Cedis via Paystack (**Mob
 | **`FOUNDATION-WEBAPP-MASTER-PROMPT.md`** | The phase sequence, Phase 0 → 18. |
 | **`docs/PHASE-2-RUNBOOK.md`** | ⭐ Setup and deployment, step by step, with expected output and failure modes. |
 | **`docs/PHASE-3-DATA-ARCHITECTURE.md`** | The schema: ~150 tables by module, conventions, and the binding migration-safety policy. |
+| **`docs/PHASE-8-PAYMENTS-TEST-PLAN.md`** | Walking every payment path against Paystack test keys. |
+| **`docs/PHASE-10-EMAIL-DELIVERABILITY.md`** | Why receipts land in spam from shared hosting; the Resend decision; SPF/DKIM/DMARC; the setup, in order. |
+| **`docs/PHASE-10-SMS-SENDER-ID.md`** | Registering the sender ID in Ghana, and the SMS provider comparison. |
 | **`docs/DEPENDENCIES.md`** | Why each package is here, and what was deliberately rejected. |
 | **`CHANGELOG.md`** | What changed, when. |
 
@@ -152,6 +155,8 @@ Run `vendor/bin/pint` before pushing.
 **Phase 8 complete** — donations and Paystack. Landed: the giving flow (frequency chips, direct Mobile Money with the prompt-and-wait page, attribution, the receipt as a PDF behind a signed link, dunning in the tone of a thank-you, a signed management link for regular gifts, and refunds that need two people); and the finance admin (Donations with every action audited, offline gifts, Donors with merge, Regular gifts, Refunds, Webhook events with replay, Reports in integer pesewas, and a test-mode band on every admin page); then the popup checkout (Paystack's window over our page, a setting) and Cloudflare Turnstile on the donation form when its keys are set. See `CHANGELOG.md` and `docs/PHASE-8-PAYMENTS-TEST-PLAN.md`.
 
 **Phase 9 complete** — the shop. Four kinds of product (posted, downloaded, a gift that becomes a receipted donation, a ticket that becomes a code at the door); bulk and signed-in prices; the whole Ghanaian address with the GhanaPost GPS code; a gift at the last step; guest order tracking and signed order links; a customer message on every change of state; invoice and packing-slip PDFs, in bulk; refunds from the order with stock returned when the gateway confirms; and a reports page that adds net shop proceeds to donations without counting a sponsored meal twice. See `CHANGELOG.md`.
+
+**Phase 10 complete** — email and SMS. Landed: the template editors with a live preview inside the real layout and a send-a-test button; a newsletter composer built from blocks, compiled to email-safe HTML and plain text, sent in throttled batches by the cron after a second person approves; topic preferences a subscriber can change with no account; open and click tracking that is off unless switched on and never on receipts; three more SMS gateways (Arkesel, Hubtel, Twilio) chosen in Settings, an SMS broadcast that shows its cost before anybody presses send, and the suppression list as a screen; the failed-jobs list, the outbox and both delivery logs as screens behind the permissions seeded in Phase 3; a worker heartbeat on the health page; and the mail decision — Resend, on a sending subdomain, with its Svix-signed bounce webhook verified for real. See `CHANGELOG.md`, `docs/PHASE-10-EMAIL-DELIVERABILITY.md` and `docs/PHASE-10-SMS-SENDER-ID.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 > Donors sign in at **`/login`**. Staff cannot: see below.

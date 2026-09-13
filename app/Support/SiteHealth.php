@@ -71,6 +71,7 @@ class SiteHealth
             $this->wrap('storage', __('File storage'), fn () => $this->storage()),
             $this->wrap('backup', __('Backups'), fn () => $this->backup()),
             $this->wrap('payments', __('Paystack'), fn () => $this->payments()),
+            $this->wrap('mail', __('Email sending'), fn () => $this->mail()),
             $this->wrap('sms', __('SMS credits'), fn () => $this->sms()),
             $this->wrap('https', __('Secure connection'), fn () => $this->https()),
             $this->wrap('indexing', __('Search engines'), fn () => $this->indexing()),
@@ -107,7 +108,10 @@ class SiteHealth
                     .'server\'s file paths and configuration.'));
         }
 
-        return HealthCheck::ok('environment', __('Environment'), $env.($debug ? ' · '.__('debug on') : ''));
+        $release = (string) config('app.release', 'local');
+
+        return HealthCheck::ok('environment', __('Environment'),
+            $env.($release !== '' ? ' · '.__('build :release', ['release' => $release]) : '').($debug ? ' · '.__('debug on') : ''));
     }
 
     /**
@@ -308,6 +312,62 @@ class SiteHealth
         }
 
         return HealthCheck::ok('payments', __('Paystack'), $isLive ? __('Live keys') : __('Test keys'));
+    }
+
+    /**
+     * Where receipts leave from.
+     *
+     * Blueprint risk DEL-3: mail sent from the shared cPanel IP shares that
+     * IP's reputation with every other tenant, and receipts land in spam
+     * with no error anywhere. The chosen provider is Resend (see
+     * docs/PHASE-10-EMAIL-DELIVERABILITY.md); this check says whether the
+     * live site is actually using it, or a relay, or the shared box.
+     */
+    private function mail(): HealthCheck
+    {
+        if (! config('communications.channels.mail', true)) {
+            return HealthCheck::ok('mail', __('Email sending'), __('Email is switched off'));
+        }
+
+        $mailer = (string) config('mail.default', 'log');
+
+        if (in_array($mailer, ['log', 'array'], true)) {
+            return app()->isProduction()
+                ? HealthCheck::critical('mail', __('Email sending'), __('Not sending (:mailer)', ['mailer' => $mailer]),
+                    __('MAIL_MAILER is ":mailer" on the live site. Every receipt is written to the log and '
+                        .'nobody receives it. Set MAIL_MAILER=resend with RESEND_API_KEY.', ['mailer' => $mailer]))
+                : HealthCheck::ok('mail', __('Email sending'), __('Not sending real mail (:mailer)', ['mailer' => $mailer]));
+        }
+
+        if ($mailer === 'resend') {
+            $key = (string) config('services.resend.key', '');
+
+            if (blank($key) || str_contains($key, '{{')) {
+                return HealthCheck::critical('mail', __('Email sending'), __('Resend chosen, no key'),
+                    __('MAIL_MAILER=resend but RESEND_API_KEY is empty or a placeholder. Every send fails '
+                        .'and the failure lands in the failed-jobs list.'));
+            }
+
+            return HealthCheck::ok('mail', __('Email sending'), __('Resend'));
+        }
+
+        if ($mailer === 'smtp') {
+            $host = strtolower((string) config('mail.mailers.smtp.host', ''));
+            $site = strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+            $onSharedBox = $host === '' || $host === 'localhost' || $host === '127.0.0.1'
+                || ($site !== '' && str_ends_with($host, ltrim($site, 'www.')));
+
+            if ($onSharedBox && app()->isProduction()) {
+                return HealthCheck::warning('mail', __('Email sending'), __('cPanel SMTP (:host)', ['host' => $host]),
+                    __('Receipts are leaving from the shared hosting IP, whose reputation belongs to every '
+                        .'tenant on it. Expect spam-folder delivery. Move to Resend, or a provider relay, '
+                        .'and check SPF/DKIM/DMARC — see docs/PHASE-10-EMAIL-DELIVERABILITY.md.'));
+            }
+
+            return HealthCheck::ok('mail', __('Email sending'), __('SMTP relay (:host)', ['host' => $host]));
+        }
+
+        return HealthCheck::ok('mail', __('Email sending'), $mailer);
     }
 
     /**

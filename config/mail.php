@@ -115,4 +115,14 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+     * Where a reply to a receipt or a newsletter lands: a mailbox a person
+     * reads, never the noreply@ it was sent from. A template's own reply_to
+     * overrides this; this is the default when it has none.
+     */
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS'),
+        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+    ],
+
 ];

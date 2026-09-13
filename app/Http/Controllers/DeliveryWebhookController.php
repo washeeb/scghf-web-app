@@ -10,6 +10,7 @@ use App\Models\InboundWebhookEvent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -109,6 +110,10 @@ class DeliveryWebhookController extends Controller
 
         $algorithm = (string) ($config['algorithm'] ?? 'sha256');
 
+        if (($config['scheme'] ?? 'hmac') === 'svix') {
+            return $this->verifySvix($config, $rawBody, $signature, $request, $secret, $algorithm);
+        }
+
         /*
          * Some providers sign the body, others sign a timestamp concatenated
          * with it. The signed string is built from config so a provider change
@@ -123,6 +128,60 @@ class DeliveryWebhookController extends Controller
         // hash_equals, not ===. A timing-safe comparison, for the same reason
         // the Paystack handler uses one.
         return hash_equals(hash_hmac($algorithm, $signed, $secret), $signature);
+    }
+
+    /**
+     * Svix, which is how Resend signs.
+     *
+     * The secret arrives as `whsec_<base64>`; the bytes under the prefix are
+     * the key. The signed string is `{id}.{timestamp}.{body}`, so a captured
+     * signature fits exactly one delivery of exactly one payload. The header
+     * holds one or more space-separated `v1,<base64>` values — more than one
+     * while a secret is being rotated — and any one matching is enough. A
+     * timestamp outside the tolerance is refused even with a good signature:
+     * that is what stops a genuine old event being replayed to re-suppress
+     * an address that has since been released.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    private function verifySvix(
+        array $config,
+        string $rawBody,
+        string $signature,
+        Request $request,
+        string $secret,
+        string $algorithm,
+    ): bool {
+        $id = $this->headerValue($request, (string) ($config['id_header'] ?? 'svix-id'));
+        $timestamp = $this->headerValue($request, (string) ($config['timestamp_header'] ?? 'svix-timestamp'));
+
+        if ($id === null || $timestamp === null || ! ctype_digit($timestamp)) {
+            return false;
+        }
+
+        $tolerance = (int) ($config['tolerance_seconds'] ?? 300);
+
+        if (abs(time() - (int) $timestamp) > $tolerance) {
+            return false;
+        }
+
+        $key = base64_decode(Str::after($secret, 'whsec_'), true);
+
+        if ($key === false || $key === '') {
+            return false;
+        }
+
+        $expected = base64_encode(hash_hmac($algorithm, $id.'.'.$timestamp.'.'.$rawBody, $key, true));
+
+        foreach (preg_split('/\s+/', trim($signature)) ?: [] as $candidate) {
+            [$version, $value] = array_pad(explode(',', $candidate, 2), 2, '');
+
+            if ($version === 'v1' && hash_equals($expected, $value)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function headerValue(Request $request, string $header): ?string

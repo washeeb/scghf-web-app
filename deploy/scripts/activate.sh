@@ -87,6 +87,17 @@ else
   ok "Schema up to date"
 fi
 
+# ── Stamp the build ──────────────────────────────────────────────────────────
+# APP_RELEASE is the one .env value that changes per deploy, so it is written
+# into shared/.env here rather than by hand. Site Health → Environment shows it,
+# which is how anybody can tell which build is live without a shell.
+if grep -qE '^APP_RELEASE=' "$SHARED_DIR/.env"; then
+  sed -i -E "s|^APP_RELEASE=.*|APP_RELEASE=$REL|" "$SHARED_DIR/.env"
+else
+  printf '\nAPP_RELEASE=%s\n' "$REL" >> "$SHARED_DIR/.env"
+fi
+ok "APP_RELEASE=$REL"
+
 # ── Warm the caches on the new release, before it goes live ──────────────────
 say "Building caches"
 "$PHP_BIN" artisan config:cache  --no-interaction && ok "config"

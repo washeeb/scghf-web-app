@@ -79,7 +79,9 @@ it('reads the worker pulse: alive, stale, or never seen', function () {
 it('leaves a pulse when the worker runs, even with nothing to do', function () {
     Cache::forget(SiteHealth::QUEUE_HEARTBEAT_KEY);
 
-    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-time' => 5])->assertSuccessful();
+    // --memory: the worker exits 12 once the PHP process is past its memory
+    // ceiling, and late in the full suite the test process already is.
+    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-time' => 5, '--memory' => 2048])->assertSuccessful();
 
     expect(Cache::get(SiteHealth::QUEUE_HEARTBEAT_KEY))->not->toBeNull();
 });
@@ -138,4 +140,32 @@ it('shows the email and SMS logs to the log permissions, with the body only wher
     Livewire::test(ViewEmailLog::class, ['record' => $stored->getRouteKey()])->assertOk()->assertSee('Thank you Ama', escape: false);
     Livewire::test(ViewEmailLog::class, ['record' => $bulk->getRouteKey()])->assertOk()->assertSee('was not stored');
     Livewire::test(ListSmsLogs::class)->assertOk()->assertSee('+233241234567')->assertSee('GH₵ 0.08 this month');
+});
+
+it('says where receipts leave from, and objects to the log mailer or the shared box on production', function () {
+    $health = fn () => app(SiteHealth::class)->checks()->firstWhere('key', 'mail');
+
+    config()->set('mail.default', 'log');
+    expect($health()->status)->toBe(HealthCheck::OK);
+
+    config()->set('mail.default', 'resend');
+    config()->set('services.resend.key', '');
+    expect($health()->status)->toBe(HealthCheck::CRITICAL)->and($health()->value)->toContain('no key');
+
+    config()->set('services.resend.key', 're_test_123');
+    expect($health()->status)->toBe(HealthCheck::OK)->and($health()->value)->toBe('Resend');
+
+    app()->detectEnvironment(fn () => 'production');
+    config()->set('mail.default', 'log');
+    expect($health()->status)->toBe(HealthCheck::CRITICAL);
+
+    config()->set('mail.default', 'smtp');
+    config()->set('app.url', 'https://greaterhopefoundations.com');
+    config()->set('mail.mailers.smtp.host', 'mail.greaterhopefoundations.com');
+    expect($health()->status)->toBe(HealthCheck::WARNING)->and($health()->advice)->toContain('shared hosting IP');
+
+    config()->set('mail.mailers.smtp.host', 'smtp-relay.brevo.com');
+    expect($health()->status)->toBe(HealthCheck::OK)->and($health()->value)->toContain('relay');
+
+    app()->detectEnvironment(fn () => 'testing');
 });

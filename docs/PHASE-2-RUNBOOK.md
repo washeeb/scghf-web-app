@@ -600,7 +600,9 @@ APP_URL=https://greaterhopefoundations.com
 FORCE_HTTPS=true
 SESSION_SECURE_COOKIE=true
 LOG_LEVEL=warning
-ALLOW_SEARCH_INDEXING=true
+MAIL_MAILER=resend
+RESEND_API_KEY=re_...                 # see docs/PHASE-10-EMAIL-DELIVERABILITY.md
+RESEND_WEBHOOK_SECRET=whsec_...
 
 DB_HOST=localhost
 DB_DATABASE=presti98_scghf_prod
@@ -625,7 +627,7 @@ Paste that into `APP_KEY=`. Save with `Ctrl+O`, `Enter`, `Ctrl+X`.
 
 > ⛔ **`APP_KEY` must never change once real data exists.** It encrypts sessions and any encrypted column. Changing it makes that data unreadable — permanently. Back it up in your password manager the moment you set it.
 
-For **staging**, the same but `APP_ENV=staging`, `ALLOW_SEARCH_INDEXING=false`, the staging database, and a **different** `APP_KEY`.
+For **staging**, the same but `APP_ENV=staging`, the staging database, and a **different** `APP_KEY`. Whether search engines may index is the `seo.allow_indexing` setting (Settings → SEO), seeded false — switch it on for production only, and leave it off on staging.
 
 ```bash
 chmod 600 /home/presti98/scghf/shared/.env

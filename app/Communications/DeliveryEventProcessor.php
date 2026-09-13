@@ -246,6 +246,7 @@ class DeliveryEventProcessor
             ?? $parsed['_id']
             ?? $parsed['MessageID']
             ?? data_get($parsed, 'event-data.id')
+            ?? data_get($parsed, 'data.email_id')
             ?? data_get($parsed, 'data.id');
 
         return is_scalar($id) && (string) $id !== ''
@@ -266,6 +267,7 @@ class DeliveryEventProcessor
     {
         $raw = Str::lower((string) (
             $parsed['event']
+            ?? $parsed['type']
             ?? $parsed['RecordType']
             ?? $parsed['status']
             ?? data_get($parsed, 'event-data.event')
@@ -296,12 +298,23 @@ class DeliveryEventProcessor
                 : null;
         }
 
+        /*
+         * Resend says `email.bounced` for both kinds and puts the kind in
+         * `data.bounce.type`: Permanent is a dead address, Transient is a
+         * full mailbox or a greylist. Only the first earns a suppression.
+         */
+        if ($raw === 'email.bounced') {
+            return Str::lower((string) data_get($parsed, 'data.bounce.type', 'permanent')) === 'transient'
+                ? InboundWebhookEvent::TYPE_SOFT_BOUNCE
+                : InboundWebhookEvent::TYPE_BOUNCE;
+        }
+
         return match (true) {
             str_contains($raw, 'complain'), str_contains($raw, 'spam') => InboundWebhookEvent::TYPE_COMPLAINT,
             str_contains($raw, 'unsubscrib'), $raw === 'stop' => InboundWebhookEvent::TYPE_UNSUBSCRIBE,
 
             // Order matters: "soft" must be tested before the general bounce.
-            str_contains($raw, 'soft'), str_contains($raw, 'deferred') => InboundWebhookEvent::TYPE_SOFT_BOUNCE,
+            str_contains($raw, 'soft'), str_contains($raw, 'deferred'), str_contains($raw, 'delay') => InboundWebhookEvent::TYPE_SOFT_BOUNCE,
             str_contains($raw, 'bounce'), str_contains($raw, 'dropped') => InboundWebhookEvent::TYPE_BOUNCE,
 
             str_contains($raw, 'deliver') => InboundWebhookEvent::TYPE_DELIVERED,
@@ -325,7 +338,13 @@ class DeliveryEventProcessor
             ?? $parsed['msisdn']
             ?? $parsed['to']
             ?? data_get($parsed, 'event-data.recipient')
-            ?? data_get($parsed, 'data.recipient');
+            ?? data_get($parsed, 'data.recipient')
+            ?? data_get($parsed, 'data.to');
+
+        // Resend gives `to` as a list; we send to one person at a time.
+        if (is_array($value)) {
+            $value = $value[0] ?? null;
+        }
 
         if (! is_scalar($value) || (string) $value === '') {
             return null;
@@ -346,6 +365,8 @@ class DeliveryEventProcessor
             ?? $payload['Details']
             ?? $payload['description']
             ?? data_get($payload, 'event-data.delivery-status.message')
+            ?? data_get($payload, 'data.bounce.message')
+            ?? data_get($payload, 'data.failed.reason')
             ?? null;
 
         return is_scalar($reason) ? Str::limit((string) $reason, 500) : null;

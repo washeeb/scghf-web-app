@@ -49,8 +49,10 @@ class RenderedMessage extends Mailable
             $envelope = $envelope->from($this->fromAddressOverride, $this->fromNameOverride);
         }
 
-        if ($this->replyToOverride !== null) {
-            $envelope = $envelope->replyTo($this->replyToOverride);
+        $replyTo = $this->replyToOverride ?? config('mail.reply_to.address');
+
+        if (filled($replyTo)) {
+            $envelope = $envelope->replyTo($replyTo, $this->replyToOverride === null ? config('mail.reply_to.name') : null);
         }
 
         return $envelope;
