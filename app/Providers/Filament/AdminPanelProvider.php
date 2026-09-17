@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\RecordAdminActivity;
+use App\Http\Middleware\RestrictAdminByIp;
+use App\Http\Middleware\SecurityHeaders;
 use App\Models\ThemeSetting;
 use App\Payments\PaymentMode;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
@@ -162,6 +164,10 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
 
             ->middleware([
+                // The panel has its own stack, not the `web` group, so the
+                // headers middleware is named here as well.
+                SecurityHeaders::class,
+                RestrictAdminByIp::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

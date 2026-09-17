@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\CauseController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DonateController;
@@ -194,6 +195,7 @@ Route::middleware(['auth', 'auth.session'])
 
         Route::get('security', [SecurityController::class, 'show'])->name('security');
         Route::put('security/password', [SecurityController::class, 'updatePassword'])->name('password.update');
+        Route::post('security/sessions/revoke', [SecurityController::class, 'logoutEverywhere'])->name('sessions.revoke');
 
         /*
          * Changing the address. Rate limited on the same bucket as password
@@ -377,6 +379,14 @@ Route::post('newsletter/preferences/{token}', [NewsletterController::class, 'upd
 | marketing mail. The pixel answers whatever happens; the click redirect
 | accepts only a signed, absolute destination.
 */
+/*
+ * CSP violation reports. Browsers POST here with no CSRF token and a JSON
+ * body of their own content type; the exemption is in bootstrap/app.php.
+ */
+Route::post('csp-report', CspReportController::class)
+    ->middleware('throttle:30,1')
+    ->name('csp.report');
+
 Route::get('t/o/{log}', [TrackingController::class, 'open'])->name('track.open');
 Route::get('t/c/{log}', [TrackingController::class, 'click'])->name('track.click');
 

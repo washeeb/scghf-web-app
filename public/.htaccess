@@ -95,33 +95,36 @@ Options -Indexes
 # ═══════════════════════════════════════════════════════════════════════════════
 <IfModule mod_headers.c>
     # Stop MIME sniffing.
-    Header always set X-Content-Type-Options "nosniff"
+    Header always setifempty X-Content-Type-Options "nosniff"
 
     # Clickjacking. SAMEORIGIN rather than DENY so the admin can preview pages.
-    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always setifempty X-Frame-Options "SAMEORIGIN"
 
     # Do not leak the full URL (which may contain a donation reference) to
     # third-party sites the donor clicks through to.
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always setifempty Referrer-Policy "strict-origin-when-cross-origin"
 
     # Nothing on this site needs a camera, microphone, or the user's location.
-    Header always set Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(self), usb=()"
+    Header always setifempty Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(self), usb=()"
 
     # Cross-origin isolation — safe defaults for a content site.
-    Header always set Cross-Origin-Opener-Policy "same-origin"
-    Header always set Cross-Origin-Resource-Policy "same-origin"
+    Header always setifempty Cross-Origin-Opener-Policy "same-origin"
+    Header always setifempty Cross-Origin-Resource-Policy "same-origin"
 
     # ── HSTS ─────────────────────────────────────────────────────────────────
     # ⚠️  Commented out deliberately. Enable ONLY once HTTPS is confirmed working
     #     on the apex AND every subdomain, because browsers cache this for a year
     #     and there is no way to retract it early. Start without 'preload'.
-    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    # The application sends it from HSTS_MAX_AGE once that is set; this line is
+    # for files Apache serves without PHP. Uncomment both together.
+    # Header always setifempty Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
     # ── Content Security Policy ──────────────────────────────────────────────
-    # Report-Only first. Watch the reports for a week, then switch the header
-    # name to Content-Security-Policy. Paystack's hosted checkout is a full-page
-    # redirect, so it needs no frame-src; the inline popup would.
-    Header always set Content-Security-Policy-Report-Only "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://checkout.paystack.com; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.paystack.co; connect-src 'self' https://api.paystack.co; frame-src 'self' https://checkout.paystack.com https://www.youtube-nocookie.com; upgrade-insecure-requests"
+    # For files Apache serves without PHP only (setifempty): the application
+    # sets the real, nonce-carrying policy on every page it renders — see
+    # App\Http\Middleware\SecurityHeaders and config/security.php, which is
+    # where the list of allowed origins lives. Keep this line in step with it.
+    Header always setifempty Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://checkout.paystack.com; img-src 'self' https: data: blob:; font-src 'self' data:; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self' https://js.paystack.co https://challenges.cloudflare.com; connect-src 'self' https://api.paystack.co https://challenges.cloudflare.com; frame-src 'self' https://checkout.paystack.com https://challenges.cloudflare.com"
 
     # ── Search engine indexing ───────────────────────────────────────────────
     # Handled automatically: deploy/scripts/activate.sh appends an

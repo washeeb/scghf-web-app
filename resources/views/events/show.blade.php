@@ -76,7 +76,7 @@
                 @endif
 
                 @if ($event->description)
-                    <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">{!! $event->description !!}</div>
+                    <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">@clean($event->description)</div>
                 @endif
 
                 @if ($event->hasFinished() && ($event->outcomes || $event->attendance_count !== null || $event->gallery?->is_published))
@@ -86,7 +86,7 @@
                             <p class="mt-2 text-[var(--text-secondary)]">{{ trans_choice('{1}:count person came.|[2,*]:count people came.', $event->attendance_count, ['count' => number_format($event->attendance_count)]) }}</p>
                         @endif
                         @if ($event->outcomes)
-                            <div class="prose-scghf mt-3 space-y-4 text-[var(--text-primary)]">{!! $event->outcomes !!}</div>
+                            <div class="prose-scghf mt-3 space-y-4 text-[var(--text-primary)]">@clean($event->outcomes)</div>
                         @endif
                         @if ($event->gallery?->is_published)
                             <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="{{ __('Photographs') }}">

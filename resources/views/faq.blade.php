@@ -61,7 +61,7 @@
                         </h3>
 
                         <div class="prose-scghf mt-3 space-y-3 text-[var(--text-secondary)]">
-                            {!! $faq->answer !!}
+                            @clean($faq->answer)
                         </div>
                     </details>
                 @endforeach

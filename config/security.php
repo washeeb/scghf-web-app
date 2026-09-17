@@ -82,6 +82,53 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Response headers
+    |--------------------------------------------------------------------------
+    |
+    | Set by `SecurityHeaders` on every response the application produces.
+    | `public/.htaccess` carries the same headers with `setifempty`, so a file
+    | Apache serves without PHP (an image, a built asset) still gets them and
+    | a header PHP set is never doubled.
+    |
+    | ── The Content Security Policy ─────────────────────────────────────────
+    |
+    | The public site runs no Alpine and no Livewire — plain Blade with a few
+    | kilobytes of script — so it can have the strict form: scripts only from
+    | this origin or carrying this request's nonce, nothing inline without
+    | one, no eval. The inline theme script and the Vite tags carry the nonce.
+    |
+    | The admin panel is Filament, which injects inline scripts and styles of
+    | its own and needs `unsafe-eval` for Alpine. It gets the looser policy,
+    | REPORT-ONLY, so a breach of it is logged rather than the panel broken.
+    | Tightening it is a Filament upgrade away, not a setting.
+    |
+    | Origins are listed once, here, because the .htaccess copy and this one
+    | must say the same thing.
+    */
+    'headers' => [
+        /*
+         * HSTS: 0 = not sent. Send it only once https works everywhere on the
+         * domain, INCLUDING every subdomain (staging, mail, cpanel…), because
+         * `includeSubDomains` commits them all for max-age. 31536000 = a year.
+         */
+        'hsts_max_age' => (int) env('HSTS_MAX_AGE', 0),
+
+        'csp' => [
+            'script_origins' => ['https://js.paystack.co', 'https://challenges.cloudflare.com'],
+            'connect_origins' => ['https://api.paystack.co', 'https://challenges.cloudflare.com'],
+            'frame_origins' => ['https://checkout.paystack.com', 'https://challenges.cloudflare.com'],
+            'form_action_origins' => ['https://checkout.paystack.com'],
+            // Media may live on S3-compatible storage; a wider img-src is the
+            // price of the escape hatch. Everything else is this origin.
+            'img_origins' => ['https:', 'data:', 'blob:'],
+            'font_origins' => ['data:'],
+        ],
+
+        'permissions_policy' => 'accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(self), usb=()',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Passwords
     |--------------------------------------------------------------------------
     |

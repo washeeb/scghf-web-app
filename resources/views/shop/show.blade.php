@@ -10,9 +10,9 @@
 
     ── The description is the one place stored HTML is printed unescaped ──────
 
-    It comes from the rich-text editor, which only staff can reach. That is
-    what makes `{!! !!}` acceptable here — a page that printed customer-typed
-    HTML this way would be stored XSS.
+    It comes from the rich-text editor, which only staff can reach, and is
+    sanitised on the way out by `@clean` — so a compromised staff account
+    cannot turn a product page into stored XSS either.
 --}}
 @php
     $variants = $product->variants;
@@ -174,7 +174,7 @@
                 @endif
 
                 @if ($product->description)
-                    <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">{!! $product->description !!}</div>
+                    <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">@clean($product->description)</div>
                 @endif
 
                 @if (filled($product->specifications))

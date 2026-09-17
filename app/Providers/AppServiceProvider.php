@@ -41,6 +41,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
@@ -113,6 +114,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        /*
+         * `@clean($html)` — stored rich text, sanitised on the way out. The
+         * only sanctioned way to print CMS HTML on the public site.
+         */
+        Blade::directive('clean', fn (string $expression): string => "<?php echo \App\Support\Html::clean({$expression}); ?>");
+
         /*
          * Fixture tables for the test suite.
          *

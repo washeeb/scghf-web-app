@@ -10,6 +10,7 @@ use App\Events\TwoFactorChallengeFailed;
 use App\Models\LoginHistory;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\Sessions;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
@@ -73,6 +74,19 @@ class RecordAuthenticationEvent
         $this->audit('auth.login', $user->isStaff()
             ? 'Signed in to the admin panel.'
             : 'Signed in.', $user);
+
+        /*
+         * One live session per staff account, when the foundation wants it.
+         * This sign-in ends every other: whoever else was using the password
+         * lands on the login form, and the account holder notices.
+         */
+        if ($user->isStaff() && (bool) config('admin.single_session', false)) {
+            $ended = Sessions::revokeAll($user, request()->hasSession() ? request()->session()->getId() : null);
+
+            if ($ended > 0) {
+                $this->audit('auth.sessions_revoked', sprintf('Signing in ended %d other session(s) (single-session mode).', $ended), $user);
+            }
+        }
 
         if (! $isNewDevice) {
             return;

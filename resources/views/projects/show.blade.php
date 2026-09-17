@@ -22,7 +22,7 @@
     <div class="grid gap-12 lg:grid-cols-[2fr_1fr]">
         <div class="max-w-3xl space-y-10">
             @if ($project->description)
-                <div class="prose-scghf space-y-4 text-[var(--text-primary)]">{!! $project->description !!}</div>
+                <div class="prose-scghf space-y-4 text-[var(--text-primary)]">@clean($project->description)</div>
             @endif
 
             @if ($milestones->isNotEmpty())
@@ -70,7 +70,7 @@
                                     {{ $update->published_at?->toFormattedDateString() }}
                                 </p>
                                 <h3 class="mt-1 font-semibold text-[var(--text-primary)]">{{ $update->title }}</h3>
-                                <div class="prose-scghf mt-2 text-sm text-[var(--text-secondary)]">{!! $update->body !!}</div>
+                                <div class="prose-scghf mt-2 text-sm text-[var(--text-secondary)]">@clean($update->body)</div>
                             </li>
                         @endforeach
                     </ul>

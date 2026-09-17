@@ -399,7 +399,7 @@
         </form>
 
         @push('scripts')
-            <script>
+            <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 var form = document.querySelector('form[action="{{ route('donate.store') }}"]');
                 var out = document.getElementById('donation-summary');

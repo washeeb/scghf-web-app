@@ -57,6 +57,22 @@
         </form>
     </section>
 
+    <section class="space-y-4" aria-labelledby="other-devices">
+        <h2 id="other-devices" class="font-semibold text-[var(--text-primary)]">{{ __('Other devices') }}</h2>
+        <p class="max-w-md text-sm text-[var(--text-secondary)]">
+            {{ trans_choice('{0}This is the only device signed in to your account.|{1}One other device is signed in to your account.|[2,*]:count other devices are signed in to your account.', max(0, $openSessions - 1)) }}
+            {{ __('If one of them is not yours — a shared computer, a lost phone — sign it out here. This device stays signed in.') }}
+        </p>
+
+        <form method="POST" action="{{ route('account.sessions.revoke') }}" class="max-w-md space-y-4">
+            @csrf
+            <x-site.field name="current_password" type="password" :label="__('Your password')" required autocomplete="current-password" :hint="__('Asked for so that somebody who finds this page open cannot use it against you.')" />
+            <button type="submit" class="rounded-md border border-[var(--brand-secondary)] px-5 py-2.5 font-semibold text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">
+                {{ __('Sign out everywhere else') }}
+            </button>
+        </form>
+    </section>
+
     {{--
         Recovery codes, shown exactly once.
 

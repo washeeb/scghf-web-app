@@ -66,12 +66,12 @@
                 </dl>
 
                 @if ($role->description)
-                    <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">{!! $role->description !!}</div>
+                    <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">@clean($role->description)</div>
                 @endif
 
                 @if ($role->requirements)
                     <h2 class="mt-8 text-lg font-semibold text-[var(--text-primary)]">{{ __('What we are looking for') }}</h2>
-                    <div class="prose-scghf mt-2 space-y-4 text-[var(--text-primary)]">{!! $role->requirements !!}</div>
+                    <div class="prose-scghf mt-2 space-y-4 text-[var(--text-primary)]">@clean($role->requirements)</div>
                 @endif
 
                 @if (filled($role->skills_needed))

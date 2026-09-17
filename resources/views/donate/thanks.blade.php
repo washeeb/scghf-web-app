@@ -176,7 +176,7 @@
 
     @if ($status === 'pending')
         @push('scripts')
-            <script>
+            <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 var box = document.querySelector('[data-donation-status]');
                 if (!box || !window.fetch) return;

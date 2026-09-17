@@ -21,7 +21,7 @@
                                 </svg>
                             </summary>
 
-                            <div class="prose prose-sm mt-3 max-w-none text-[var(--text-muted)]">{!! $faq->answer !!}</div>
+                            <div class="prose prose-sm mt-3 max-w-none text-[var(--text-muted)]">@clean($faq->answer)</div>
                         </details>
                     </li>
                 @endforeach

@@ -17,7 +17,7 @@
             <h2 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{{ $section->field('heading') }}</h2>
 
             @if ($body = $section->field('body'))
-                <div class="prose mt-4 max-w-none text-[var(--text-primary)]">{!! $body !!}</div>
+                <div class="prose mt-4 max-w-none text-[var(--text-primary)]">@clean($body)</div>
             @endif
 
             @if (filled($section->field('cta_label')) && filled($section->field('cta_url')))

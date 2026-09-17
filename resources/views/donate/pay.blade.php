@@ -56,8 +56,8 @@
 
     @if ($inline)
         @push('scripts')
-            <script src="https://js.paystack.co/v2/inline.js"></script>
-            <script>
+            <script nonce="{{ $cspNonce ?? '' }}" src="https://js.paystack.co/v2/inline.js"></script>
+            <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 if (typeof PaystackPop === 'undefined') return;
 

@@ -64,6 +64,12 @@ return [
             'auth.password_reset' => ['category' => 'auth', 'severity' => 'notice'],
             'auth.two_factor_disabled' => ['category' => 'security', 'severity' => 'warning'],
             'auth.locked_out' => ['category' => 'security', 'severity' => 'warning'],
+            'auth.sessions_revoked' => ['category' => 'security', 'severity' => 'warning'],
+            'auth.two_factor_reset' => ['category' => 'security', 'severity' => 'critical'],
+            'user.created' => ['category' => 'security', 'severity' => 'notice'],
+            'user.updated' => ['category' => 'security', 'severity' => 'notice'],
+            'user.suspended' => ['category' => 'security', 'severity' => 'warning'],
+            'user.reinstated' => ['category' => 'security', 'severity' => 'warning'],
 
             /*
              * Public account lifecycle.

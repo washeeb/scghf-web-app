@@ -91,6 +91,33 @@ return [
     'session_timeout' => (int) env('ADMIN_SESSION_TIMEOUT', 60),
 
     /*
+     * Minutes since sign-in after which a staff session ends regardless of
+     * activity. An idle timeout alone never ends a session on a machine that
+     * keeps the tab moving; twelve hours ends the working day.
+     */
+    'absolute_timeout' => (int) env('ADMIN_ABSOLUTE_TIMEOUT', 720),
+
+    /*
+     * One live session per staff account. Signing in anywhere ends every
+     * other session — so a password used from two places at once is
+     * noticed by the person whose screen goes back to the login form.
+     * Off by default: a coordinator on a laptop and a phone is normal.
+     */
+    'single_session' => (bool) env('ADMIN_SINGLE_SESSION', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | IP allowlist
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated addresses or CIDR ranges that may reach the panel at
+    | all. Empty = anywhere (the default: the foundation's staff work from
+    | phones on mobile data with addresses that change daily). Behind
+    | Cloudflare, TRUSTED_PROXIES must be set or every visitor is Cloudflare.
+    */
+    'ip_allowlist' => array_values(array_filter(array_map('trim', explode(',', (string) env('ADMIN_IP_ALLOWLIST', ''))))),
+
+    /*
     |--------------------------------------------------------------------------
     | Branding
     |--------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 use App\Http\Middleware\CountVisit;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\HandleRedirects;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetRobotsHeader;
 use App\Support\ErrorReporter;
 use Illuminate\Foundation\Application;
@@ -36,7 +37,28 @@ return Application::configure(basePath: dirname(__DIR__))
          */
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
+            // A browser's CSP violation report: a POST from the browser
+            // itself, no form, no token. The endpoint stores nothing.
+            'csp-report',
         ]);
+
+        /*
+         * Response headers on everything — the public site, the admin panel,
+         * the webhooks. Prepended so the nonce exists before any view renders.
+         */
+        $middleware->prependToGroup('web', SecurityHeaders::class);
+
+        /*
+         * Behind Cloudflare every connection comes from Cloudflare, and the
+         * visitor's address is in X-Forwarded-For. Believing that header from
+         * anybody lets anybody choose their address — which defeats the rate
+         * limits and the IP allowlist — so it is believed only from the
+         * proxies named in TRUSTED_PROXIES ("*" once .htaccess refuses
+         * connections that are not from Cloudflare's ranges).
+         */
+        $middleware->trustProxies(
+            at: array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))))) ?: null,
+        );
 
         /*
          * Counts page views, and nothing about the people who cause them.

@@ -26,7 +26,7 @@
             @endif
 
             @if ($cause->description)
-                <div class="prose-scghf space-y-4 text-[var(--text-primary)]">{!! $cause->description !!}</div>
+                <div class="prose-scghf space-y-4 text-[var(--text-primary)]">@clean($cause->description)</div>
             @endif
 
             @if ($cause->project)
@@ -114,7 +114,7 @@
                                     {{ $update->published_at?->toFormattedDateString() }}
                                 </p>
                                 <h3 class="mt-1 font-semibold text-[var(--text-primary)]">{{ $update->title }}</h3>
-                                <div class="prose-scghf mt-2 text-sm text-[var(--text-secondary)]">{!! $update->body !!}</div>
+                                <div class="prose-scghf mt-2 text-sm text-[var(--text-secondary)]">@clean($update->body)</div>
                             </li>
                         @endforeach
                     </ul>

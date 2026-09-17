@@ -32,7 +32,7 @@
 
     @once
         @push('scripts')
-            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+            <script nonce="{{ $cspNonce ?? '' }}" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
         @endpush
     @endonce
 @endif

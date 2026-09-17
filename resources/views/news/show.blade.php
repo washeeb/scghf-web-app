@@ -52,7 +52,7 @@
         @endif
 
         <div class="prose-scghf space-y-4 text-[var(--text-primary)]">
-            {!! $post->body !!}
+            @clean($post->body)
         </div>
 
         @if ($post->tags->isNotEmpty())

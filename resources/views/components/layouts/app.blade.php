@@ -57,10 +57,10 @@
 
     {{-- The palette, from `theme_settings`. Both themes, always — a visitor
          whose system flips to dark must not need a round trip. --}}
-    <style>{{ app(App\Support\ThemeTokens::class)->css() }}</style>
+    <style nonce="{{ $cspNonce ?? '' }}">{{ app(App\Support\ThemeTokens::class)->css() }}</style>
 
     {{-- Before first paint. Not deferred, not external. --}}
-    <script>{!! $theme->inlineScript() !!}</script>
+    <script nonce="{{ $cspNonce ?? '' }}">{!! $theme->inlineScript() !!}</script>
 
     {{--
         Title, description, canonical, robots, Open Graph and the Twitter card.

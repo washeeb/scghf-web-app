@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\PasswordUpdateRequest;
 use App\Support\AuditLogger;
+use App\Support\Sessions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,7 +41,40 @@ class SecurityController extends Controller
         return view('account.security', [
             'user' => $user,
             'history' => $history,
+            'openSessions' => $user === null ? 0 : Sessions::countFor($user),
         ]);
+    }
+
+    /**
+     * Sign out everywhere else.
+     *
+     * The password is asked for, because the person pressing this may be
+     * the reason it is needed: somebody who found the laptop open must not
+     * be able to lock the owner out of their own other devices.
+     */
+    public function logoutEverywhere(Request $request): RedirectResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password']]);
+
+        $user = $request->user();
+
+        if ($user === null) {
+            return redirect()->route('login');
+        }
+
+        $ended = Sessions::revokeAll($user, $request->session()->getId());
+
+        app(AuditLogger::class)->record(
+            'auth.sessions_revoked',
+            sprintf('The account holder signed out of %d other device(s).', $ended),
+            subject: $user,
+            causer: $user,
+        );
+
+        return back()->with('status', trans_choice(
+            '{0}No other devices were signed in. This one stays.|{1}One other device has been signed out. This one stays.|[2,*]:count other devices have been signed out. This one stays.',
+            $ended,
+        ));
     }
 
     public function updatePassword(PasswordUpdateRequest $request): RedirectResponse

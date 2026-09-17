@@ -31,6 +31,8 @@ class RecordAdminActivity
 {
     private const KEY = 'admin_last_active_at';
 
+    private const SIGNED_IN_AT = 'admin_signed_in_at';
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
@@ -41,8 +43,17 @@ class RecordAdminActivity
         }
 
         $lastActive = $request->session()->get(self::KEY);
+        $signedInAt = $request->session()->get(self::SIGNED_IN_AT);
+        $absolute = (int) config('admin.absolute_timeout', 720);
 
-        if (is_int($lastActive) && (now()->timestamp - $lastActive) > ($timeout * 60)) {
+        if (! is_int($signedInAt)) {
+            $request->session()->put(self::SIGNED_IN_AT, $signedInAt = now()->timestamp);
+        }
+
+        $idleExpired = is_int($lastActive) && (now()->timestamp - $lastActive) > ($timeout * 60);
+        $absoluteExpired = $absolute > 0 && (now()->timestamp - $signedInAt) > ($absolute * 60);
+
+        if ($idleExpired || $absoluteExpired) {
             /*
              * Logged out and the session invalidated, not merely redirected.
              *
