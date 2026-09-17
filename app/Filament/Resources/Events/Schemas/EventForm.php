@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Events\Schemas;
 
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\SeoFields;
 use App\Models\Cause;
 use App\Models\Division;
 use App\Models\Event;
@@ -225,6 +226,7 @@ class EventForm
                                 ->helperText(__('A gallery from the media library. Its consent flag governs whether faces may appear.')),
                         ]),
                     ]),
+                SeoFields::tab(),
             ]),
         ]);
     }

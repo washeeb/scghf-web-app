@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\BlogCategories\Schemas;
 
+use App\Filament\Support\SeoFields;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -64,6 +65,8 @@ class BlogCategoryForm
                 ->label(__('Show on the site'))
                 ->default(true)
                 ->helperText(__('Hiding a category does not hide the posts in it — they stay published, just not listed under this heading.')),
+
+            SeoFields::section(),
         ]);
     }
 }

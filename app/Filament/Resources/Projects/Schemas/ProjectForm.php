@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Projects\Schemas;
 
 use App\Enums\ProjectStatus;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\SeoFields;
 use App\Models\Project;
 use App\ValueObjects\Money;
 use Filament\Forms\Components\DatePicker;
@@ -186,6 +187,7 @@ class ProjectForm
 
                     MediaPicker::image('featured_image_id')->label(__('Image')),
                 ]),
+                SeoFields::tab(),
             ]),
         ]);
     }

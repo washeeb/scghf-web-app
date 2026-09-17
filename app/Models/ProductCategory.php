@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSeo;
 use App\Shop\RegulatoryScreener;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,6 +28,7 @@ use Illuminate\Support\Str;
 class ProductCategory extends Model
 {
     use HasFactory;
+    use HasSeo;
     use HasUlids;
     use SoftDeletes;
 

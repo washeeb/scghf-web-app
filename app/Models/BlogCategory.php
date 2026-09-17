@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSeo;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ use Illuminate\Support\Str;
 
 class BlogCategory extends Model
 {
+    use HasSeo;
     use SoftDeletes;
 
     protected $fillable = ['name', 'slug', 'description', 'colour', 'sort_order', 'is_published'];

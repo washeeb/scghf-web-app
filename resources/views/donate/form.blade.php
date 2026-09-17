@@ -44,6 +44,10 @@
     $payWith = old('pay_with', 'gateway');
 @endphp
 
+@push('head')
+    <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->donateAction() !!}</script>
+@endpush
+
 <x-site.page-shell
     :meta="$meta"
     :crumbs="$crumbs"

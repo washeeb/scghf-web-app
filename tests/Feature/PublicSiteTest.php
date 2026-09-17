@@ -160,7 +160,10 @@ it('lists a published page in the sitemap', function () {
     $this->get('/sitemap.xml')
         ->assertOk()
         ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
-        ->assertSee(url($page->path));
+        ->assertSee('<sitemapindex', escape: false)
+        ->assertSee(route('sitemap.type', ['type' => 'pages']));
+
+    $this->get('/sitemaps/pages.xml')->assertOk()->assertSee(url($page->path));
 });
 
 it('honours the switch an editor actually toggles', function () {
@@ -173,7 +176,7 @@ it('honours the switch an editor actually toggles', function () {
 
     $page = Page::factory()->create(['status' => PageStatus::Published, 'show_in_sitemap' => false]);
 
-    $this->get('/sitemap.xml')->assertOk()->assertDontSee(url($page->path));
+    $this->get('/sitemaps/pages.xml')->assertOk()->assertDontSee(url($page->path));
 });
 
 it('keeps drafts out of the sitemap', function () {
@@ -181,7 +184,7 @@ it('keeps drafts out of the sitemap', function () {
 
     $page = Page::factory()->create(['status' => PageStatus::Draft, 'show_in_sitemap' => true]);
 
-    $this->get('/sitemap.xml')->assertOk()->assertDontSee(url($page->path));
+    $this->get('/sitemaps/pages.xml')->assertOk()->assertDontSee(url($page->path));
 });
 
 // ── News ────────────────────────────────────────────────────────────────────

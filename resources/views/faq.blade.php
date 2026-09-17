@@ -21,6 +21,10 @@
     rather than at the top of a page of forty. `target:open` in the stylesheet
     is what makes a linked question expand on arrival.
 --}}
+@push('head')
+    <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->faqPage($categories->flatMap(fn ($category) => $category->faqs)->concat($uncategorised)) !!}</script>
+@endpush
+
 <x-site.page-shell
     :meta="$meta"
     :crumbs="$crumbs"

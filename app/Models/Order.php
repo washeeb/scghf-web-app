@@ -56,7 +56,7 @@ class Order extends Model implements Payable
         'coupon_id', 'coupon_code', 'shipping_zone_id', 'shipping_rate_id', 'shipping_method',
         'delivery_name', 'delivery_phone', 'delivery_address', 'delivery_area', 'delivery_city',
         'delivery_region', 'delivery_landmark', 'delivery_gps', 'delivery_notes', 'is_pickup',
-        'donation', 'channel', 'notes', 'recorded_by',
+        'donation', 'channel', 'notes', 'recorded_by', 'source', 'utm',
     ];
 
     /** @var array<string, mixed> */
@@ -76,6 +76,7 @@ class Order extends Model implements Payable
     protected function casts(): array
     {
         return [
+            'utm' => 'array',
             'status' => OrderStatus::class,
             'is_pickup' => 'boolean',
             'stock_held' => 'boolean',

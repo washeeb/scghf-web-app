@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Posts\Schemas;
 
 use App\Enums\PageStatus;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\SeoFields;
 use App\Models\Post;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
@@ -167,6 +168,7 @@ class PostForm
                             .'no alt text yet, or if its camera metadata has not been removed.'
                         )),
                 ]),
+                SeoFields::tab(),
             ]),
         ]);
     }

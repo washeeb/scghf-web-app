@@ -8,6 +8,7 @@ use App\Blocks\BlockRegistry;
 use App\Blocks\SectionSettings;
 use App\Enums\PageStatus;
 use App\Filament\Blocks\BlockFieldFactory;
+use App\Filament\Support\SeoFields;
 use App\Models\Page;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
@@ -119,32 +120,7 @@ class PageForm
                     ]),
                 ]),
 
-                Tabs\Tab::make(__('Search & sharing'))->schema([
-                    Section::make(__('How this page appears in Google and when shared'))
-                        ->description(__('All optional. Left empty, the page title and short summary are used.'))
-                        ->relationship('seo')
-                        ->schema([
-                            TextInput::make('title')
-                                ->label(__('Search result title'))
-                                ->maxLength(191)
-                                ->helperText(__('Around 60 characters. Longer titles are cut off.')),
-
-                            Textarea::make('description')
-                                ->label(__('Search result description'))
-                                ->rows(2)
-                                ->maxLength(500)
-                                ->helperText(__('Around 155 characters. This is the sentence under the link.')),
-
-                            Grid::make(2)->schema([
-                                Toggle::make('no_index')
-                                    ->label(__('Hide from search engines'))
-                                    ->helperText(__('Use for thank-you pages and anything not meant to be found.')),
-
-                                Toggle::make('no_follow')
-                                    ->label(__('Do not follow links on this page')),
-                            ]),
-                        ]),
-                ]),
+                SeoFields::tab(),
             ])->columnSpanFull(),
         ]);
     }

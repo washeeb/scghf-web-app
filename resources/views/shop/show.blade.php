@@ -21,6 +21,10 @@
     $gallery = $product->images->filter(fn ($image) => $image->media?->isPublishable());
 @endphp
 
+@push('head')
+    <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->product($product) !!}</script>
+@endpush
+
 <x-layouts.app :meta="$meta">
     <x-site.breadcrumbs :crumbs="$crumbs" />
 

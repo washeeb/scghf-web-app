@@ -43,14 +43,18 @@
     <meta name="robots" content="noindex, nofollow">
 @endunless
 
+@if ($meta->shouldIndex() && $meta->nofollow)
+    <meta name="robots" content="index, nofollow">
+@endif
+
 <meta property="og:type" content="{{ $meta->type }}">
-<meta property="og:title" content="{{ $meta->title }}">
+<meta property="og:title" content="{{ $meta->ogTitle ?? $meta->title }}">
 <meta property="og:url" content="{{ $meta->canonical ?? url()->current() }}">
 <meta property="og:site_name" content="{{ setting('general.short_name', config('app.name')) }}">
 <meta property="og:locale" content="{{ str_replace('-', '_', str_replace('_', '-', app()->getLocale())) }}">
 
-@if ($meta->description)
-    <meta property="og:description" content="{{ $meta->description }}">
+@if ($meta->ogDescription ?? $meta->description)
+    <meta property="og:description" content="{{ $meta->ogDescription ?? $meta->description }}">
 @endif
 
 @if ($meta->imageUrl)
@@ -74,8 +78,8 @@
     @endif
 @endif
 
-<meta name="twitter:card" content="{{ $meta->imageUrl ? 'summary_large_image' : 'summary' }}">
-<meta name="twitter:title" content="{{ $meta->title }}">
+<meta name="twitter:card" content="{{ $meta->imageUrl ? $meta->twitterCard : 'summary' }}">
+<meta name="twitter:title" content="{{ $meta->ogTitle ?? $meta->title }}">
 
 @if ($meta->description)
     <meta name="twitter:description" content="{{ $meta->description }}">

@@ -62,10 +62,7 @@ class NewsController extends Controller
                 ->paginate(self::PER_PAGE),
             'categories' => $this->categories(),
             'category' => $category,
-            'meta' => PageMeta::site(
-                $category->name,
-                $category->description,
-            ),
+            'meta' => PageMeta::for($category),
             'crumbs' => [
                 ['label' => __('Home'), 'url' => url('/')],
                 ['label' => __('News'), 'url' => route('news.index')],
@@ -97,22 +94,17 @@ class NewsController extends Controller
         return view('news.show', [
             'post' => $post,
             'related' => $this->related($post),
-            'meta' => new PageMeta(
-                title: $meta->title,
-                description: $meta->description,
-                noindex: $meta->noindex,
-                canonical: route('news.show', $post),
-                imageUrl: $post->featuredImage?->isPublishable()
+            'meta' => $meta->with([
+                'canonical' => $post->seo?->canonical_url ?: route('news.show', $post),
+                'imageUrl' => $post->featuredImage?->isPublishable()
                     ? $post->featuredImage->conversionUrl('card')
                     : $meta->imageUrl,
-                imageAlt: $post->featuredImage?->altText() ?? $meta->imageAlt,
+                'imageAlt' => $post->featuredImage?->altText() ?? $meta->imageAlt,
                 // `article`, not `website`. It is what puts the byline and the
                 // date on a shared link rather than a generic site card.
-                type: 'article',
-                publishedAt: $post->published_at?->toIso8601String(),
-                modifiedAt: $post->updated_at?->toIso8601String(),
-                author: $post->author?->name,
-            ),
+                'type' => 'article',
+                'author' => $post->author?->name,
+            ]),
             'crumbs' => array_values(array_filter([
                 ['label' => __('Home'), 'url' => url('/')],
                 ['label' => __('News'), 'url' => route('news.index')],

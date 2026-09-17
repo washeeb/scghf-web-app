@@ -657,6 +657,7 @@ Route::post('enquiries/{kind}', [EnquiryController::class, 'store'])
 | staging included.
 */
 Route::get('sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
+Route::get('sitemaps/{type}.xml', [SitemapController::class, 'type'])->where('type', '[a-z]+')->name('sitemap.type');
 Route::get('robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 /*

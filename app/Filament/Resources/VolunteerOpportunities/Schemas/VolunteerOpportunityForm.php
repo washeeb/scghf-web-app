@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\VolunteerOpportunities\Schemas;
 
+use App\Filament\Support\SeoFields;
 use App\Models\Division;
 use App\Models\Project;
 use App\Models\ShippingZone;
@@ -149,6 +150,8 @@ class VolunteerOpportunityForm
                 Toggle::make('is_published')->label(__('Show on the site')),
                 DateTimePicker::make('published_at')->label(__('From'))->seconds(false)->helperText(__('Leave empty to publish immediately.')),
             ]),
+
+            SeoFields::section(),
         ]);
     }
 }

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Models\Media;
+use App\Models\Post;
+use App\Models\Product;
 use Illuminate\Support\HtmlString;
 
 /**
@@ -116,6 +119,123 @@ class StructuredData
                 ]))
                 ->all(),
         ]);
+    }
+
+    /**
+     * A news post as an Article. The publisher is the NGO; the author is
+     * the staff member if one is named, otherwise the organisation.
+     */
+    public function article(Post $post): HtmlString
+    {
+        $image = $post->featuredImage?->isPublishable() ? $post->featuredImage->conversionUrl('hero') : null;
+        $org = setting('general.legal_name', setting('general.short_name', config('app.name')));
+
+        return $this->encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'Article',
+            'headline' => str($post->title)->limit(110)->toString(),
+            'description' => $post->seoDescription(),
+            'image' => $image,
+            'datePublished' => $post->published_at?->toIso8601String(),
+            'dateModified' => $post->updated_at?->toIso8601String(),
+            'author' => $post->author
+                ? ['@type' => 'Person', 'name' => $post->author->name]
+                : ['@type' => 'Organization', 'name' => $org],
+            'publisher' => array_filter([
+                '@type' => 'Organization',
+                'name' => $org,
+                'logo' => $this->logoUrl() ? ['@type' => 'ImageObject', 'url' => $this->logoUrl()] : null,
+            ]),
+            'mainEntityOfPage' => route('news.show', $post),
+        ]);
+    }
+
+    /**
+     * A product with its offer in GHS. Price is the lowest sellable
+     * variant's; availability is whether anything is in stock.
+     */
+    public function product(Product $product): HtmlString
+    {
+        $from = $product->fromPrice();
+        $image = $product->featuredImage?->isPublishable() ? $product->featuredImage->conversionUrl('hero') : null;
+
+        return $this->encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => $product->name,
+            'description' => $product->seoDescription(),
+            'image' => $image,
+            'sku' => $product->variants->first()?->sku,
+            'brand' => ['@type' => 'Organization', 'name' => setting('general.short_name', config('app.name'))],
+            'offers' => $from === null ? null : [
+                '@type' => 'Offer',
+                'url' => route('shop.show', $product),
+                'priceCurrency' => 'GHS',
+                'price' => number_format($from->toMinor() / 100, 2, '.', ''),
+                'availability' => $product->isInStock() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                'seller' => ['@type' => 'Organization', 'name' => setting('general.legal_name', setting('general.short_name', config('app.name')))],
+            ],
+        ]);
+    }
+
+    /**
+     * FAQPage: the questions and answers on the page, answers as plain
+     * text — a rich snippet is not a place for markup.
+     *
+     * @param  iterable<int, object{question: string, answer: ?string}>  $faqs
+     */
+    public function faqPage(iterable $faqs): HtmlString
+    {
+        $entities = collect($faqs)
+            ->filter(fn (object $faq): bool => filled($faq->question) && filled($faq->answer))
+            ->map(fn (object $faq): array => [
+                '@type' => 'Question',
+                'name' => (string) $faq->question,
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => str((string) $faq->answer)->stripTags()->squish()->toString(),
+                ],
+            ])
+            ->values()
+            ->all();
+
+        return $this->encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => $entities,
+        ]);
+    }
+
+    /**
+     * The donate page: the NGO with a DonateAction, so a search result can
+     * carry a "Donate" affordance and the amount is understood to be GHS.
+     */
+    public function donateAction(): HtmlString
+    {
+        return $this->encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'NGO',
+            'name' => setting('general.legal_name', setting('general.short_name', config('app.name'))),
+            'url' => url('/'),
+            'potentialAction' => [
+                '@type' => 'DonateAction',
+                'name' => __('Donate'),
+                'target' => [
+                    '@type' => 'EntryPoint',
+                    'urlTemplate' => route('donate'),
+                    'actionPlatform' => ['https://schema.org/DesktopWebPlatform', 'https://schema.org/MobileWebPlatform'],
+                ],
+                'recipient' => ['@type' => 'NGO', 'name' => setting('general.legal_name', setting('general.short_name', config('app.name')))],
+                'priceCurrency' => 'GHS',
+            ],
+        ]);
+    }
+
+    private function logoUrl(): ?string
+    {
+        $logo = Media::query()->find(setting('header.logo_light'));
+
+        return $logo?->isPublishable() ? $logo->conversionUrl('card') : null;
     }
 
     /** @return array<string, mixed>|null */

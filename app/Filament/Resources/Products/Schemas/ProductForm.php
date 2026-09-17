@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use App\Filament\Support\MediaPicker;
 use App\Filament\Support\MoneyField;
+use App\Filament\Support\SeoFields;
 use App\Models\Cause;
 use App\Models\EventTicket;
 use App\Models\Product;
@@ -333,6 +334,7 @@ class ProductForm
                         TextInput::make('sort_order')->label(__('Order'))->numeric()->default(0),
                     ]),
                 ]),
+                SeoFields::tab(),
             ]),
         ]);
     }

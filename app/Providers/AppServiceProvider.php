@@ -15,12 +15,22 @@ use App\Media\MediaUsage;
 use App\Media\UploadPolicy;
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
+use App\Models\Cause;
+use App\Models\Document;
 use App\Models\EmailLog;
 use App\Models\EventRegistration;
+use App\Models\Faq;
+use App\Models\FocusArea;
+use App\Models\Gallery;
+use App\Models\Page;
+use App\Models\Post;
 use App\Models\PrayerRequest;
+use App\Models\Product;
+use App\Models\Project;
 use App\Models\SmsLog;
 use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
+use App\Observers\SitemapObserver;
 use App\Shop\RegulatoryScreener;
 use App\Support\Anonymiser;
 use App\Support\AuditLogger;
@@ -168,6 +178,11 @@ class AppServiceProvider extends ServiceProvider
          * home coordinates that window is the entire problem.
          */
         Event::listen(MediaHasBeenAddedEvent::class, SanitiseUploadedImage::class);
+
+        // Every model a sitemap lists forgets the cached sitemap on save.
+        foreach ([Page::class, Post::class, Project::class, Cause::class, Product::class, \App\Models\Event::class, FocusArea::class, Faq::class, Gallery::class, Document::class] as $listed) {
+            $listed::observe(SitemapObserver::class);
+        }
 
         $this->recordAuthenticationEvents();
         $this->registerRateLimiters();

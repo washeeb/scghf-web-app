@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\ProductCategories\Schemas;
 
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\SeoFields;
 use App\Models\ProductCategory;
 use App\Shop\RegulatoryScreener;
 use Filament\Forms\Components\Select;
@@ -86,6 +87,8 @@ class ProductCategoryForm
                     ->default(true)
                     ->helperText(__('Hiding a category does not unpublish the products in it — they stay on sale, just not listed under this heading.')),
             ]),
+
+            SeoFields::section(),
         ]);
     }
 }

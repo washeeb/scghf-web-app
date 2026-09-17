@@ -12,6 +12,7 @@ use App\Models\PaymentTransaction;
 use App\Payments\DonationService;
 use App\Payments\PaymentManager;
 use App\Payments\PaymentMode;
+use App\Support\Attribution;
 use App\Support\PageMeta;
 use App\ValueObjects\Money;
 use Illuminate\Http\JsonResponse;
@@ -114,8 +115,8 @@ class DonateController extends Controller
             'recurring_interval' => $request->wantsRecurring() ? $request->frequency() : null,
             'public_message' => $request->string('public_message')->toString() ?: null,
 
-            'source' => $request->string('source')->toString() ?: null,
-            'utm' => $request->utm(),
+            'source' => ($stamp = Attribution::current($request, $request->all()))['source'] ?? null,
+            'utm' => Attribution::utm($stamp),
             'callback_url' => route('donate.callback'),
 
             'consent_email' => $request->boolean('consent_email'),
@@ -351,10 +352,8 @@ class DonateController extends Controller
      */
     private function attribution(Request $request): array
     {
-        return collect(['source', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'])
-            ->mapWithKeys(fn (string $key): array => [$key => mb_substr(trim($request->string($key)->toString()), 0, 100)])
-            ->filter()
-            ->all();
+        // The link's own parameters, else what the visit arrived with.
+        return Attribution::current($request, $request->query());
     }
 
     /**

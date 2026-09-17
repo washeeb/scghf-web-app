@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Causes\Schemas;
 
 use App\Enums\CauseStatus;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\SeoFields;
 use App\Models\Cause;
 use App\Models\Project;
 use App\ValueObjects\Money;
@@ -270,6 +271,7 @@ class CauseForm
                         ->label(__('Image'))
                         ->helperText(__('Shown on the appeal, in the list, and as the picture when the link is shared.')),
                 ]),
+                SeoFields::tab(),
             ]),
         ]);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\FocusAreas\Schemas;
 
+use App\Filament\Support\SeoFields;
 use App\Models\Division;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -65,6 +66,8 @@ class FocusAreaForm
                     ->default(true)
                     ->helperText(__('An area with no published project yet is still worth listing — it is a true statement about the foundation.')),
             ]),
+
+            SeoFields::section(),
         ]);
     }
 }

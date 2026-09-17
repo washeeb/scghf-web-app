@@ -17,6 +17,10 @@
     A WhatsApp link is a URL — and WhatsApp is how this foundation's supporters
     actually share things.
 --}}
+@push('head')
+    <script type="application/ld+json">{!! app(App\Support\StructuredData::class)->article($post) !!}</script>
+@endpush
+
 <x-site.page-shell :meta="$meta" :crumbs="$crumbs" :title="$post->title">
     <article class="max-w-3xl">
         <p class="mb-6 text-sm text-[var(--text-muted)]">

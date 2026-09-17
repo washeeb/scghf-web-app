@@ -48,6 +48,10 @@ class PageMeta implements Arrayable
         public readonly ?string $publishedAt = null,
         public readonly ?string $modifiedAt = null,
         public readonly ?string $author = null,
+        public readonly ?string $ogTitle = null,
+        public readonly ?string $ogDescription = null,
+        public readonly bool $nofollow = false,
+        public readonly string $twitterCard = 'summary_large_image',
     ) {}
 
     /**
@@ -62,16 +66,26 @@ class PageMeta implements Arrayable
         $image = static::resolveImage($og['image'] ?? null)
             ?? static::defaultShareImage();
 
+        $seo = $model->seo ?? null;
+
         return new self(
             title: $model->seoTitle(),
             description: $model->seoDescription(),
             noindex: ! $model->seoShouldIndex(),
-            canonical: $canonical ?? request()->url(),
+            // An explicit canonical (this content is a copy of something
+            // published elsewhere first) wins; otherwise the page's own URL.
+            canonical: $canonical ?? ($seo?->canonical_url ?: self::selfCanonical()),
             imageUrl: $image?->url,
             imageAlt: $image?->alt,
             type: $og['type'] ?? 'website',
-            publishedAt: $model->published_at?->toIso8601String(),
+            // Not every model has a publish date (a category does not), and
+            // strict mode refuses a missing attribute rather than nulling it.
+            publishedAt: array_key_exists('published_at', $model->getAttributes()) ? $model->published_at?->toIso8601String() : null,
             modifiedAt: $model->updated_at?->toIso8601String(),
+            ogTitle: filled($og['title'] ?? null) && ($og['title'] !== $model->seoTitle()) ? (string) $og['title'] : null,
+            ogDescription: filled($og['description'] ?? null) && ($og['description'] !== $model->seoDescription()) ? (string) $og['description'] : null,
+            nofollow: (bool) ($seo?->no_follow ?? false),
+            twitterCard: (string) ($seo?->twitter_card ?: 'summary_large_image'),
         );
     }
 
@@ -100,7 +114,10 @@ class PageMeta implements Arrayable
             title: $title.$suffix,
             description: $description ?? setting('seo.default_description'),
             noindex: $noindex || ! setting('seo.allow_indexing', false),
-            canonical: request()->url(),
+            // A paginated list's second page is its own page, not a copy of
+            // the first: the canonical keeps `?page=`. Every other parameter
+            // (sort, filter, utm) is dropped so those are not indexed twice.
+            canonical: self::selfCanonical(),
             imageUrl: $image?->url,
             imageAlt: $image?->alt,
         );
@@ -115,6 +132,29 @@ class PageMeta implements Arrayable
      * for a thank-you page or a receipt, reached only by having just done
      * something.
      */
+    /**
+     * A copy with some slots changed. Controllers that know more than the
+     * model — a post's featured image, its author — override those and keep
+     * everything else, rather than rebuilding the object and losing the
+     * editor's Open Graph and robots choices on the way.
+     *
+     * @param  array<string, mixed>  $changes
+     */
+    public function with(array $changes): self
+    {
+        $current = get_object_vars($this);
+
+        return new self(...array_merge($current, $changes));
+    }
+
+    /** The current URL with `page` kept and everything else dropped. */
+    public static function selfCanonical(): string
+    {
+        $page = (int) request()->query('page', 1);
+
+        return $page > 1 ? request()->url().'?page='.$page : request()->url();
+    }
+
     public function shouldIndex(): bool
     {
         return ! $this->noindex && (bool) setting('seo.allow_indexing', false);

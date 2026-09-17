@@ -277,9 +277,14 @@ it('lists events in the sitemap alongside the programmatic pages', function () {
 
     $event = Event::factory()->create();
 
+    // Phase 13: an index of per-type sitemaps. Events in their own; the
+    // index pages (events, donate) in "indexes".
     $this->get('/sitemap.xml')
         ->assertOk()
-        ->assertSee(route('events.show', $event), escape: false)
+        ->assertSee(route('sitemap.type', ['type' => 'events']), escape: false)
+        ->assertSee(route('sitemap.type', ['type' => 'indexes']), escape: false);
+    $this->get('/sitemaps/events.xml')->assertOk()->assertSee(route('events.show', $event), escape: false);
+    $this->get('/sitemaps/indexes.xml')->assertOk()
         ->assertSee(route('events.index'), escape: false)
         ->assertSee(route('donate'), escape: false);
 });

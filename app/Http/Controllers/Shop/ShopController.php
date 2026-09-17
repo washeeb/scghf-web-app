@@ -85,10 +85,7 @@ class ShopController extends Controller
             'categories' => $this->categories(),
             'category' => $category,
             'sort' => $sort,
-            'meta' => PageMeta::site(
-                $category->name,
-                $category->description ?: (string) setting('shop.intro', __('Every purchase funds our work.')),
-            ),
+            'meta' => PageMeta::for($category),
             'crumbs' => array_values(array_filter([
                 ['label' => __('Home'), 'url' => url('/')],
                 ['label' => __('Shop'), 'url' => route('shop.index')],

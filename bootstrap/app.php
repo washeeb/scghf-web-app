@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CaptureAttribution;
 use App\Http\Middleware\CountVisit;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\HandleRedirects;
@@ -87,6 +88,8 @@ return Application::configure(basePath: dirname(__DIR__))
          * reading order — neither depends on the other.
          */
         $middleware->appendToGroup('web', [
+            // Which campaign brought them, kept for the visit. See Attribution.
+            CaptureAttribution::class,
             CountVisit::class,
             HandleRedirects::class,
             /*

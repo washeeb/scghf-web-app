@@ -215,6 +215,8 @@ class SettingsSeeder extends Seeder
         ['seo', 'title_suffix', ' | Greater Hope Foundations', SettingType::String, 'Title suffix', true],
         ['seo', 'default_description', 'A Ghanaian foundation bringing hope, healing, education and care to vulnerable individuals, families and communities.', SettingType::Text, 'Default meta description', true],
         ['seo', 'og_image', null, SettingType::Media, 'Default share image', true],
+        ['seo', 'robots_extra', '', SettingType::Text, 'Extra robots.txt lines', false,
+            'One directive per line, added to robots.txt when indexing is on — "Disallow: /old-section/", "Crawl-delay: 5". The admin, account and search paths are already excluded.'],
         ['seo', 'allow_indexing', '0', SettingType::Boolean, 'Allow search engine indexing', false,
             'Set by APP_ENV at deploy time. Production only.'],
 

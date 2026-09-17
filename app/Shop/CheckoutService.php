@@ -13,6 +13,7 @@ use App\Models\PaymentTransaction;
 use App\Models\ShippingRate;
 use App\Models\ShippingZone;
 use App\Payments\PaymentManager;
+use App\Support\Attribution;
 use App\ValueObjects\Money;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -109,6 +110,9 @@ final class CheckoutService
                 'currency' => $subtotal->currency,
                 'coupon_id' => $coupon?->getKey(),
                 'coupon_code' => $coupon?->code,
+                // Which campaign brought them, from the visit's first page.
+                'source' => ($stamp = Attribution::current(request()))['source'] ?? null,
+                'utm' => Attribution::utm($stamp),
                 'shipping_zone_id' => $zone?->getKey(),
                 'shipping_rate_id' => $rate?->getKey(),
                 // Snapshotted: a rate renamed or repriced later must not change

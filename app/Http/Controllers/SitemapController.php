@@ -18,6 +18,7 @@ use App\Support\Features;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * `/sitemap.xml` and `/robots.txt`.
@@ -56,13 +57,79 @@ class SitemapController extends Controller
     /** An hour. See the note above. */
     private const CACHE_SECONDS = 3600;
 
+    /** The types a crawler can ask for on their own. */
+    public const TYPES = ['pages', 'posts', 'programmes', 'shop', 'events', 'indexes'];
+
+    /**
+     * The sitemap index: one entry per type, each with the newest lastmod
+     * in it. A crawler that wants only the shop fetches only the shop.
+     */
     public function sitemap(): Response
     {
-        $urls = cache()->remember('sitemap.urls', self::CACHE_SECONDS, fn (): array => $this->urls()->all());
+        $entries = collect(self::TYPES)
+            ->map(fn (string $type): array => ['type' => $type, 'urls' => $this->cached($type)])
+            ->filter(fn (array $e): bool => $e['urls'] !== [])
+            ->map(fn (array $e): array => [
+                'loc' => route('sitemap.type', ['type' => $e['type']]),
+                'lastmod' => collect($e['urls'])->pluck('lastmod')->filter()->max(),
+            ])
+            ->values()
+            ->all();
 
-        $xml = view('sitemap', ['urls' => $urls])->render();
+        return $this->xml(view('sitemap-index', ['sitemaps' => $entries])->render());
+    }
 
-        return response($xml, 200, [
+    /** One type's URLs. */
+    public function type(string $type): Response
+    {
+        if (! in_array($type, self::TYPES, true)) {
+            throw new NotFoundHttpException;
+        }
+
+        return $this->xml(view('sitemap', ['urls' => $this->cached($type)])->render());
+    }
+
+    /**
+     * Regenerated on publish: `SitemapObserver` forgets these keys whenever
+     * anything that can appear in a sitemap is saved or deleted, so the
+     * next crawler fetch rebuilds it. Between saves it is served from cache.
+     *
+     * @return array<int, array{loc: string, lastmod: string|null, priority: string}>
+     */
+    private function cached(string $type): array
+    {
+        return cache()->remember(self::cacheKey($type), self::CACHE_SECONDS, fn (): array => $this->urlsFor($type)->values()->all());
+    }
+
+    public static function cacheKey(string $type): string
+    {
+        return 'sitemap.'.$type;
+    }
+
+    public static function forget(): void
+    {
+        foreach (self::TYPES as $type) {
+            cache()->forget(self::cacheKey($type));
+        }
+    }
+
+    /** @return Collection<int, array{loc: string, lastmod: string|null, priority: string}> */
+    private function urlsFor(string $type): Collection
+    {
+        return match ($type) {
+            'pages' => $this->pages(),
+            'posts' => $this->posts(),
+            'programmes' => $this->programmes(),
+            'shop' => $this->shop(),
+            'events' => $this->events(),
+            'indexes' => $this->simpleIndexes(),
+            default => collect(),
+        };
+    }
+
+    private function xml(string $body): Response
+    {
+        return response($body, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
             'Cache-Control' => 'public, max-age='.self::CACHE_SECONDS,
         ]);
@@ -87,6 +154,7 @@ class SitemapController extends Controller
                 'Disallow: /'.trim((string) config('admin.path', 'admin'), '/').'/',
                 'Disallow: /account/',
                 'Disallow: /search',
+                ...array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string) setting('seo.robots_extra', '')) ?: []))),
                 '',
                 'Sitemap: '.route('sitemap'),
             ]
@@ -103,8 +171,6 @@ class SitemapController extends Controller
     }
 
     /**
-     * Everything worth listing.
-     *
      * ⚠ Only what is genuinely public. A sitemap is a list handed to crawlers,
      * so an unpublished draft or a page an editor excluded must not appear —
      * and a document marked `requires_auth` least of all, since listing it
@@ -112,15 +178,16 @@ class SitemapController extends Controller
      *
      * @return Collection<int, array{loc: string, lastmod: string|null, priority: string}>
      */
-    private function urls(): Collection
+    private function pages(): Collection
     {
-        $urls = collect([[
+        $home = collect([[
             'loc' => url('/'),
             'lastmod' => null,
             'priority' => '1.0',
         ]]);
 
-        $pages = Page::query()
+        return $home->concat(Page::query()
+            ->with('seo')
             ->where('show_in_sitemap', true)
             ->where('is_homepage', false)
             ->get()
@@ -129,37 +196,30 @@ class SitemapController extends Controller
                 'loc' => url($page->path),
                 'lastmod' => $page->updated_at?->toAtomString(),
                 'priority' => '0.8',
-            ]);
+            ]));
+    }
 
-        $posts = Post::query()
+    /** @return Collection<int, array{loc: string, lastmod: string|null, priority: string}> */
+    private function posts(): Collection
+    {
+        return Post::query()
+            ->with('seo')
             ->get()
-            ->filter(fn (Post $post): bool => $post->isLive())
+            ->filter(fn (Post $post): bool => $post->isLive() && $post->seoShouldIndex())
             ->map(fn (Post $post): array => [
                 'loc' => route('news.show', $post),
                 'lastmod' => $post->updated_at?->toAtomString(),
                 'priority' => '0.6',
             ]);
-
-        return $urls
-            ->concat($pages)
-            ->concat($posts)
-            ->concat($this->entities())
-            ->concat($this->simpleIndexes())
-            ->values();
     }
 
     /**
-     * The programmatic pages: areas of work, projects, appeals, products and
-     * events.
-     *
-     * Added in Phase 6 Module 5. The programmatic pages arrived in Module 2
-     * and the sitemap kept listing only pages and posts — so the projects and
-     * appeals, the pages a donor is most likely to search for, were the ones
-     * crawlers were not told about.
+     * Areas of work, projects and appeals — the pages a donor is most likely
+     * to search for.
      *
      * @return Collection<int, array{loc: string, lastmod: string|null, priority: string}>
      */
-    private function entities(): Collection
+    private function programmes(): Collection
     {
         $entries = collect();
 
@@ -169,26 +229,38 @@ class SitemapController extends Controller
         }
 
         if (Route::has('projects.show')) {
-            $entries = $entries->concat(Project::query()->get()->filter(fn (Project $p): bool => $p->isLive())
+            $entries = $entries->concat(Project::query()->with('seo')->get()->filter(fn (Project $p): bool => $p->isLive() && $p->seoShouldIndex())
                 ->map(fn (Project $p): array => ['loc' => route('projects.show', $p), 'lastmod' => $p->updated_at?->toAtomString(), 'priority' => '0.7']));
         }
 
         if (Route::has('causes.show')) {
-            $entries = $entries->concat(Cause::query()->get()->filter(fn (Cause $c): bool => $c->isLive())
+            $entries = $entries->concat(Cause::query()->with('seo')->get()->filter(fn (Cause $c): bool => $c->isLive() && $c->seoShouldIndex())
                 ->map(fn (Cause $c): array => ['loc' => route('causes.show', $c), 'lastmod' => $c->updated_at?->toAtomString(), 'priority' => '0.8']));
         }
 
-        if (Route::has('shop.show') && app(Features::class)->enabled('shop')) {
-            $entries = $entries->concat(Product::query()->get()->filter(fn (Product $p): bool => $p->isLive())
-                ->map(fn (Product $p): array => ['loc' => route('shop.show', $p), 'lastmod' => $p->updated_at?->toAtomString(), 'priority' => '0.5']));
-        }
-
-        if (Route::has('events.show') && app(Features::class)->enabled('events')) {
-            $entries = $entries->concat(Event::query()->get()->filter(fn (Event $e): bool => $e->isLive())
-                ->map(fn (Event $e): array => ['loc' => route('events.show', $e), 'lastmod' => $e->updated_at?->toAtomString(), 'priority' => '0.6']));
-        }
-
         return $entries;
+    }
+
+    /** @return Collection<int, array{loc: string, lastmod: string|null, priority: string}> */
+    private function shop(): Collection
+    {
+        if (! Route::has('shop.show') || ! app(Features::class)->enabled('shop')) {
+            return collect();
+        }
+
+        return Product::query()->with('seo')->get()->filter(fn (Product $p): bool => $p->isLive() && $p->seoShouldIndex())
+            ->map(fn (Product $p): array => ['loc' => route('shop.show', $p), 'lastmod' => $p->updated_at?->toAtomString(), 'priority' => '0.5']);
+    }
+
+    /** @return Collection<int, array{loc: string, lastmod: string|null, priority: string}> */
+    private function events(): Collection
+    {
+        if (! Route::has('events.show') || ! app(Features::class)->enabled('events')) {
+            return collect();
+        }
+
+        return Event::query()->with('seo')->get()->filter(fn (Event $e): bool => $e->isLive() && $e->seoShouldIndex())
+            ->map(fn (Event $e): array => ['loc' => route('events.show', $e), 'lastmod' => $e->updated_at?->toAtomString(), 'priority' => '0.6']);
     }
 
     /**
