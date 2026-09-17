@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasConsents;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -72,11 +72,7 @@ class Story extends Model
     protected static function booted(): void
     {
         static::saving(function (self $story): void {
-            if (blank($story->slug)) {
-                $story->slug = Str::slug($story->title);
-            }
-
-            $story->slug = Str::slug($story->slug);
+            $story->slug = Slug::for($story->slug, $story->title);
 
             /*
              * The gate, enforced on every save rather than only in publish().

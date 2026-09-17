@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Partner extends Model
 {
@@ -44,7 +44,7 @@ class Partner extends Model
 
     protected static function booted(): void
     {
-        static::saving(fn (self $p) => $p->slug = Str::slug($p->slug ?: $p->name));
+        static::saving(fn (self $p) => $p->slug = Slug::for($p->slug, $p->name));
     }
 
     public function getRouteKeyName(): string

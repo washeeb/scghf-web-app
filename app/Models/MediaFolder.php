@@ -6,11 +6,11 @@ namespace App\Models;
 
 use App\Media\Concerns\HasLibraryMedia;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\MediaLibrary\HasMedia;
 
@@ -34,7 +34,6 @@ class MediaFolder extends Model implements HasMedia
      * importantly, the rule that an unsanitised image gets none of them.
      */
     use HasLibraryMedia;
-
     use HasUlids;
     use RecordsAuthor;
 
@@ -58,9 +57,7 @@ class MediaFolder extends Model implements HasMedia
         // unique index on (parent_id, slug) would allow two root folders with
         // the same name, because MySQL permits many NULLs in a unique index.
         static::saving(function (self $folder): void {
-            if (blank($folder->slug)) {
-                $folder->slug = Str::slug($folder->name);
-            }
+            $folder->slug = Slug::for($folder->slug, $folder->name);
 
             $segments = [$folder->slug];
             $parent = $folder->parent_id ? static::find($folder->parent_id) : null;

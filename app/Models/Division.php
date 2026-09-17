@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -65,11 +65,7 @@ class Division extends Model
     protected static function booted(): void
     {
         static::saving(function (self $division): void {
-            if (blank($division->slug)) {
-                $division->slug = Str::slug($division->name);
-            }
-
-            $division->slug = Str::slug($division->slug);
+            $division->slug = Slug::for($division->slug, $division->name);
         });
 
         static::deleting(function (self $division): void {

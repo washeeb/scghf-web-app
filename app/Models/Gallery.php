@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 class Gallery extends Model
@@ -48,7 +48,7 @@ class Gallery extends Model
     protected static function booted(): void
     {
         static::saving(function (self $gallery): void {
-            $gallery->slug = Str::slug($gallery->slug ?: $gallery->title);
+            $gallery->slug = Slug::for($gallery->slug, $gallery->title);
 
             // The same gate as testimonials. A gallery is where photographs of
             // children are most likely to end up, so publication without a

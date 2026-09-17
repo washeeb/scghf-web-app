@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * A downloadable document: annual report, policy, form, brochure.
@@ -50,7 +50,7 @@ class Document extends Model
 
     protected static function booted(): void
     {
-        static::saving(fn (self $doc) => $doc->slug = Str::slug($doc->slug ?: $doc->title));
+        static::saving(fn (self $doc) => $doc->slug = Slug::for($doc->slug, $doc->title));
     }
 
     /** @return array<int, string> */

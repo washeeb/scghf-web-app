@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class TeamMember extends Model
 {
@@ -48,7 +48,7 @@ class TeamMember extends Model
 
     protected static function booted(): void
     {
-        static::saving(fn (self $m) => $m->slug = Str::slug($m->slug ?: $m->name));
+        static::saving(fn (self $m) => $m->slug = Slug::for($m->slug, $m->name));
     }
 
     /** @return array<int, string> */

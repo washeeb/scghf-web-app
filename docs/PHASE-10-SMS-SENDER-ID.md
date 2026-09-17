@@ -49,7 +49,7 @@ Two rules the software enforces so nobody has to remember them:
 
 | Provider | Route | Balance | Delivery reports | Notes |
 |---|---|---|---|---|
-| **mNotify** (current) | local | credits | yes, polled hourly + webhook | Sender ID registered. Prepaid; top up before the balance line (`SMS_LOW_BALANCE_THRESHOLD`). |
+| **mNotify** (current) | local | credits | yes, polled hourly + webhook | Sender ID registered. Prepaid; top up before the balance line (`SMS_LOW_BALANCE_THRESHOLD`). Its API takes the key as a query-string parameter — the only one of the four that does — so the key appears in any proxy or access log between us and them; keep it rotated, and prefer Arkesel when both are registered. |
 | **Arkesel** | local | credits | yes | The fallback with the same shape. Register the sender ID separately — registrations are per provider. |
 | **Hubtel** | local | not on the SMS API | yes | Postpaid to a merchant account; check the balance on their dashboard. Highest volume aggregator. |
 | **Twilio** | international | money (USD) | yes | Fallback only: several times the local rate, and alphanumeric IDs are not guaranteed on every Ghanaian network — use a messaging service or a number. |

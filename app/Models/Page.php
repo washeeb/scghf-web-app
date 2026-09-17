@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\PageStatus;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -81,11 +81,7 @@ class Page extends Model
     protected static function booted(): void
     {
         static::saving(function (self $page): void {
-            if (blank($page->slug)) {
-                $page->slug = Str::slug($page->title);
-            }
-
-            $page->slug = Str::slug($page->slug);
+            $page->slug = Slug::for($page->slug, $page->title);
             $page->path = $page->buildPath();
         });
 

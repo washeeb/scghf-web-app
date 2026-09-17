@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Str;
 
 /**
  * Polymorphic from the start: projects, causes and products all want tags,
@@ -21,7 +21,7 @@ class Tag extends Model
 
     protected static function booted(): void
     {
-        static::saving(fn (self $t) => $t->slug = Str::slug($t->slug ?: $t->name));
+        static::saving(fn (self $t) => $t->slug = Slug::for($t->slug, $t->name));
     }
 
     public function getRouteKeyName(): string
@@ -43,6 +43,6 @@ class Tag extends Model
     /** Find or create by name, so an editor typing a tag does not create duplicates. */
     public static function findOrCreateByName(string $name): self
     {
-        return static::firstOrCreate(['slug' => Str::slug($name)], ['name' => trim($name)]);
+        return static::firstOrCreate(['slug' => Slug::for(null, $name)], ['name' => trim($name)]);
     }
 }

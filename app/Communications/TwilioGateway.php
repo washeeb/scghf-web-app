@@ -61,8 +61,16 @@ class TwilioGateway implements ReportsBalance, ReportsDelivery, SmsGateway
             return SmsResult::rejected($message, $code, $this->scrub($body));
         }
 
+        // A 2xx with no message SID is not an accepted message. Twilio always
+        // returns one; a body without it is a proxy page, a changed API, or
+        // a response for something other than what was sent — and marking it
+        // "sent" would hide that until somebody asks where their text went.
+        if (! isset($body['sid']) || (string) $body['sid'] === '') {
+            return SmsResult::rejected('Twilio answered without a message SID.', null, $this->scrub($body));
+        }
+
         return SmsResult::accepted(
-            providerMessageId: isset($body['sid']) ? (string) $body['sid'] : null,
+            providerMessageId: (string) $body['sid'],
             providerStatus: (string) ($body['status'] ?? 'queued'),
             raw: $this->scrub($body),
         );

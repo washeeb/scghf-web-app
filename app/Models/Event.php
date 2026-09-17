@@ -8,6 +8,7 @@ use App\Casts\MoneyCast;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -17,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -95,11 +95,7 @@ class Event extends Model
     protected static function booted(): void
     {
         static::saving(function (self $event): void {
-            if (blank($event->slug)) {
-                $event->slug = Str::slug($event->title);
-            }
-
-            $event->slug = Str::slug($event->slug);
+            $event->slug = Slug::for($event->slug, $event->title);
 
             if ($event->ends_at !== null && $event->ends_at->lt($event->starts_at)) {
                 throw new RuntimeException('An event cannot end before it starts.');

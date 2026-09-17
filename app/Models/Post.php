@@ -8,6 +8,7 @@ use App\Enums\PageStatus;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -17,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -62,11 +62,7 @@ class Post extends Model
     protected static function booted(): void
     {
         static::saving(function (self $post): void {
-            if (blank($post->slug)) {
-                $post->slug = Str::slug($post->title);
-            }
-
-            $post->slug = Str::slug($post->slug);
+            $post->slug = Slug::for($post->slug, $post->title);
             $post->reading_minutes = $post->estimateReadingMinutes();
         });
     }

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
 use App\Support\DisclosureControl;
+use App\Support\Slug;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 /**
  * Something the foundation counts.
@@ -86,11 +86,7 @@ class ImpactMetric extends Model
     protected static function booted(): void
     {
         static::saving(function (self $metric): void {
-            if (blank($metric->slug)) {
-                $metric->slug = Str::slug($metric->name);
-            }
-
-            $metric->slug = Str::slug($metric->slug);
+            $metric->slug = Slug::for($metric->slug, $metric->name);
         });
     }
 

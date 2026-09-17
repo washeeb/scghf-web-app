@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
 use App\Shop\RegulatoryScreener;
+use App\Support\Slug;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -96,11 +96,7 @@ class Product extends Model
     protected static function booted(): void
     {
         static::saving(function (self $product): void {
-            if (blank($product->slug)) {
-                $product->slug = Str::slug($product->name);
-            }
-
-            $product->slug = Str::slug($product->slug);
+            $product->slug = Slug::for($product->slug, $product->name);
 
             $product->screenForRegulatedGoods();
 

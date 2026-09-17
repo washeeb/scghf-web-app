@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -11,7 +12,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 /**
  * A dated entry on a project's timeline.
@@ -49,11 +49,7 @@ class ProjectUpdate extends Model
     protected static function booted(): void
     {
         static::saving(function (self $update): void {
-            if (blank($update->slug)) {
-                $update->slug = Str::slug($update->title);
-            }
-
-            $update->slug = Str::slug($update->slug);
+            $update->slug = Slug::for($update->slug, $update->title);
         });
     }
 

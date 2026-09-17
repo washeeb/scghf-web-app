@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 /**
  * A role the foundation is recruiting for.
@@ -75,11 +75,7 @@ class VolunteerOpportunity extends Model
     protected static function booted(): void
     {
         static::saving(function (self $opportunity): void {
-            if (blank($opportunity->slug)) {
-                $opportunity->slug = Str::slug($opportunity->title);
-            }
-
-            $opportunity->slug = Str::slug($opportunity->slug);
+            $opportunity->slug = Slug::for($opportunity->slug, $opportunity->title);
         });
     }
 

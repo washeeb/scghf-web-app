@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Casts\MoneyCast;
 use App\Models\Concerns\BelongsToDivision;
+use App\Support\Slug;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 /**
  * A named recurring giving option.
@@ -57,11 +57,7 @@ class DonationPlan extends Model
     protected static function booted(): void
     {
         static::saving(function (self $plan): void {
-            if (blank($plan->slug)) {
-                $plan->slug = Str::slug($plan->name);
-            }
-
-            $plan->slug = Str::slug($plan->slug);
+            $plan->slug = Slug::for($plan->slug, $plan->name);
         });
     }
 

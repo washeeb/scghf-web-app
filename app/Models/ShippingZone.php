@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Slug;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,7 +12,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 /**
  * A group of Ghanaian regions with the same delivery pricing.
@@ -65,11 +65,7 @@ class ShippingZone extends Model
     protected static function booted(): void
     {
         static::saving(function (self $zone): void {
-            if (blank($zone->slug)) {
-                $zone->slug = Str::slug($zone->name);
-            }
-
-            $zone->slug = Str::slug($zone->slug);
+            $zone->slug = Slug::for($zone->slug, $zone->name);
         });
     }
 

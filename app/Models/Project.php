@@ -8,6 +8,7 @@ use App\Casts\MoneyCast;
 use App\Enums\ProjectStatus;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -18,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -77,11 +77,7 @@ class Project extends Model
     protected static function booted(): void
     {
         static::saving(function (self $project): void {
-            if (blank($project->slug)) {
-                $project->slug = Str::slug($project->title);
-            }
-
-            $project->slug = Str::slug($project->slug);
+            $project->slug = Slug::for($project->slug, $project->title);
 
             /*
              * A completed project carries the date it completed. Setting the

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\HasSeo;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class BlogCategory extends Model
 {
@@ -30,7 +30,7 @@ class BlogCategory extends Model
 
     protected static function booted(): void
     {
-        static::saving(fn (self $c) => $c->slug = Str::slug($c->slug ?: $c->name));
+        static::saving(fn (self $c) => $c->slug = Slug::for($c->slug, $c->name));
     }
 
     public function getRouteKeyName(): string

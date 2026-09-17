@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasSeo;
 use App\Shop\RegulatoryScreener;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 /**
  * A branch of the shop's taxonomy.
@@ -52,11 +52,7 @@ class ProductCategory extends Model
     protected static function booted(): void
     {
         static::saving(function (self $category): void {
-            if (blank($category->slug)) {
-                $category->slug = Str::slug($category->name);
-            }
-
-            $category->slug = Str::slug($category->slug);
+            $category->slug = Slug::for($category->slug, $category->name);
         });
     }
 

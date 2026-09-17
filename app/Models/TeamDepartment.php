@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 class TeamDepartment extends Model
 {
@@ -25,7 +25,7 @@ class TeamDepartment extends Model
 
     protected static function booted(): void
     {
-        static::saving(fn (self $d) => $d->slug = Str::slug($d->slug ?: $d->name));
+        static::saving(fn (self $d) => $d->slug = Slug::for($d->slug, $d->name));
     }
 
     public function getRouteKeyName(): string

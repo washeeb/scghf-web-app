@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\HasSeo;
+use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 /**
  * A thematic band within a division's work.
@@ -51,11 +51,7 @@ class FocusArea extends Model
     protected static function booted(): void
     {
         static::saving(function (self $area): void {
-            if (blank($area->slug)) {
-                $area->slug = Str::slug($area->name);
-            }
-
-            $area->slug = Str::slug($area->slug);
+            $area->slug = Slug::for($area->slug, $area->name);
         });
     }
 

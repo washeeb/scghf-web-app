@@ -9,6 +9,7 @@ use App\Enums\CauseStatus;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\Slug;
 use App\Support\TaxDeductibility;
 use App\ValueObjects\Money;
 use DateTimeInterface;
@@ -22,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -99,11 +99,7 @@ class Cause extends Model
     protected static function booted(): void
     {
         static::saving(function (self $cause): void {
-            if (blank($cause->slug)) {
-                $cause->slug = Str::slug($cause->title);
-            }
-
-            $cause->slug = Str::slug($cause->slug);
+            $cause->slug = Slug::for($cause->slug, $cause->title);
         });
 
         static::deleting(function (self $cause): void {
