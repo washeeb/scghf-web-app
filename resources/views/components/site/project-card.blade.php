@@ -8,7 +8,7 @@
     @param project an App\Models\Project
     @param eager   true only for the images above the fold
 --}}
-@props(['project', 'eager' => false])
+@props(['project', 'eager' => false, 'level' => 'h3'])
 
 <a
     href="{{ route('projects.show', $project) }}"
@@ -30,9 +30,9 @@
         ])->filter()->implode(' · ') }}
     </p>
 
-    <h3 class="mt-1 font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
+    <{{ $level }} class="mt-1 font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
         {{ $project->title }}
-    </h3>
+    </{{ $level }}>
 
     @if ($project->summary)
         <p class="mt-2 text-sm text-[var(--text-secondary)]">{{ $project->summary }}</p>

@@ -9,7 +9,7 @@
     @param product an App\Models\Product with variants loaded
     @param eager   true only for the images above the fold
 --}}
-@props(['product', 'eager' => false])
+@props(['product', 'eager' => false, 'level' => 'h3'])
 
 @php
     $from = $product->fromPrice();
@@ -33,9 +33,9 @@
             <div class="mb-3 aspect-square w-full rounded-md bg-[var(--surface-sunken)]" aria-hidden="true"></div>
         @endif
 
-        <h3 class="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
+        <{{ $level }} class="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
             {{ $product->name }}
-        </h3>
+        </{{ $level }}>
     </a>
 
     @if ($product->cause)

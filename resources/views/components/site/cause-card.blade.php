@@ -7,7 +7,7 @@
     @param cause an App\Models\Cause
     @param eager true only for the images above the fold
 --}}
-@props(['cause', 'eager' => false])
+@props(['cause', 'eager' => false, 'level' => 'h3'])
 
 <div class="flex h-full flex-col rounded-lg border border-[var(--border)] p-5">
     <a
@@ -27,9 +27,9 @@
             <p class="text-xs font-semibold uppercase tracking-wide text-[var(--danger)]">{{ __('Urgent') }}</p>
         @endif
 
-        <h3 class="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
+        <{{ $level }} class="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
             {{ $cause->title }}
-        </h3>
+        </{{ $level }}>
 
         @if ($cause->summary)
             <p class="mt-2 text-sm text-[var(--text-secondary)]">{{ $cause->summary }}</p>

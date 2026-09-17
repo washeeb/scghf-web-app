@@ -198,7 +198,7 @@
                             @endforeach
                             @if ((bool) setting('site.cookie_banner_enabled', true))
                                 {{-- Opens the preferences dialog; without script it is a link to the policy. --}}
-                                <li><a href="{{ App\Models\Page::query()->where('slug', 'cookie-policy')->value('path') ? url((string) App\Models\Page::query()->where('slug', 'cookie-policy')->value('path')) : '#' }}" data-cookie-consent-manage class="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:underline">{{ __('Cookie preferences') }}</a></li>
+                                <li><a href="{{ App\Models\Page::query()->where('slug', 'cookie-policy')->value('path') ? url((string) App\Models\Page::query()->where('slug', 'cookie-policy')->value('path')) : '#' }}" data-cookie-consent-manage class="inline-block py-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ __('Cookie preferences') }}</a></li>
                             @endif
                         </ul>
                     </nav>

@@ -7,7 +7,7 @@
     @param event an App\Models\Event
     @param eager true only for the images above the fold
 --}}
-@props(['event', 'eager' => false])
+@props(['event', 'eager' => false, 'level' => 'h3'])
 
 <a
     href="{{ route('events.show', $event) }}"
@@ -26,9 +26,9 @@
         <time datetime="{{ $event->starts_at->toIso8601String() }}">{{ $event->starts_at->format('D j M Y · H:i') }}</time>
     </p>
 
-    <h3 class="mt-1 font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
+    <{{ $level }} class="mt-1 font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">
         {{ $event->title }}
-    </h3>
+    </{{ $level }}>
 
     <p class="mt-1 text-sm text-[var(--text-muted)]">
         {{ $event->is_online

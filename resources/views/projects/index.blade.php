@@ -87,7 +87,7 @@
             <ul role="list" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         @endif
 
-        <li><x-site.project-card :project="$project" :eager="$loop->index < 3" /></li>
+        <li><x-site.project-card :project="$project" :eager="$loop->index < 3" level="h2" /></li>
 
         @if ($loop->last)
             </ul>

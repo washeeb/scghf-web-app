@@ -197,7 +197,14 @@
                     fetch(url, {headers: {'Accept': 'application/json'}, credentials: 'same-origin'})
                         .then(function (r) { return r.json(); })
                         .then(function (s) {
-                            if (s.settled || s.awaiting !== {!! json_encode($awaiting) !!}) { window.location.reload(); return; }
+                            if (s.settled || s.awaiting !== {!! json_encode($awaiting) !!}) {
+                                // Say it before the reload wipes the page: a screen-reader
+                                // user otherwise hears nothing between "waiting" and a new page.
+                                var live = document.getElementById('announcements');
+                                if (live) { live.textContent = {!! json_encode(__('Payment update received. Refreshing the page.')) !!}; }
+                                setTimeout(function () { window.location.reload(); }, 800);
+                                return;
+                            }
                             setTimeout(poll, 5000);
                         })
                         .catch(function () { setTimeout(poll, 10000); });

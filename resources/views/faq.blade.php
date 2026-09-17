@@ -50,8 +50,15 @@
 
             <div class="divide-y divide-[var(--border)] border-y border-[var(--border)]">
                 @foreach ($group['faqs'] as $faq)
+                    @php
+                        // A question under a group heading is an h3; in a group
+                        // with no heading (the uncategorised ones) it sits directly
+                        // under the h1, so it is an h2 — a heading order that skips a
+                        // level is a screen-reader user losing their place.
+                        $questionLevel = $group['heading'] ? 'h3' : 'h2';
+                    @endphp
                     <details id="faq-{{ $faq->getKey() }}" class="group py-4">
-                        <h3>
+                        <{{ $questionLevel }}>
                             <summary class="cursor-pointer list-none font-medium text-[var(--text-primary)] marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">
                                 <span class="flex items-start justify-between gap-4">
                                     <span>{{ $faq->question }}</span>
@@ -62,7 +69,7 @@
                                     <span aria-hidden="true" class="mt-1 shrink-0 text-[var(--text-muted)] transition group-open:rotate-45">+</span>
                                 </span>
                             </summary>
-                        </h3>
+                        </{{ $questionLevel }}>
 
                         <div class="prose-scghf mt-3 space-y-3 text-[var(--text-secondary)]">
                             @clean($faq->answer)
