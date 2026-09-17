@@ -39,6 +39,10 @@
     };
 @endphp
 
+@push('scripts')
+    <span hidden data-track-event="checkout_started" data-track-once="checkout:{{ session()->getId() }}"></span>
+@endpush
+
 <x-site.page-shell :meta="$meta" :crumbs="$crumbs" :title="__('Checkout')">
     <div class="grid gap-12 lg:grid-cols-[2fr_1fr]">
         <form method="POST" action="{{ route('shop.checkout.store') }}" class="max-w-2xl space-y-8">

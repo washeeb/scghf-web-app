@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Support\Analytics;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
@@ -68,6 +69,9 @@ class SecurityHeaders
     public static function policy(string $nonce, bool $strict): string
     {
         $csp = (array) config('security.headers.csp', []);
+        $analytics = Analytics::cspOrigins();
+        $csp['script_origins'] = [...(array) ($csp['script_origins'] ?? []), ...$analytics['script']];
+        $csp['connect_origins'] = [...(array) ($csp['connect_origins'] ?? []), ...$analytics['connect']];
         $list = fn (string $key): string => implode(' ', (array) ($csp[$key] ?? []));
 
         $script = $strict

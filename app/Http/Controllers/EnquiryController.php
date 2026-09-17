@@ -53,7 +53,7 @@ class EnquiryController extends Controller
             'message' => $this->body($spec, $validated),
         ], $this->consentText());
 
-        return back()->with('status', __(
+        return back()->with('track', ['event' => 'contact_submitted', 'props' => ['kind' => $kind], 'key' => 'contact:'.$message->reference])->with('status', __(
             'Thank you. Your reference is :reference — quote it if you write to us again.',
             ['reference' => $message->reference],
         ));

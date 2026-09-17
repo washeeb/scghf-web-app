@@ -18,6 +18,7 @@
  * `fetch` is already in every browser it supports.
  */
 
+import { initAnalytics } from './analytics';
 import { initAnnouncement } from './announcement';
 import { initCookieConsent } from './cookie-consent';
 import { initNavigation } from './navigation';
@@ -29,3 +30,4 @@ initNavigation();
 initAnnouncement();
 initNewsletterPopup();
 initCookieConsent();
+initAnalytics();

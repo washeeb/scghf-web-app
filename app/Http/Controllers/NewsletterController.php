@@ -63,6 +63,7 @@ class NewsletterController extends Controller
          */
         return back()
             ->withCookie(cookie('scghf_subscribed', '1', 60 * 24 * 365, null, null, null, true, false, 'lax'))
+            ->with('track', ['event' => 'newsletter_signup', 'props' => ['source' => $validated['source'] ?? 'website']])
             ->with('status', __(
                 'Thank you. Please check your inbox — there is a link to confirm, and we will not send '
                 .'anything until you have followed it.'

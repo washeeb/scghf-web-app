@@ -250,6 +250,18 @@ class SettingsSeeder extends Seeder
         ['site', 'footer_newsletter_heading', 'Stay in touch', SettingType::String, 'Footer newsletter heading', true],
         ['site', 'show_back_to_top', '1', SettingType::Boolean, 'Show a back-to-top link', true],
 
+        // ── Analytics (Phase 13) ─────────────────────────────────────────────
+        // None by default. Whichever is chosen loads only after the visitor
+        // allows the Analytics category in the cookie notice; until then the
+        // script is inert text. The database dashboard needs none of this.
+        ['analytics', 'provider', 'none', SettingType::Select, 'Analytics provider', false,
+            'Plausible and Umami are privacy-first and need no cookie; GA4 runs in consent mode. All three load only after consent. See docs/PHASE-13-SEO-AND-CONTENT.md for which to pick.',
+            ['none' => 'None (the built-in dashboard only)', 'plausible' => 'Plausible', 'umami' => 'Umami', 'ga4' => 'Google Analytics 4']],
+        ['analytics', 'site_id', '', SettingType::String, 'Site / measurement ID', false,
+            'Plausible: the domain (greaterhopefoundations.com). Umami: the website ID from the dashboard. GA4: the measurement ID (G-XXXXXXX).'],
+        ['analytics', 'script_url', '', SettingType::Url, 'Script URL', false,
+            'Plausible: https://plausible.io/js/script.js (or your self-hosted one). Umami cloud: https://cloud.umami.is/script.js. GA4: leave empty.'],
+
         // ── Cookie consent (Phase 12) ────────────────────────────────────────
         // The site sets essential cookies only today. The banner exists so
         // that is SAID, so a visitor can see and change what they allow, and

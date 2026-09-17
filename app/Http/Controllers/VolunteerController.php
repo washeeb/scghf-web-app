@@ -130,7 +130,8 @@ class VolunteerController extends Controller
 
         app(VolunteerNotifier::class)->received($application->load('opportunity'));
 
-        return redirect()->route('volunteer.applied', $application);
+        return redirect()->route('volunteer.applied', $application)
+            ->with('track', ['event' => 'volunteer_application', 'key' => 'volunteer:'.$application->reference]);
     }
 
     public function applied(VolunteerApplication $application): View

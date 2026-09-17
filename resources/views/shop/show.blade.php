@@ -78,7 +78,7 @@
                 @if ($variants->isEmpty())
                     <p class="mt-6 text-[var(--text-secondary)]">{{ __('This is not available to buy at the moment.') }}</p>
                 @else
-                    <form method="POST" action="{{ route('shop.cart.add') }}" class="mt-6 space-y-5">
+                    <form method="POST" action="{{ route('shop.cart.add') }}" class="mt-6 space-y-5" data-track-on="submit:add_to_cart" data-track-props="{{ json_encode(['product' => $product->slug]) }}">
                         @csrf
 
                         @if ($single)

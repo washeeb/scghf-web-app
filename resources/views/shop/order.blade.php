@@ -20,6 +20,12 @@
     $status = $order->status;
 @endphp
 
+@if ($status->isPaid())
+    @push('scripts')
+        <span hidden data-track-event="purchase" data-track-once="order:{{ $order->reference }}" data-track-props="{{ json_encode(['value' => round($order->total->toMinor() / 100, 2), 'currency' => 'GHS', 'items' => $order->items->count()]) }}"></span>
+    @endpush
+@endif
+
 <x-site.page-shell
     :meta="$meta"
     :crumbs="$crumbs"

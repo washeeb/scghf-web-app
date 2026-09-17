@@ -55,7 +55,7 @@
     :lead="$cause?->summary"
 >
     <div class="grid gap-12 lg:grid-cols-[2fr_1fr]">
-        <form method="POST" action="{{ route('donate.store') }}" class="max-w-2xl space-y-8">
+        <form method="POST" action="{{ route('donate.store') }}" class="max-w-2xl space-y-8" data-track-on="submit:donation_started">
             @csrf
             <x-honeypot />
 

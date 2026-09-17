@@ -104,6 +104,7 @@ class ManageSettings extends Page
         'events' => 'Events',
         'volunteering' => 'Volunteering',
         'communications' => 'Email & SMS',
+        'analytics' => 'Analytics',
         'header' => 'Header',
         'site' => 'Site & footer',
         'seo' => 'Search engines',

@@ -32,6 +32,16 @@
     $isMomo = $transaction?->channel === 'mobile_money' && $transaction?->authorization_url === null;
 @endphp
 
+@if ($status === 'completed')
+    {{-- The conversion, from the database, not the redirect: fired once per reference. --}}
+    @push('scripts')
+        <span hidden data-track-event="donation_completed" data-track-once="donation:{{ $donation->reference }}" data-track-props="{{ json_encode(['value' => round($donation->amount->toMinor() / 100, 2), 'currency' => 'GHS', 'cause' => $donation->cause?->slug, 'regular' => (bool) $donation->wants_recurring]) }}"></span>
+        @if ($donation->wants_recurring)
+            <span hidden data-track-event="recurring_started" data-track-once="recurring:{{ $donation->reference }}" data-track-props="{{ json_encode(['value' => round($donation->amount->toMinor() / 100, 2), 'currency' => 'GHS']) }}"></span>
+        @endif
+    @endpush
+@endif
+
 <x-site.page-shell
     :meta="$meta"
     :crumbs="$crumbs"

@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
+use App\Enums\DonationStatus;
 use App\Enums\PageStatus;
+use App\Filament\Pages\AnalyticsPage;
 use App\Filament\Resources\Posts\Pages\EditPost;
 use App\Models\BlogCategory;
+use App\Models\Donation;
 use App\Models\Faq;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\VisitorStat;
 use App\Policies\BasePolicy;
 use App\Support\Settings;
 use App\Support\ThemeTokens;
@@ -184,4 +188,77 @@ it('remembers the campaign a visit arrived with and stamps it on the donation ma
 
     // The donate page carries it as hidden fields.
     $this->get(route('donate'))->assertOk()->assertSee('name="utm_campaign" value="harvest"', escape: false);
+});
+
+// ── Analytics ───────────────────────────────────────────────────────────────
+
+it('loads no analytics by default, and the chosen provider only as consent-gated text', function () {
+    $this->get('/')->assertOk()->assertDontSee('data-consent="analytics"', escape: false)->assertDontSee('plausible', escape: false);
+
+    seoSetting('analytics.provider', 'plausible');
+    seoSetting('analytics.site_id', 'greaterhopefoundations.com');
+
+    $response = $this->get('/')->assertOk()
+        ->assertSee('type="text/plain" data-consent="analytics"', escape: false)
+        ->assertSee('data-domain="greaterhopefoundations.com"', escape: false)
+        ->assertSee('src="https://plausible.io/js/script.js"', escape: false);
+
+    // The CSP admits the provider's origin — only once it is chosen.
+    expect((string) $response->headers->get('Content-Security-Policy'))->toContain('https://plausible.io');
+
+    seoSetting('analytics.provider', 'ga4');
+    seoSetting('analytics.site_id', 'G-TEST1234');
+    $this->get('/')->assertOk()
+        ->assertSee('googletagmanager.com/gtag/js?id=G-TEST1234', escape: false)
+        ->assertSee("gtag('consent', 'default', {analytics_storage: 'granted'", escape: false)
+        ->assertSee('anonymize_ip', escape: false);
+});
+
+it('marks the conversions on the pages that confirm them, once per reference', function () {
+    $this->seed(MessageTemplateSeeder::class);
+
+    $this->get(route('donate'))->assertOk()->assertSee('data-track-on="submit:donation_started"', escape: false);
+
+    $this->post(route('newsletter.subscribe'), ['email' => 'ama@example.test', 'source' => 'footer'])->assertRedirect();
+    $this->get('/')->assertOk()->assertSee('data-track-event="newsletter_signup"', escape: false);
+    $this->get('/')->assertOk()->assertDontSee('data-track-event="newsletter_signup"', escape: false);
+
+    $donation = Donation::factory()->create(['status' => DonationStatus::Completed, 'wants_recurring' => true]);
+    $this->get(route('donate.thanks', $donation))->assertOk()
+        ->assertSee('data-track-event="donation_completed"', escape: false)
+        ->assertSee('data-track-once="donation:'.$donation->reference.'"', escape: false)
+        ->assertSee('&quot;currency&quot;:&quot;GHS&quot;', escape: false)
+        ->assertSee('data-track-event="recurring_started"', escape: false);
+
+    $pending = Donation::factory()->create(['status' => DonationStatus::Pending]);
+    $this->get(route('donate.thanks', $pending))->assertOk()->assertDontSee('data-track-event="donation_completed"', escape: false);
+});
+
+it('shows the director visits, conversions and income by campaign from the database', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    BasePolicy::forgetKnownPermissions();
+    $director = User::factory()->staff()->withTwoFactor()->create()->fresh();
+    $director->givePermissionTo('visitor_stats.view');
+
+    VisitorStat::increment_(VisitorStat::DIMENSION_TOTAL, 'total', true);
+    VisitorStat::increment_(VisitorStat::DIMENSION_PATH, '/projects', false);
+    Donation::factory()->create(['status' => DonationStatus::Completed, 'amount' => 5_000, 'source' => null, 'utm' => ['source' => 'whatsapp', 'campaign' => 'harvest']]);
+    Donation::factory()->create(['status' => DonationStatus::Completed, 'amount' => 2_000]);
+    Donation::factory()->create(['status' => DonationStatus::Pending, 'amount' => 90_000]);
+
+    $this->actingAs($director);
+    expect(AnalyticsPage::canAccess())->toBeTrue();
+
+    Livewire::test(AnalyticsPage::class)
+        ->assertOk()
+        ->assertSee('Income by campaign')
+        ->assertSee('whatsapp')
+        ->assertSee('harvest')
+        ->assertSee('GH₵ 50.00')
+        ->assertSee('Direct or unknown')
+        ->assertSee('/projects')
+        ->assertDontSee('GH₵ 900.00');
+
+    $this->actingAs(User::factory()->staff()->withTwoFactor()->create()->fresh());
+    expect(AnalyticsPage::canAccess())->toBeFalse();
 });
