@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Casts\MoneyCast;
 use App\Contracts\Payable;
 use App\Enums\OrderStatus;
+use App\Payments\AnomalyAlerts;
 use App\Shop\OrderFulfilment;
 use App\Shop\OrderNotifier;
 use App\ValueObjects\Money;
@@ -343,6 +344,8 @@ class Order extends Model implements Payable
         ])->save();
 
         $this->recordStatusChange($from, null, (string) $transaction->mismatch_reason);
+
+        app(AnomalyAlerts::class)->mismatch($this, $transaction);
 
         Log::critical('Order held for review after a payment mismatch.', [
             'order' => $this->reference,

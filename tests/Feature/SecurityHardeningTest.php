@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\PageStatus;
+use App\Enums\PaymentStatus;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -10,7 +11,11 @@ use App\Filament\Resources\Users\UserResource;
 use App\Http\Middleware\RestrictAdminByIp;
 use App\Mail\RenderedMessage;
 use App\Models\AuditLog;
+use App\Models\Donation;
+use App\Models\PaymentTransaction;
 use App\Models\Post;
+use App\Models\ScheduledMessage;
+use App\Models\Setting;
 use App\Models\User;
 use App\Policies\BasePolicy;
 use App\Support\Html;
@@ -259,4 +264,43 @@ it('prints CMS rich text through the sanitiser, so a compromised editor account 
     $post = Post::create(['title' => 'Dirty', 'slug' => 'dirty', 'status' => PageStatus::Published, 'published_at' => now()->subDay(), 'body' => $dirty]);
 
     $this->get(route('news.show', $post))->assertOk()->assertSee('<b>there</b>', escape: false)->assertDontSee('alert(1)', escape: false)->assertDontSee('onerror', escape: false)->assertDontSee('javascript:', escape: false);
+});
+
+// ── Payments: anomalies reach a person ─────────────────────────────────────
+
+it('emails the alerts address when a payment settles for the wrong amount, once', function () {
+    Setting::query()->where('group', 'communications')->where('key', 'alert_email')->update(['value' => 'finance@example.test']);
+    app(Settings::class)->flush();
+    config(['payments.paystack.webhook_secret' => 'sk_test_webhook_secret_for_tests']);
+
+    $donation = Donation::factory()->create();
+    $transaction = PaymentTransaction::factory()->create();
+    $transaction->forceFill(['status' => 'mismatch', 'mismatch_reason' => 'Amount mismatch: expected 25000, got 24999'])->save();
+
+    $donation->onPaymentMismatch($transaction->fresh());
+    $donation->onPaymentMismatch($transaction->fresh());
+
+    $alerts = ScheduledMessage::where('template_key', 'admin.payment_anomaly')->get();
+
+    expect($alerts)->toHaveCount(1)
+        ->and($alerts->first()->to_address)->toBe('finance@example.test')
+        ->and(json_encode($alerts->first()->payload))->toContain('different amount');
+});
+
+it('emails the alerts address about a run of failed payments or refunds, once an hour, and stays quiet otherwise', function () {
+    Setting::query()->where('group', 'communications')->where('key', 'alert_email')->update(['value' => 'finance@example.test']);
+    app(Settings::class)->flush();
+    config()->set('payments.paystack.anomalies.failed_per_hour', 3);
+
+    PaymentTransaction::factory()->count(2)->create(['status' => PaymentStatus::Failed]);
+    $this->artisan('scghf:payment-anomalies')->assertSuccessful();
+    expect(ScheduledMessage::where('template_key', 'admin.payment_anomaly')->count())->toBe(0);
+
+    PaymentTransaction::factory()->count(2)->create(['status' => PaymentStatus::Failed]);
+    $this->artisan('scghf:payment-anomalies')->assertSuccessful();
+    $this->artisan('scghf:payment-anomalies')->assertSuccessful();
+
+    $alerts = ScheduledMessage::where('template_key', 'admin.payment_anomaly')->get();
+    expect($alerts)->toHaveCount(1)
+        ->and(json_encode($alerts->first()->payload))->toContain('4 failed payments');
 });

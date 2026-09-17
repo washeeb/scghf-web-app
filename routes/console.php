@@ -107,6 +107,11 @@ Schedule::command('scghf:contact-sla --execute')
     ->hourly()
     ->onOneServer();
 
+// Runs of failed payments or refunds tell the alerts address, once an hour at most.
+Schedule::command('scghf:payment-anomalies')
+    ->hourly()
+    ->onOneServer();
+
 /*
  * The retention sweep, weekly and DRY BY DEFAULT.
  *

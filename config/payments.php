@@ -82,6 +82,16 @@ return [
          * Empty disables the check, which is the right default until the
          * hosting arrangement is known.
          */
+        /*
+         * Anomaly lines, read by `scghf:payment-anomalies`. Each is "more
+         * than this in the window" and each sends one email per window, so
+         * an attack that runs all night is one alert an hour, not a hundred.
+         */
+        'anomalies' => [
+            'failed_per_hour' => (int) env('PAYMENT_ALERT_FAILED_PER_HOUR', 10),
+            'refunds_per_day' => (int) env('PAYMENT_ALERT_REFUNDS_PER_DAY', 3),
+        ],
+
         'webhook_ips' => array_values(array_filter(array_map(
             'trim',
             explode(',', (string) env('PAYSTACK_WEBHOOK_IPS', '')),

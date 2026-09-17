@@ -533,6 +533,26 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'admin.payment_anomaly',
+                'name' => 'Something odd with payments — to the alerts address',
+                'description' => 'Sent when a payment settles for the wrong amount, or when failed '
+                    .'payments or refunds pass the lines set in config/payments.php.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['headline', 'detail', 'admin_url'],
+                'required' => ['headline'],
+                'subject' => 'Payments: {{headline}}',
+                'html' => <<<'HTML'
+                    <p><strong>{{headline}}</strong></p>
+                    {{detail}}
+                    <p>{{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    {{headline}}
+
+                    {{admin_url}}
+                    TEXT,
+            ],
+            [
                 'key' => 'admin.new_donation',
                 'name' => 'A large gift — to the alerts address',
                 'description' => 'Sent to the alerts address when a gift completes at or above the amount set '

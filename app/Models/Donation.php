@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Casts\MoneyCast;
 use App\Contracts\Payable;
 use App\Enums\DonationStatus;
+use App\Payments\AnomalyAlerts;
 use App\Payments\DonationNotifier;
 use App\Payments\RecurringGivingService;
 use App\ValueObjects\Money;
@@ -398,6 +399,8 @@ class Donation extends Model implements Payable
             'donation' => $this->reference,
             'transaction' => $transaction->ulid,
         ]);
+
+        app(AnomalyAlerts::class)->mismatch($this, $transaction);
     }
 
     // ── Money ────────────────────────────────────────────────────────────────
