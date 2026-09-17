@@ -8,6 +8,91 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 13 — SEO, analytics and accessibility, completed — 2026-09-17
+
+#### Module 1 — search and sharing
+
+- **One "Search & sharing" section on every content type** — pages,
+  posts, projects, appeals, products, events, areas of work, volunteer
+  roles and both category types (which gain `HasSeo`). Title and
+  description with live character counts against what Google shows,
+  canonical, robots, Open Graph title/text/image/type, X card. `seo_meta`
+  has been polymorphic since Phase 3 and only the Page form reached it,
+  with three of eleven columns
+- **`PageMeta` carries the overrides it ignored** — `og_title`,
+  `canonical_url`, `no_follow`, `twitter_card` — and gained `with()` so a
+  controller overrides a slot without rebuilding the object and losing
+  the editor's choices on the way (the news page did exactly that)
+- **JSON-LD**: Article on posts, Product with an Offer in GHS and stock
+  availability, FAQPage, DonateAction on the donate page — alongside the
+  NGO, WebSite + SearchAction, BreadcrumbList and Event from Phase 6
+- **A sitemap index** with per-type sitemaps, cached per type and
+  forgotten by an observer whenever anything listed is saved — so
+  "regenerated on publish" is true. Google retired the ping endpoint in
+  2023 and nothing pretends otherwise. Extra `robots.txt` lines from a
+  setting. A paginated list's canonical keeps `?page=` and drops every
+  other parameter
+- **Attribution**: first-touch `utm_*` on any page is kept for the visit
+  and stamped on the donation or order made later; orders gain
+  `source`/`utm` like donations
+
+#### Module 2 — analytics
+
+- A provider as a setting — none (default), Plausible, Umami, or GA4 in
+  consent mode — written into the page as `text/plain` and made a script
+  only when the visitor allows the Analytics category in Phase 12's
+  cookie notice. The CSP admits the chosen provider's origins and no
+  other's
+- `scghfTrack()`, one shim for whichever provider is loaded, and the nine
+  events: donation_started, donation_completed (value in GHS, cause,
+  regular), recurring_started, add_to_cart, checkout_started, purchase,
+  newsletter_signup, volunteer_application, contact_submitted. The
+  server-known ones render on the page that confirms them — from the
+  database, never the redirect — and fire once per reference
+- **Site analytics** (`visitor_stats.view` — seeded in Phase 3, no screen
+  until now): views and visits by day, most-read pages, referrers,
+  devices, the conversions as counts from the tables that are them, and
+  income by campaign. Nobody outside this database is asked anything
+
+#### Module 3 — accessibility
+
+- axe-core run against 27 public pages in both themes and the open
+  dialogs. Found and fixed: a 17 px footer link (WCAG 2.2 target size),
+  `h1 → h3` on the projects and appeals indexes (cards take a `level`
+  prop), `h1 → h3` on the FAQ page for uncategorised questions, and a
+  payment-status reload that announced nothing
+- **`AccessibilityTest`** runs the structural rules on 21 public pages,
+  the 404 and the account pages on every commit: one `h1`, no skipped
+  levels, landmarks, skip link, `lang`, `alt` on every image, a label on
+  every control, no positive `tabindex`, no destination-less link, no
+  nameless button, a live region, errors tied to fields
+- `docs/PHASE-13-ACCESSIBILITY-REPORT.md`; the public statement (draft)
+  names the audit and the fixes
+
+#### Module 4 — the plan
+
+- `docs/PHASE-13-SEO-AND-CONTENT.md`: keyword and content plan by intent
+  (donation, programme, partner), ten blog topics, NAP consistency,
+  Google Business Profile and directories, the Core Web Vitals checklist
+  with what is implemented and what is not, and the one-time setup list
+
+#### Tests
+
+`SeoAndAnalyticsTest` (11), `AccessibilityTest` (4). The sitemap tests in
+`PublicSiteTest` and `EventPagesTest` updated for the index.
+
+#### Decided
+
+- **Analytics defaults to none.** The built-in dashboard covers the
+  director's questions; a third party is a trustee choice, and the doc
+  recommends Umami cloud or Plausible over GA4
+- **No hreflang** while `FEATURE_MULTILINGUAL` is off
+- **No sitemap ping**: Google's is gone; IndexNow is worth adding only
+  when the site publishes several times a week
+- The admin panel is outside the accessibility audit — Filament's own
+- Lighthouse and a screen-reader pass need a person at a browser; the
+  report says exactly what to do and what to expect
+
 ### Phase 12 — security hardening and compliance, completed — 2026-09-17
 
 An audit of everything built so far, and the hardening it called for.
