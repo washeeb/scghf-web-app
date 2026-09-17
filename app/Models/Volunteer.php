@@ -70,6 +70,8 @@ class Volunteer extends Model implements Retainable
     protected function casts(): array
     {
         return [
+            // A safeguarding concern, encrypted at rest (Phase 12).
+            'concern_note' => 'encrypted',
             'is_cleared' => 'boolean',
             'involves_vulnerable_contact' => 'boolean',
             'started_on' => 'date',

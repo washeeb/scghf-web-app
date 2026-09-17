@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 
@@ -79,6 +80,19 @@ class MediaForm
                             'Who took it. Donated photography usually comes with a condition that it is '
                             .'credited, and this is the field that keeps that promise.'
                         )),
+                ]),
+
+            Section::make(__('People in the picture'))
+                ->description(__('A photograph of a person needs their consent before it goes on the site; a photograph of a child needs a named parent’s or guardian’s. Both are recorded on the Consent tab (consents.manage), and the image cannot be published until one is valid.'))
+                ->columns(2)
+                ->schema([
+                    Toggle::make('depicts_people')
+                        ->label(__('Shows a person'))
+                        ->live(),
+                    Toggle::make('depicts_children')
+                        ->label(__('Shows a child'))
+                        ->live()
+                        ->afterStateUpdated(fn (Set $set, bool $state) => $state ? $set('depicts_people', true) : null),
                 ]),
 
             Section::make(__('Filing'))

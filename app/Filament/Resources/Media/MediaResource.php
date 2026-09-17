@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Media;
 
 use App\Filament\Resources\Media\Pages\EditMedia;
 use App\Filament\Resources\Media\Pages\ListMedia;
+use App\Filament\Resources\Media\RelationManagers\ConsentsRelationManager;
 use App\Filament\Resources\Media\Schemas\MediaForm;
 use App\Filament\Resources\Media\Tables\MediaTable;
 use App\Models\Media;
@@ -142,6 +143,13 @@ class MediaResource extends Resource
     public static function table(Table $table): Table
     {
         return MediaTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            ConsentsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

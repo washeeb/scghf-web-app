@@ -248,6 +248,15 @@ class SettingsSeeder extends Seeder
         ['site', 'footer_newsletter_heading', 'Stay in touch', SettingType::String, 'Footer newsletter heading', true],
         ['site', 'show_back_to_top', '1', SettingType::Boolean, 'Show a back-to-top link', true],
 
+        // ── Cookie consent (Phase 12) ────────────────────────────────────────
+        // The site sets essential cookies only today. The banner exists so
+        // that is SAID, so a visitor can see and change what they allow, and
+        // so any analytics or embed added later is gated before it loads.
+        ['site', 'cookie_banner_enabled', '1', SettingType::Boolean, 'Show the cookie notice', true,
+            'A small notice on the first visit with a link to the cookie policy and a preferences panel. Required by Act 843 and GDPR the moment any non-essential cookie exists.'],
+        ['site', 'cookie_banner_text', 'We use cookies that are needed for the site to work — signing in, giving, your theme choice. Nothing else unless you say so.',
+            SettingType::Text, 'Cookie notice text', true],
+
         // ── The newsletter popup (Phase 11) ──────────────────────────────────
         // Off until somebody turns it on. When on: exit-intent on a laptop,
         // after a delay on a phone, at most once per `frequency_days`, never

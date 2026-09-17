@@ -135,6 +135,7 @@
 
     <x-site.footer />
     <x-site.newsletter-popup />
+    <x-site.cookie-consent />
 
     {{--
         The live region.

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as BaseMedia;
 
 /**
@@ -27,6 +28,9 @@ class Media extends BaseMedia
     protected function casts(): array
     {
         return array_merge(parent::casts(), [
+            'depicts_people' => 'boolean',
+            'depicts_children' => 'boolean',
+            'withdrawn_at' => 'datetime',
             'metadata_stripped_at' => 'datetime',
             'had_gps_data' => 'boolean',
             'stripped_metadata_keys' => 'array',
@@ -183,7 +187,71 @@ class Media extends BaseMedia
      */
     public function isPublishable(): bool
     {
-        return $this->hasBeenSanitised() && ($this->isDecorative() || filled($this->alt_text));
+        return $this->publicationRejectionReason() === null;
+    }
+
+    // ── People in the picture ────────────────────────────────────────────────
+
+    /** @return MorphMany<Consent, $this> */
+    public function consents(): MorphMany
+    {
+        return $this->morphMany(Consent::class, 'consentable');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function withdrawnBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'withdrawn_by');
+    }
+
+    public function isWithdrawn(): bool
+    {
+        return $this->withdrawn_at !== null;
+    }
+
+    /**
+     * A valid, unrevoked, unexpired photo consent covering the website — and,
+     * for a child, one a named parent or guardian gave.
+     */
+    public function hasValidPhotoConsent(): bool
+    {
+        // A query when the relation is not loaded: strict mode forbids a lazy
+        // load, and a gallery of fifty portraits must not throw on the first.
+        $consents = $this->relationLoaded('consents') ? $this->consents : $this->consents()->get();
+
+        return $consents
+            ->filter(fn (Consent $consent): bool => $consent->consent_type === Consent::TYPE_PHOTO
+                && $consent->coversScope(Consent::SCOPE_WEBSITE)
+                && $consent->isValid()
+                && (! $this->depicts_children || ($consent->is_minor && filled($consent->guardian_name))))
+            ->isNotEmpty();
+    }
+
+    /**
+     * Take the image down everywhere it appears, now.
+     *
+     * Every render goes through `isPublishable()`, so this is enough: the
+     * hero, the gallery, the card, the Open Graph image all stop showing it
+     * on the next request. Nothing is deleted — the file, the record and
+     * the reason stay, because "why did we take it down" is a question
+     * somebody will ask.
+     */
+    public function withdraw(User $by, string $reason): void
+    {
+        if (trim($reason) === '') {
+            throw new \RuntimeException('Withdrawing an image needs a reason. It is the one thing anybody will want to know later.');
+        }
+
+        $this->forceFill([
+            'withdrawn_at' => now(),
+            'withdrawn_reason' => $reason,
+            'withdrawn_by' => $by->getKey(),
+        ])->save();
+    }
+
+    public function reinstate(): void
+    {
+        $this->forceFill(['withdrawn_at' => null, 'withdrawn_reason' => null, 'withdrawn_by' => null])->save();
     }
 
     /**
@@ -193,6 +261,19 @@ class Media extends BaseMedia
      */
     public function publicationRejectionReason(): ?string
     {
+        if ($this->isWithdrawn()) {
+            return 'This image has been withdrawn'.($this->withdrawn_reason ? ': '.$this->withdrawn_reason : '.')
+                .' It will not appear anywhere until it is reinstated.';
+        }
+
+        if ($this->depicts_people && ! $this->hasValidPhotoConsent()) {
+            return $this->depicts_children
+                ? 'This photograph shows a child and has no valid consent from a named parent or guardian. '
+                    .'Record the consent on the Consent tab before it can be published.'
+                : 'This photograph shows a person and has no valid photo consent recorded. Record it on '
+                    .'the Consent tab before it can be published.';
+        }
+
         if ($this->sanitisation_error !== null) {
             return 'This image could not have its metadata removed ('.$this->sanitisation_error.'), '
                 .'so it cannot be published. An unsanitised photograph can carry the coordinates '

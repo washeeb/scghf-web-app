@@ -74,14 +74,14 @@ it('renders dark on the server when the cookie says dark', function () {
      * alone the server always sends light, the browser paints it, and the
      * script corrects it. That correction IS the flash.
      */
-    $this->withCookie(ThemePreference::COOKIE, 'dark')
+    $this->withUnencryptedCookie(ThemePreference::COOKIE, 'dark')
         ->get('/')
         ->assertOk()
         ->assertSee('class="dark"', escape: false);
 });
 
 it('does not render dark when the cookie says light', function () {
-    $this->withCookie(ThemePreference::COOKIE, 'light')
+    $this->withUnencryptedCookie(ThemePreference::COOKIE, 'light')
         ->get('/')
         ->assertOk()
         ->assertDontSee('class="dark"', escape: false);
@@ -93,7 +93,7 @@ it('leaves the class off for system and lets the script decide', function () {
      * sent with the request. The inline script resolves it before first paint,
      * so there is still nothing to flash.
      */
-    $this->withCookie(ThemePreference::COOKIE, 'system')
+    $this->withUnencryptedCookie(ThemePreference::COOKIE, 'system')
         ->get('/')
         ->assertOk()
         ->assertDontSee('class="dark"', escape: false)

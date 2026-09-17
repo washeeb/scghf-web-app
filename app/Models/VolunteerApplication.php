@@ -92,7 +92,12 @@ class VolunteerApplication extends Model implements Retainable
             'interviewed_at' => 'datetime',
             'decided_at' => 'datetime',
             'last_activity_at' => 'datetime',
-            'referees' => 'array',
+            // Encrypted at rest (Phase 12): the things a leaked backup must
+            // not hand over in clear. See scghf:encrypt-at-rest.
+            'referees' => 'encrypted:array',
+            'next_of_kin_name' => 'encrypted',
+            'next_of_kin_phone' => 'encrypted',
+            'disclosed_convictions' => 'encrypted',
         ];
     }
 

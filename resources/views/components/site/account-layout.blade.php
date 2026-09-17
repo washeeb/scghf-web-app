@@ -19,6 +19,7 @@
         ['route' => 'account.giving', 'label' => __('Regular giving')],
         ['route' => 'account.profile', 'label' => __('Your details')],
         ['route' => 'account.security', 'label' => __('Security')],
+        ['route' => 'account.privacy', 'label' => __('Your data')],
     ];
 @endphp
 

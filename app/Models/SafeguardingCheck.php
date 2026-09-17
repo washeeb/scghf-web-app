@@ -52,6 +52,8 @@ class SafeguardingCheck extends Model
     protected function casts(): array
     {
         return [
+            // The certificate number, encrypted at rest (Phase 12).
+            'reference' => 'encrypted',
             'completed_on' => 'date',
             'expires_on' => 'date',
         ];

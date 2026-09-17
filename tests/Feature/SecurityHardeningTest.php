@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Enums\PageStatus;
 use App\Enums\PaymentStatus;
+use App\Filament\Resources\Media\Pages\EditMedia;
+use App\Filament\Resources\Media\RelationManagers\ConsentsRelationManager;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -12,11 +14,16 @@ use App\Http\Middleware\RestrictAdminByIp;
 use App\Mail\RenderedMessage;
 use App\Models\AuditLog;
 use App\Models\Donation;
+use App\Models\Donor;
+use App\Models\Media;
 use App\Models\PaymentTransaction;
 use App\Models\Post;
 use App\Models\ScheduledMessage;
 use App\Models\Setting;
+use App\Models\Subscriber;
+use App\Models\Suppression;
 use App\Models\User;
+use App\Models\VolunteerApplication;
 use App\Policies\BasePolicy;
 use App\Support\Html;
 use App\Support\Sessions;
@@ -27,6 +34,7 @@ use Database\Seeders\MessageTemplateSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Database\Seeders\SettingsSeeder;
 use Database\Seeders\ThemeSettingsSeeder;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -303,4 +311,158 @@ it('emails the alerts address about a run of failed payments or refunds, once an
     $alerts = ScheduledMessage::where('template_key', 'admin.payment_anomaly')->get();
     expect($alerts)->toHaveCount(1)
         ->and(json_encode($alerts->first()->payload))->toContain('4 failed payments');
+});
+
+// ── Data protection ─────────────────────────────────────────────────────────
+
+it('will not publish a photograph of a person without a valid consent, and takes it down everywhere when withdrawn', function () {
+    $staff = User::factory()->staff()->withTwoFactor()->create()->fresh();
+    $staff->givePermissionTo(['media.view', 'media.upload', 'consents.view', 'consents.manage']);
+    $this->actingAs($staff);
+
+    $photo = Media::factory()->sanitised()->create(['alt_text' => 'A pupil at her desk', 'depicts_people' => true, 'depicts_children' => true]);
+    expect($photo->isPublishable())->toBeFalse()
+        ->and($photo->publicationRejectionReason())->toContain('child');
+
+    // A child cannot consent for themselves; the model refuses.
+    expect(fn () => $photo->consents()->create(['consent_type' => 'photo', 'scope' => 'website', 'granted_by_name' => 'The pupil', 'granted_by_relationship' => 'self', 'is_minor' => true, 'granted_at' => now()]))
+        ->toThrow(RuntimeException::class);
+
+    $consent = $photo->consents()->create(['consent_type' => 'photo', 'scope' => 'website', 'granted_by_name' => 'Mrs Owusu', 'granted_by_relationship' => 'parent', 'is_minor' => true, 'guardian_name' => 'Mrs Owusu', 'granted_at' => now()->subDay()]);
+    expect($photo->fresh()->isPublishable())->toBeTrue();
+
+    // Revoking the consent unpublishes; so does withdrawing the image outright.
+    Livewire::test(ConsentsRelationManager::class, ['ownerRecord' => $photo, 'pageClass' => EditMedia::class])
+        ->assertOk()
+        ->callAction(TestAction::make('revoke')->table($consent), ['reason' => 'The mother rang and asked.'])
+        ->assertNotified();
+    expect($photo->fresh()->isPublishable())->toBeFalse()
+        ->and(AuditLog::where('event', 'consent.revoked')->exists())->toBeTrue();
+
+    $other = Media::factory()->sanitised()->create(['alt_text' => 'The new borehole']);
+    expect($other->isPublishable())->toBeTrue();
+
+    Livewire::test(EditMedia::class, ['record' => $other->getRouteKey()])
+        ->callAction('withdraw', ['reason' => 'The landowner asked for it to come down.'])
+        ->assertNotified();
+
+    expect($other->fresh()->isPublishable())->toBeFalse()
+        ->and($other->fresh()->publicationRejectionReason())->toContain('withdrawn')
+        ->and(AuditLog::where('event', 'media.withdrawn')->exists())->toBeTrue();
+
+    $this->assertStringNotContainsString('<img', view('components.media.image', ['media' => $other->fresh()])->render());
+});
+
+it('gives a donor a copy of their data, without other people in it, behind the password', function () {
+    $user = User::factory()->donor()->create(['password' => 'correct-horse-battery-staple', 'email' => 'ama@example.test'])->fresh();
+    $donor = Donor::factory()->create(['user_id' => $user->id, 'email' => 'ama@example.test', 'name' => 'Ama Mensah']);
+    Donation::factory()->create(['donor_id' => $donor->id, 'tribute_name' => 'Auntie Grace']);
+
+    $this->actingAs($user);
+    $this->get(route('account.privacy'))->assertOk()->assertSee('Download my data')->assertSee('Delete my account');
+
+    $this->post(route('account.privacy.export'), ['current_password' => 'nope'])->assertSessionHasErrors('current_password');
+
+    $response = $this->post(route('account.privacy.export'), ['current_password' => 'correct-horse-battery-staple']);
+    $response->assertOk()->assertHeader('Content-Type', 'application/json; charset=utf-8');
+
+    $json = json_decode($response->streamedContent(), true);
+    expect($json['account']['email'])->toBe('ama@example.test')
+        ->and($json['donations'])->toHaveCount(1)
+        ->and($json['donations'][0]['in_memory_of_someone'])->toBeTrue()
+        ->and(json_encode($json))->not->toContain('Auntie Grace')
+        ->and(AuditLog::where('event', 'privacy.exported')->exists())->toBeTrue();
+});
+
+it('deletes a donor account but keeps the financial records without the name, and blocks the address from coming back', function () {
+    $this->seed(MessageTemplateSeeder::class);
+    $user = User::factory()->donor()->create(['password' => 'correct-horse-battery-staple', 'email' => 'ama@example.test', 'name' => 'Ama Mensah'])->fresh();
+    $donor = Donor::factory()->create(['user_id' => $user->id, 'email' => 'ama@example.test', 'name' => 'Ama Mensah', 'phone' => '+233241234567']);
+    $donation = Donation::factory()->create(['donor_id' => $donor->id, 'donor_name' => 'Ama Mensah', 'donor_email' => 'ama@example.test']);
+    Subscriber::create(['email' => 'ama@example.test', 'source' => 'footer']);
+
+    $this->actingAs($user);
+    $this->delete(route('account.privacy.destroy'), ['current_password' => 'correct-horse-battery-staple'])->assertSessionHasErrors('confirm');
+
+    $this->delete(route('account.privacy.destroy'), ['current_password' => 'correct-horse-battery-staple', 'confirm' => '1'])
+        ->assertRedirect('/')
+        ->assertSessionHas('status');
+
+    expect(auth()->check())->toBeFalse();
+
+    $trashed = User::withTrashed()->find($user->id);
+    expect($trashed->trashed())->toBeTrue()
+        ->and($trashed->name)->not->toBe('Ama Mensah')
+        ->and($trashed->email)->toContain('erased')
+        ->and(Subscriber::where('email', 'ama@example.test')->exists())->toBeFalse()
+        ->and(Suppression::blocks('email', 'ama@example.test', 'marketing'))->toBeTrue();
+
+    $donation->refresh();
+    expect(Donation::count())->toBe(1)
+        ->and($donation->donor_name)->not->toBe('Ama Mensah')
+        ->and($donation->donor_email)->toBeNull()
+        ->and($donor->fresh()->name)->not->toBe('Ama Mensah')
+        ->and($donor->fresh()->phone)->toBeNull()
+        ->and(AuditLog::where('event', 'erasure.completed')->exists())->toBeTrue();
+
+    $this->post(route('newsletter.subscribe'), ['email' => 'ama@example.test'])->assertRedirect();
+    expect(Subscriber::where('email', 'ama@example.test')->exists())->toBeFalse();
+});
+
+it('stores the safeguarding-sensitive columns encrypted, and the command re-encrypts legacy rows', function () {
+    $application = VolunteerApplication::factory()->create([
+        'next_of_kin_name' => 'Kofi Mensah', 'disclosed_convictions' => 'A caution in 2014.',
+        'referees' => [['name' => 'Rev. Atia', 'relationship' => 'Pastor', 'phone' => '0201112222', 'email' => null]],
+    ]);
+
+    $raw = DB::table('volunteer_applications')->where('id', $application->id)->first();
+    expect($raw->next_of_kin_name)->not->toContain('Kofi')
+        ->and($raw->disclosed_convictions)->not->toContain('caution')
+        ->and($raw->referees)->not->toContain('Atia')
+        ->and($application->fresh()->next_of_kin_name)->toBe('Kofi Mensah')
+        ->and($application->fresh()->referees()[0]['name'])->toBe('Rev. Atia');
+
+    // A row written before the casts existed: plaintext in the column.
+    DB::table('volunteer_applications')->where('id', $application->id)->update(['next_of_kin_name' => 'Plain Text Person', 'referees' => json_encode([['name' => 'Legacy Referee']])]);
+
+    $this->artisan('scghf:encrypt-at-rest')->assertSuccessful()->expectsOutputToContain('DRY RUN');
+    $this->artisan('scghf:encrypt-at-rest', ['--execute' => true])->assertSuccessful()->expectsOutputToContain('volunteer_applications: 1 row(s) encrypted');
+    $this->artisan('scghf:encrypt-at-rest', ['--execute' => true])->assertSuccessful()->expectsOutputToContain('volunteer_applications: 0 row(s) encrypted');
+
+    $raw = DB::table('volunteer_applications')->where('id', $application->id)->first();
+    expect($raw->next_of_kin_name)->not->toContain('Plain Text')
+        ->and($application->fresh()->next_of_kin_name)->toBe('Plain Text Person')
+        ->and($application->fresh()->referees()[0]['name'])->toBe('Legacy Referee');
+});
+
+it('shows the cookie notice with a preferences dialog, from the CMS, and not in the admin', function () {
+    $this->get('/')->assertOk()
+        ->assertSee('data-cookie-consent', escape: false)
+        ->assertSee('data-cookie-preferences', escape: false)
+        ->assertSee('Essential only')
+        ->assertSee('Cookie preferences')
+        ->assertSee(setting('site.cookie_banner_text'));
+
+    Setting::query()->where('group', 'site')->where('key', 'cookie_banner_enabled')->update(['value' => '0']);
+    app(Settings::class)->flush();
+    $this->get('/')->assertOk()->assertDontSee('data-cookie-consent', escape: false);
+});
+
+it('exports the data held about an address with no account, from the command line', function () {
+    $donor = Donor::factory()->create(['email' => 'noaccount@example.test', 'name' => 'Yaw Boateng']);
+    Donation::factory()->create(['donor_id' => $donor->id]);
+    $dir = storage_path('app/private/exports-test');
+
+    $this->artisan('scghf:export-data', ['email' => 'NoAccount@example.test', '--to' => $dir])->assertSuccessful();
+
+    $files = glob($dir.'/export-noaccount-example-test-*.json');
+    expect($files)->toHaveCount(1);
+    $json = json_decode((string) file_get_contents($files[0]), true);
+    expect($json['donor_profile']['name'])->toBe('Yaw Boateng')
+        ->and($json['donations'])->toHaveCount(1)
+        ->and($json['sign_ins'])->toBe([])
+        ->and(AuditLog::where('event', 'privacy.exported')->exists())->toBeTrue();
+
+    array_map('unlink', $files);
+    rmdir($dir);
 });

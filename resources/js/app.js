@@ -19,6 +19,7 @@
  */
 
 import { initAnnouncement } from './announcement';
+import { initCookieConsent } from './cookie-consent';
 import { initNavigation } from './navigation';
 import { initNewsletterPopup } from './newsletter-popup';
 import { initTheme } from './theme';
@@ -27,3 +28,4 @@ initTheme();
 initNavigation();
 initAnnouncement();
 initNewsletterPopup();
+initCookieConsent();

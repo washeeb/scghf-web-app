@@ -139,6 +139,9 @@ return [
              * the audit trail exists to catch: real, invisible everywhere else.
              */
             'media.replaced' => ['category' => 'data_access', 'severity' => 'notice'],
+            'media.withdrawn' => ['category' => 'privacy', 'severity' => 'warning'],
+            'media.reinstated' => ['category' => 'privacy', 'severity' => 'notice'],
+            'consent.recorded' => ['category' => 'privacy', 'severity' => 'notice'],
 
             // --- Taking personal data out of the system --------------------
             // Always at least a warning. An export leaves the application's
@@ -210,6 +213,7 @@ return [
             'retention.dry_run' => ['category' => 'privacy', 'severity' => 'info'],
             'legal_hold.placed' => ['category' => 'privacy', 'severity' => 'warning'],
             'legal_hold.lifted' => ['category' => 'privacy', 'severity' => 'warning'],
+            'privacy.exported' => ['category' => 'privacy', 'severity' => 'notice'],
             'erasure.requested' => ['category' => 'privacy', 'severity' => 'warning'],
             'erasure.completed' => ['category' => 'privacy', 'severity' => 'critical'],
             'consent.revoked' => ['category' => 'privacy', 'severity' => 'notice'],

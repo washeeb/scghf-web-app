@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailController;
+use App\Http\Controllers\Account\PrivacyController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\RegularGivingController;
 use App\Http\Controllers\Account\SecurityController;
@@ -196,6 +197,11 @@ Route::middleware(['auth', 'auth.session'])
         Route::get('security', [SecurityController::class, 'show'])->name('security');
         Route::put('security/password', [SecurityController::class, 'updatePassword'])->name('password.update');
         Route::post('security/sessions/revoke', [SecurityController::class, 'logoutEverywhere'])->name('sessions.revoke');
+
+        // Act 843: a copy of your data, and the end of your account.
+        Route::get('privacy', [PrivacyController::class, 'show'])->name('privacy');
+        Route::post('privacy/export', [PrivacyController::class, 'export'])->middleware('throttle:5,60')->name('privacy.export');
+        Route::delete('privacy', [PrivacyController::class, 'destroy'])->middleware('throttle:3,60')->name('privacy.destroy');
 
         /*
          * Changing the address. Rate limited on the same bucket as password

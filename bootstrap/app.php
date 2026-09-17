@@ -49,6 +49,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToGroup('web', SecurityHeaders::class);
 
         /*
+         * Two cookies the browser writes itself — the theme choice and the
+         * cookie consent — arrive in plain text. Left to EncryptCookies they
+         * fail to decrypt and read as absent, which is why the server-side
+         * theme silently fell back to "system" for every real visitor.
+         */
+        $middleware->encryptCookies(except: ['scghf_theme', 'scghf_consent']);
+
+        /*
          * Behind Cloudflare every connection comes from Cloudflare, and the
          * visitor's address is in X-Forwarded-For. Believing that header from
          * anybody lets anybody choose their address — which defeats the rate
