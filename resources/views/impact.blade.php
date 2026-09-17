@@ -43,6 +43,14 @@
             <dt class="text-sm text-[var(--text-muted)]">{{ __('Projects') }}</dt>
             <dd class="mt-1 text-2xl font-bold text-[var(--text-primary)]">{{ number_format($projects) }}</dd>
         </div>
+
+        @if ($volunteerHours > 0 || $volunteers > 0)
+            <div class="rounded-lg border border-[var(--border)] p-5">
+                <dt class="text-sm text-[var(--text-muted)]">{{ __('Volunteer hours given') }}</dt>
+                <dd class="mt-1 text-2xl font-bold text-[var(--text-primary)]">{{ number_format($volunteerHours) }}</dd>
+                <dd class="mt-1 text-xs text-[var(--text-muted)]">{{ trans_choice(':count volunteer today|:count volunteers today', $volunteers) }}</dd>
+            </div>
+        @endif
     </dl>
 
     <p class="mt-4 max-w-2xl text-sm text-[var(--text-muted)]">

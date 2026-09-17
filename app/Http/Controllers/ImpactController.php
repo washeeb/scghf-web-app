@@ -10,6 +10,8 @@ use App\Models\ImpactMetric;
 use App\Models\Payout;
 use App\Models\Project;
 use App\Models\ProjectLocation;
+use App\Models\Volunteer;
+use App\Models\VolunteerHour;
 use App\Support\PageMeta;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Builder;
@@ -56,6 +58,8 @@ class ImpactController extends Controller
             'donors' => $this->donorCount(),
             'projects' => $this->projectCount(),
             'regions' => $this->byRegion()->all(),
+            'volunteers' => $this->volunteerCount(),
+            'volunteer_hours' => $this->volunteerHours(),
         ]);
 
         return view('impact', [
@@ -64,6 +68,8 @@ class ImpactController extends Controller
             'donors' => $figures['donors'],
             'projects' => $figures['projects'],
             'regions' => collect($figures['regions']),
+            'volunteers' => $figures['volunteers'] ?? 0,
+            'volunteerHours' => $figures['volunteer_hours'] ?? 0,
             'metrics' => $this->metrics(),
 
             'meta' => PageMeta::site(
@@ -75,6 +81,22 @@ class ImpactController extends Controller
                 ['label' => __('Our impact'), 'url' => null],
             ],
         ]);
+    }
+
+    /** Volunteers on the books today. Not people who have applied. */
+    private function volunteerCount(): int
+    {
+        return Volunteer::query()->where('status', Volunteer::STATUS_ACTIVE)->count();
+    }
+
+    /**
+     * Hours given, ever, counting only entries a second person verified — the
+     * same rule the admin total obeys, so the public figure is never larger
+     * than the one a funder is shown.
+     */
+    private function volunteerHours(): int
+    {
+        return intdiv((int) VolunteerHour::query()->whereNotNull('verified_at')->sum('minutes'), 60);
     }
 
     /**

@@ -135,6 +135,7 @@ final class PolicyMap
             Models\VolunteerApplication::class => VolunteerPolicy::class,
             Models\VolunteerOpportunity::class => VolunteerPolicy::class,
             Models\VolunteerHour::class => VolunteerPolicy::class,
+            Models\VolunteerShift::class => VolunteerPolicy::class,
             Models\SafeguardingCheck::class => VolunteerPolicy::class,
 
             Models\Event::class => EventPolicy::class,

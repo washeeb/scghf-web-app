@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use RuntimeException;
 
 /**
@@ -63,6 +64,24 @@ class VolunteerHour extends Model
                 throw new RuntimeException('Hours cannot be recorded for a day that has not happened.');
             }
         });
+    }
+
+    /** @return HasOne<VolunteerShift, $this> */
+    public function shift(): HasOne
+    {
+        return $this->hasOne(VolunteerShift::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function verifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 
     /** @return BelongsTo<Volunteer, $this> */

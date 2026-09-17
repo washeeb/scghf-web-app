@@ -98,6 +98,12 @@ class Volunteer extends Model implements Retainable
         return $this->belongsTo(VolunteerApplication::class, 'volunteer_application_id');
     }
 
+    /** @return HasMany<VolunteerShift, $this> */
+    public function shifts(): HasMany
+    {
+        return $this->hasMany(VolunteerShift::class);
+    }
+
     /** @return HasMany<VolunteerHour, $this> */
     public function hours(): HasMany
     {

@@ -47,6 +47,7 @@ class VolunteerApplicationInfolist
             Section::make(__('In their words'))->schema([
                 TextEntry::make('motivation')->label(__('Why they want to volunteer'))->placeholder('—')->prose(),
                 TextEntry::make('experience')->label(__('Relevant experience'))->placeholder('—')->prose(),
+                TextEntry::make('skills')->label(__('Skills they offer'))->placeholder('—')->prose(),
             ]),
 
             Section::make(__('Personal details'))
@@ -58,6 +59,14 @@ class VolunteerApplicationInfolist
                     TextEntry::make('address')->label(__('Address'))->placeholder('—'),
                     TextEntry::make('next_of_kin_name')->label(__('Next of kin'))->placeholder('—'),
                     TextEntry::make('next_of_kin_phone')->label(__('Next of kin phone'))->placeholder('—'),
+                    TextEntry::make('referee_one')
+                        ->label(__('Referee 1'))
+                        ->state(fn (VolunteerApplication $record): string => self::referee($record->referees()[0]))
+                        ->placeholder(__('None given')),
+                    TextEntry::make('referee_two')
+                        ->label(__('Referee 2'))
+                        ->state(fn (VolunteerApplication $record): string => self::referee($record->referees()[1]))
+                        ->placeholder(__('None given')),
                     TextEntry::make('disclosed_convictions')
                         ->label(__('Disclosed convictions'))
                         ->placeholder(__('None disclosed'))
@@ -74,6 +83,16 @@ class VolunteerApplicationInfolist
                 TextEntry::make('declaration_text')->label(__('What they agreed to'))->columnSpanFull()->prose(),
             ]),
 
+            Section::make(__('Interview'))
+                ->columns(3)
+                ->visible(fn (VolunteerApplication $record): bool => $record->interview_at !== null || $record->interviewed_at !== null)
+                ->schema([
+                    TextEntry::make('interview_at')->label(__('Arranged for'))->dateTime('D j M Y, g:i a')->placeholder('—'),
+                    TextEntry::make('interview_location')->label(__('Where'))->placeholder('—'),
+                    TextEntry::make('interviewed_at')->label(__('Held'))->dateTime('j M Y')->placeholder(__('Not yet')),
+                    TextEntry::make('interview_notes')->label(__('How it went'))->placeholder('—')->columnSpanFull()->prose(),
+                ]),
+
             Section::make(__('Decision'))
                 ->visible(fn (VolunteerApplication $record): bool => $record->decided_at !== null)
                 ->columns(3)
@@ -88,5 +107,20 @@ class VolunteerApplicationInfolist
                 TextEntry::make('assessor_notes')->label(__('Assessor notes'))->placeholder(__('None yet'))->prose(),
             ]),
         ]);
+    }
+
+    /** @param  array{name: ?string, relationship: ?string, phone: ?string, email: ?string}  $referee */
+    private static function referee(array $referee): string
+    {
+        if ($referee['name'] === null) {
+            return '';
+        }
+
+        return collect([
+            $referee['name'],
+            $referee['relationship'] ? '('.$referee['relationship'].')' : null,
+            $referee['phone'],
+            $referee['email'],
+        ])->filter()->implode(' · ');
     }
 }

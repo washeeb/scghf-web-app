@@ -747,6 +747,116 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'volunteer.shortlisted',
+                'name' => 'Volunteer application shortlisted',
+                'description' => 'Sent when a reviewer shortlists an application — they are through '
+                    .'to the next stage and somebody will be in touch about an interview.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'role', 'reference'],
+                'required' => ['name'],
+                'subject' => 'Your volunteer application — next steps',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Thank you for applying to volunteer with us as {{role}}. We have read your
+                    application and would like to take it further.</p>
+                    <p>Somebody from the team will be in touch to arrange a conversation. Your
+                    reference is {{reference}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Thank you for applying to volunteer with us as {{role}}. We have read your
+                    application and would like to take it further.
+
+                    Somebody from the team will be in touch to arrange a conversation. Your
+                    reference is {{reference}}.
+                    TEXT,
+            ],
+            [
+                'key' => 'volunteer.interview',
+                'name' => 'Volunteer interview arranged',
+                'description' => 'Sent when an interview date and place are set on an application.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'role', 'interview_date', 'interview_time', 'location', 'reference'],
+                'required' => ['name', 'interview_date', 'interview_time', 'location'],
+                'subject' => 'Your volunteer interview: {{interview_date}}',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>We would like to meet you about volunteering with us as {{role}}.</p>
+                    <p><strong>{{interview_date}} at {{interview_time}}</strong><br>{{location}}</p>
+                    <p>It is a conversation, not an exam — we want to hear about you and tell you
+                    about the work. If the time does not suit, reply to this email and we will find
+                    another. Your reference is {{reference}}.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    We would like to meet you about volunteering with us as {{role}}.
+
+                    {{interview_date}} at {{interview_time}}
+                    {{location}}
+
+                    It is a conversation, not an exam — we want to hear about you and tell you
+                    about the work. If the time does not suit, reply to this email and we will find
+                    another. Your reference is {{reference}}.
+                    TEXT,
+            ],
+            [
+                'key' => 'volunteer.shift_reminder',
+                'name' => 'Volunteer shift reminder',
+                'description' => 'Sent the evening before a scheduled shift.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'activity', 'shift_date', 'shift_time', 'location'],
+                'required' => ['name', 'shift_date', 'shift_time'],
+                'subject' => 'Tomorrow: {{activity}}, {{shift_time}}',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>A reminder that you are volunteering with us tomorrow.</p>
+                    <p><strong>{{activity}}</strong><br>{{shift_date}}, {{shift_time}}<br>{{location}}</p>
+                    <p>If you can no longer make it, please let us know as early as you can so
+                    somebody else can step in. Thank you.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    A reminder that you are volunteering with us tomorrow.
+
+                    {{activity}}
+                    {{shift_date}}, {{shift_time}}
+                    {{location}}
+
+                    If you can no longer make it, please let us know as early as you can so
+                    somebody else can step in. Thank you.
+                    TEXT,
+            ],
+            [
+                'key' => 'volunteer.thank_you',
+                'name' => 'Volunteer thank-you on leaving',
+                'description' => 'Sent when a volunteer record is closed, with the hours they gave.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'role', 'hours', 'started', 'ended'],
+                'required' => ['name', 'hours'],
+                'subject' => 'Thank you, {{name}}',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>Thank you for the time you gave us as {{role}} between {{started}} and
+                    {{ended}} — <strong>{{hours}} hours</strong> in all. That time went into real
+                    work for real people, and we are grateful for every one of them.</p>
+                    <p>You are always welcome back. If you would like a letter confirming your
+                    service, reply to this email and we will send one.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    Thank you for the time you gave us as {{role}} between {{started}} and
+                    {{ended}} — {{hours}} hours in all. That time went into real work for real
+                    people, and we are grateful for every one of them.
+
+                    You are always welcome back. If you would like a letter confirming your
+                    service, reply to this email and we will send one.
+                    TEXT,
+            ],
+            [
                 'key' => 'event.registration_confirmed',
                 'name' => 'Event registration confirmed',
                 'description' => 'Sent when somebody registers for an event. Says whether the '
@@ -1315,6 +1425,40 @@ class MessageTemplateSeeder extends Seeder
                 'max_segments' => 1,
                 'body' => 'Hello {{name}}, your volunteer application with {{site_name}} has been '
                     .'approved. We will be in touch with next steps.',
+            ],
+            [
+                'key' => 'volunteer.shortlisted',
+                'name' => 'Volunteer shortlisted',
+                'description' => 'Sent when an application is shortlisted.',
+                'category' => SmsTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name'],
+                'required' => ['name'],
+                'max_segments' => 1,
+                'body' => 'Hello {{name}}, your volunteer application with {{site_name}} is through '
+                    .'to the next stage. We will be in touch about an interview.',
+            ],
+            [
+                'key' => 'volunteer.interview',
+                'name' => 'Volunteer interview arranged',
+                'description' => 'Sent when an interview is set: date, time, place.',
+                'category' => SmsTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'interview_date', 'interview_time', 'location'],
+                'required' => ['name', 'interview_date', 'interview_time', 'location'],
+                'max_segments' => 2,
+                'body' => 'Hello {{name}}, your {{site_name}} volunteer interview is on '
+                    .'{{interview_date}} at {{interview_time}}, {{location}}. Reply to the email if the '
+                    .'time does not suit.',
+            ],
+            [
+                'key' => 'volunteer.shift_reminder',
+                'name' => 'Volunteer shift reminder',
+                'description' => 'Sent the evening before a scheduled shift.',
+                'category' => SmsTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'activity', 'shift_time', 'location'],
+                'required' => ['name', 'shift_time'],
+                'max_segments' => 1,
+                'body' => 'Hi {{name}}, reminder: {{activity}} tomorrow at {{shift_time}}, {{location}}. '
+                    .'Let us know early if you cannot make it. {{site_name}}',
             ],
         ];
     }

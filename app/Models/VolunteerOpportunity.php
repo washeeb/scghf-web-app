@@ -45,7 +45,7 @@ class VolunteerOpportunity extends Model
 
     protected $fillable = [
         'division_id', 'project_id', 'title', 'slug', 'summary', 'description',
-        'requirements', 'involves_vulnerable_contact', 'placement_type',
+        'requirements', 'skills_needed', 'involves_vulnerable_contact', 'placement_type',
         'location', 'region', 'time_commitment', 'positions_available',
         'starts_on', 'closes_on', 'is_published', 'published_at',
         'contact_user_id', 'created_by',
@@ -65,6 +65,7 @@ class VolunteerOpportunity extends Model
         return [
             'involves_vulnerable_contact' => 'boolean',
             'is_published' => 'boolean',
+            'skills_needed' => 'array',
             'starts_on' => 'date',
             'closes_on' => 'date',
             'published_at' => 'datetime',

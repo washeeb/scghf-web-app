@@ -89,6 +89,16 @@ Schedule::command('scghf:weekly-summary --execute')
     ->onOneServer();
 
 /*
+ * Phase 11. The evening before a volunteer shift, and the day before an
+ * event, a reminder to the people who said they were coming. Both go into
+ * the outbox, so quiet hours still apply; 17:00 is early enough to be out
+ * before they start.
+ */
+Schedule::command('scghf:shift-reminders --execute')
+    ->dailyAt('17:00')
+    ->onOneServer();
+
+/*
  * The retention sweep, weekly and DRY BY DEFAULT.
  *
  * Deliberately not `--execute`. This destroys records about vulnerable people,

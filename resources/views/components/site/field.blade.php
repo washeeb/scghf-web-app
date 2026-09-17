@@ -35,8 +35,11 @@
 ])
 
 @php
-    $id = $attributes->get('id', $name);
-    $hasError = $errors->has($name);
+    // An array field — `referees[0][name]` — is `referees.0.name` to the
+    // validator and to old(), and its id must not carry brackets.
+    $key = trim(preg_replace('/\.+/', '.', str_replace(['[', ']'], ['.', ''], $name)), '.');
+    $id = $attributes->get('id', str_replace('.', '-', $key));
+    $hasError = $errors->has($key);
     $describedBy = collect([
         $hint ? $id.'-hint' : null,
         $hasError ? $id.'-error' : null,
@@ -85,7 +88,7 @@
             @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
             @if ($hasError) aria-invalid="true" @endif
             {{ $control }}
-        >{{ old($name, $value) }}</textarea>
+        >{{ old($key, $value) }}</textarea>
     @else
         <input
             id="{{ $id }}"
@@ -95,12 +98,12 @@
             @if ($autocomplete) autocomplete="{{ $autocomplete }}" @endif
             @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
             @if ($hasError) aria-invalid="true" @endif
-            value="{{ old($name, $value) }}"
+            value="{{ old($key, $value) }}"
             {{ $control }}
         >
     @endif
 
-    @error($name)
+    @error($key)
         <p id="{{ $id }}-error" role="alert" class="text-sm text-[var(--brand-secondary)]">{{ $message }}</p>
     @enderror
 </div>

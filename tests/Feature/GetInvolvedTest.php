@@ -68,6 +68,11 @@ function applicationPayload(array $overrides = []): array
         'region' => 'Upper East',
         'date_of_birth' => now()->subYears(30)->toDateString(),
         'motivation' => 'I grew up in Bolgatanga and want to give something back.',
+        'skills' => 'Frafra and Twi; a driving licence.',
+        'referees' => [
+            ['name' => 'Rev. Atia', 'relationship' => 'Pastor', 'phone' => '0201112222', 'email' => ''],
+            ['name' => 'Mrs Abugri', 'relationship' => 'Former employer', 'phone' => '', 'email' => 'abugri@example.test'],
+        ],
         'declaration' => '1',
     ], $overrides);
 }

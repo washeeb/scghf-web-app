@@ -49,7 +49,16 @@ class VolunteerApplication extends Model implements Retainable
 
     public const STATUS_UNDER_REVIEW = 'under_review';
 
+    public const STATUS_SHORTLISTED = 'shortlisted';
+
+    public const STATUS_INTERVIEWED = 'interviewed';
+
     public const STATUS_APPROVED = 'approved';
+
+    /** The states from which a decision can still be taken, in order. */
+    public const OPEN_STATUSES = [
+        self::STATUS_SUBMITTED, self::STATUS_UNDER_REVIEW, self::STATUS_SHORTLISTED, self::STATUS_INTERVIEWED,
+    ];
 
     public const STATUS_DECLINED = 'declined';
 
@@ -58,8 +67,8 @@ class VolunteerApplication extends Model implements Retainable
     protected $fillable = [
         'volunteer_opportunity_id', 'user_id', 'status',
         'full_name', 'email', 'phone', 'date_of_birth', 'address', 'region',
-        'occupation', 'motivation', 'experience', 'availability',
-        'next_of_kin_name', 'next_of_kin_phone', 'cv_media_id',
+        'occupation', 'motivation', 'experience', 'skills', 'availability',
+        'next_of_kin_name', 'next_of_kin_phone', 'referees', 'cv_media_id',
         'declaration_agreed', 'declaration_text', 'declaration_ip',
         'disclosed_convictions', 'assessor_notes',
     ];
@@ -78,8 +87,12 @@ class VolunteerApplication extends Model implements Retainable
             'declaration_agreed' => 'boolean',
             'declaration_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'shortlisted_at' => 'datetime',
+            'interview_at' => 'datetime',
+            'interviewed_at' => 'datetime',
             'decided_at' => 'datetime',
             'last_activity_at' => 'datetime',
+            'referees' => 'array',
         ];
     }
 
@@ -291,6 +304,86 @@ class VolunteerApplication extends Model implements Retainable
         });
     }
 
+    /**
+     * Shortlisted: the reviewer wants to meet them. Nothing about safeguarding
+     * changes here — the checks are opened at submission and close on their
+     * own timetable — but the applicant should hear that they are through.
+     */
+    public function shortlist(User $by): void
+    {
+        $this->assertOpen('shortlisted');
+
+        $this->forceFill([
+            'status' => self::STATUS_SHORTLISTED,
+            'shortlisted_at' => now(),
+            'last_activity_at' => now(),
+            'assessed_by' => $by->getKey(),
+        ])->save();
+    }
+
+    /** An interview arranged: when and where, which is what the message says. */
+    public function scheduleInterview(User $by, Carbon $at, string $location): void
+    {
+        $this->assertOpen('given an interview');
+
+        if ($at->isPast()) {
+            throw new RuntimeException('An interview has to be in the future.');
+        }
+
+        $this->forceFill([
+            'status' => self::STATUS_SHORTLISTED,
+            'shortlisted_at' => $this->shortlisted_at ?? now(),
+            'interview_at' => $at,
+            'interview_location' => $location,
+            'last_activity_at' => now(),
+            'assessed_by' => $by->getKey(),
+        ])->save();
+    }
+
+    /** The interview happened. The notes are for the file, not the applicant. */
+    public function markInterviewed(User $by, string $notes = ''): void
+    {
+        $this->assertOpen('marked as interviewed');
+
+        $this->forceFill([
+            'status' => self::STATUS_INTERVIEWED,
+            'interviewed_at' => now(),
+            'interview_notes' => $notes !== '' ? $notes : $this->interview_notes,
+            'last_activity_at' => now(),
+            'assessed_by' => $by->getKey(),
+        ])->save();
+    }
+
+    private function assertOpen(string $what): void
+    {
+        if (! in_array($this->status, self::OPEN_STATUSES, true)) {
+            throw new RuntimeException(sprintf(
+                'Application %s is %s and cannot be %s.',
+                $this->reference,
+                $this->status,
+                $what,
+            ));
+        }
+    }
+
+    /**
+     * The referees, always two slots, each `name`, `relationship`, `phone`,
+     * `email` — or null where the applicant gave none.
+     *
+     * @return array<int, array{name: ?string, relationship: ?string, phone: ?string, email: ?string}>
+     */
+    public function referees(): array
+    {
+        $given = is_array($this->referees) ? array_values($this->referees) : [];
+
+        return array_map(fn (int $i): array => [
+            'name' => $given[$i]['name'] ?? null,
+            'relationship' => $given[$i]['relationship'] ?? null,
+            'phone' => $given[$i]['phone'] ?? null,
+            'email' => $given[$i]['email'] ?? null,
+        ], [0, 1]);
+    }
+
     public function decline(User $by, string $reason): void
     {
         $this->forceFill([
@@ -362,6 +455,12 @@ class VolunteerApplication extends Model implements Retainable
             'experience' => 'narrative',
             'next_of_kin_name' => 'next_of_kin',
             'next_of_kin_phone' => 'next_of_kin',
+            // A referee is a third party's name and number, held only to be
+            // rung once; the same disposition as next of kin.
+            'referees' => 'next_of_kin',
+            'skills' => 'narrative',
+            'interview_notes' => 'case_notes',
+            'interview_location' => 'programme',
             'cv_media_id' => 'supporting_document',
             'declaration_text' => 'narrative',
             'declaration_ip' => 'device',
@@ -381,7 +480,8 @@ class VolunteerApplication extends Model implements Retainable
             'id', 'ulid', 'created_at', 'updated_at', 'deleted_at',
             'status', 'volunteer_opportunity_id', 'user_id',
             'declaration_agreed', 'declaration_at',
-            'submitted_at', 'decided_at', 'last_activity_at', 'decline_reason',
+            'submitted_at', 'shortlisted_at', 'interview_at', 'interviewed_at',
+            'decided_at', 'last_activity_at', 'decline_reason',
             'assessed_by',
         ];
     }
@@ -389,15 +489,15 @@ class VolunteerApplication extends Model implements Retainable
     #[Scope]
     protected function awaitingDecision(Builder $query): void
     {
-        $query->whereIn('status', [self::STATUS_SUBMITTED, self::STATUS_UNDER_REVIEW]);
+        $query->whereIn('status', self::OPEN_STATUSES);
     }
 
     #[Scope]
     protected function retentionCandidates(Builder $query): void
     {
         $query->whereIn('status', [
-            self::STATUS_DECLINED, self::STATUS_WITHDRAWN,
-            self::STATUS_SUBMITTED, self::STATUS_UNDER_REVIEW, self::STATUS_APPROVED,
+            self::STATUS_DECLINED, self::STATUS_WITHDRAWN, self::STATUS_APPROVED,
+            ...self::OPEN_STATUSES,
         ]);
     }
 

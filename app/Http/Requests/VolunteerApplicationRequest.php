@@ -7,6 +7,7 @@ namespace App\Http\Requests;
 use App\Models\ShippingZone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Applying to volunteer.
@@ -65,7 +66,50 @@ class VolunteerApplicationRequest extends FormRequest
 
             'disclosed_convictions' => ['nullable', 'string', 'max:3000'],
 
+            'skills' => ['nullable', 'string', 'max:1000'],
+
+            /*
+             * Two referees for a role with vulnerable contact — the safeguarding
+             * checks "reference one/two taken up" cannot be done without them.
+             * Optional otherwise, but a referee given at all must be reachable.
+             */
+            'referees' => [$contact ? 'required' : 'nullable', 'array', 'max:2'],
+            'referees.*.name' => [$contact ? 'required' : 'nullable', 'string', 'max:191'],
+            'referees.*.relationship' => ['nullable', 'string', 'max:191'],
+            'referees.*.phone' => ['nullable', 'string', 'max:20', 'regex:/^(\+?233|0)[2345][0-9]{8}$/'],
+            'referees.*.email' => ['nullable', 'string', 'email:rfc', 'max:191'],
+
             'declaration' => ['accepted'],
+        ];
+    }
+
+    /**
+     * A referee who was named must be reachable; a slot left empty on an
+     * optional form is not an error. Two slots are always posted, so this
+     * cannot be said with `required_without` on a wildcard.
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $contact = (bool) $this->route('opportunity')?->involves_vulnerable_contact ?? true;
+                $referees = array_values((array) $this->input('referees', []));
+
+                if ($contact && count(array_filter($referees, fn ($r): bool => filled($r['name'] ?? null))) < 2) {
+                    foreach ([0, 1] as $i) {
+                        if (blank($referees[$i]['name'] ?? null)) {
+                            $validator->errors()->add("referees.{$i}.name", __('This role involves contact with vulnerable people, so we need two referees we can speak to.'));
+                        }
+                    }
+                }
+
+                foreach ($referees as $i => $referee) {
+                    if (filled($referee['name'] ?? null) && blank($referee['phone'] ?? null) && blank($referee['email'] ?? null)) {
+                        $validator->errors()->add("referees.{$i}.phone", __('A phone number or an email for the referee, so we can reach them.'));
+                        $validator->errors()->add("referees.{$i}.email", __('A phone number or an email for the referee, so we can reach them.'));
+                    }
+                }
+            },
         ];
     }
 
@@ -75,6 +119,8 @@ class VolunteerApplicationRequest extends FormRequest
         return [
             'phone.regex' => __('That does not look like a Ghanaian number. Try 024 123 4567.'),
             'next_of_kin_phone.regex' => __('That does not look like a Ghanaian number.'),
+            'referees.*.name.required' => __('This role involves contact with vulnerable people, so we need two referees we can speak to.'),
+            'referees.*.phone.regex' => __('That does not look like a Ghanaian number.'),
             'date_of_birth.before' => __('Volunteers must be 18 or over.'),
             'date_of_birth.required' => __('We need your date of birth because this role needs a police clearance, which is applied for against it.'),
             'declaration.accepted' => __('The declaration has to be agreed before an application can be made.'),

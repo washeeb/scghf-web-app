@@ -73,6 +73,15 @@
                     <h2 class="mt-8 text-lg font-semibold text-[var(--text-primary)]">{{ __('What we are looking for') }}</h2>
                     <div class="prose-scghf mt-2 space-y-4 text-[var(--text-primary)]">{!! $role->requirements !!}</div>
                 @endif
+
+                @if (filled($role->skills_needed))
+                    <h2 class="mt-8 text-lg font-semibold text-[var(--text-primary)]">{{ __('Skills that help') }}</h2>
+                    <ul class="mt-2 flex flex-wrap gap-2" aria-label="{{ __('Skills needed') }}">
+                        @foreach ($role->skills_needed as $skill)
+                            <li class="rounded-full border border-[var(--border)] px-3 py-1 text-sm text-[var(--text-secondary)]">{{ $skill }}</li>
+                        @endforeach
+                    </ul>
+                @endif
             @else
                 <p class="text-[var(--text-secondary)]">{{ __('Tell us about yourself and how you would like to help, and we will be in touch about where you could fit.') }}</p>
             @endif
@@ -139,6 +148,29 @@
                     <x-site.field name="motivation" type="textarea" :rows="4" :label="__('Why would you like to volunteer with us?')" required />
                     <x-site.field name="experience" type="textarea" :rows="3" :label="__('Relevant experience')" :hint="__('Optional. Work, church, community — anything that bears on the role.')" />
                     <x-site.field name="availability" :label="__('When are you available?')" :hint="__('"Weekday evenings", "Saturdays", "school holidays".')" />
+                    <x-site.field name="skills" type="textarea" :rows="2" :label="__('Skills you can offer')" :hint="__('Optional. Teaching, bookkeeping, driving, a trade, a language — whatever you would bring.')" />
+
+                    <fieldset class="space-y-4">
+                        <legend class="text-sm font-medium text-[var(--text-primary)]">
+                            {{ __('Referees') }}
+                            <span class="font-normal text-[var(--text-muted)]">
+                                @if ($contact)
+                                    ({{ __('two, required — people who know you and are not family') }})
+                                @else
+                                    ({{ __('optional') }})
+                                @endif
+                            </span>
+                        </legend>
+                        <p class="text-sm text-[var(--text-secondary)]">{{ __('We will contact them only to ask about you, and only if your application goes forward.') }}</p>
+                        @foreach ([0, 1] as $i)
+                            <div class="grid gap-5 rounded-lg border border-[var(--border)] p-4 sm:grid-cols-2">
+                                <x-site.field name="referees[{{ $i }}][name]" :label="__('Referee :n name', ['n' => $i + 1])" :required="$contact" />
+                                <x-site.field name="referees[{{ $i }}][relationship]" :label="__('How they know you')" :hint="__('Employer, pastor, teacher, community leader.')" />
+                                <x-site.field name="referees[{{ $i }}][phone]" type="tel" :label="__('Their phone')" />
+                                <x-site.field name="referees[{{ $i }}][email]" type="email" :label="__('Their email')" />
+                            </div>
+                        @endforeach
+                    </fieldset>
 
                     <fieldset class="space-y-4">
                         <legend class="text-sm font-medium text-[var(--text-primary)]">{{ __('Next of kin') }} <span class="font-normal text-[var(--text-muted)]">({{ __('optional — for field roles') }})</span></legend>

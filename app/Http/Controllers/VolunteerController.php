@@ -105,6 +105,18 @@ class VolunteerController extends Controller
             'motivation' => $request->string('motivation')->toString(),
             'experience' => $request->string('experience')->toString() ?: null,
             'availability' => $request->string('availability')->toString() ?: null,
+            'skills' => $request->string('skills')->toString() ?: null,
+            'referees' => collect((array) $request->input('referees', []))
+                ->take(2)
+                ->map(fn (array $r): array => [
+                    'name' => trim((string) ($r['name'] ?? '')) ?: null,
+                    'relationship' => trim((string) ($r['relationship'] ?? '')) ?: null,
+                    'phone' => trim((string) ($r['phone'] ?? '')) ?: null,
+                    'email' => mb_strtolower(trim((string) ($r['email'] ?? ''))) ?: null,
+                ])
+                ->filter(fn (array $r): bool => $r['name'] !== null)
+                ->values()
+                ->all() ?: null,
             'next_of_kin_name' => $request->string('next_of_kin_name')->toString() ?: null,
             'next_of_kin_phone' => $request->string('next_of_kin_phone')->toString() ?: null,
             'disclosed_convictions' => $request->string('disclosed_convictions')->toString() ?: null,

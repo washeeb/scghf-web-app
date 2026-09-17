@@ -61,6 +61,8 @@ class VolunteerApplicationsTable
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         VolunteerApplication::STATUS_SUBMITTED => __('New'),
                         VolunteerApplication::STATUS_UNDER_REVIEW => __('Under review'),
+                        VolunteerApplication::STATUS_SHORTLISTED => __('Shortlisted'),
+                        VolunteerApplication::STATUS_INTERVIEWED => __('Interviewed'),
                         VolunteerApplication::STATUS_APPROVED => __('Approved'),
                         VolunteerApplication::STATUS_DECLINED => __('Declined'),
                         VolunteerApplication::STATUS_WITHDRAWN => __('Withdrawn'),
@@ -69,6 +71,7 @@ class VolunteerApplicationsTable
                     ->color(fn (string $state): string => match ($state) {
                         VolunteerApplication::STATUS_SUBMITTED => 'info',
                         VolunteerApplication::STATUS_UNDER_REVIEW => 'warning',
+                        VolunteerApplication::STATUS_SHORTLISTED, VolunteerApplication::STATUS_INTERVIEWED => 'primary',
                         VolunteerApplication::STATUS_APPROVED => 'success',
                         default => 'gray',
                     }),
@@ -81,6 +84,8 @@ class VolunteerApplicationsTable
                 SelectFilter::make('status')->label(__('Status'))->options([
                     VolunteerApplication::STATUS_SUBMITTED => __('New'),
                     VolunteerApplication::STATUS_UNDER_REVIEW => __('Under review'),
+                    VolunteerApplication::STATUS_SHORTLISTED => __('Shortlisted'),
+                    VolunteerApplication::STATUS_INTERVIEWED => __('Interviewed'),
                     VolunteerApplication::STATUS_APPROVED => __('Approved'),
                     VolunteerApplication::STATUS_DECLINED => __('Declined'),
                     VolunteerApplication::STATUS_WITHDRAWN => __('Withdrawn'),

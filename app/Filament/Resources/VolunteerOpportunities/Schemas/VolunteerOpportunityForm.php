@@ -13,6 +13,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -67,6 +68,11 @@ class VolunteerOpportunityForm
                 ->label(__('What we are looking for'))
                 ->toolbarButtons(['bold', 'italic', 'link', 'bulletList', 'orderedList', 'undo', 'redo'])
                 ->helperText(__('Skills, experience, languages. Be specific — "comfortable talking to older people in Frafra" is a requirement somebody can measure themselves against.')),
+
+            TagsInput::make('skills_needed')
+                ->label(__('Skills that help'))
+                ->placeholder(__('Type one and press Enter'))
+                ->helperText(__('Short tags shown on the page and used to match applicants — "Twi", "first aid", "driving licence".')),
 
             Section::make(__('Safeguarding'))->schema([
                 Toggle::make('involves_vulnerable_contact')
