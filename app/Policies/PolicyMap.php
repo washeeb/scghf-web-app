@@ -71,6 +71,8 @@ final class PolicyMap
             Models\FocusArea::class => DivisionPolicy::class,
             Models\TeamMember::class => DivisionPolicy::class,
             Models\TeamDepartment::class => DivisionPolicy::class,
+            // Contact details are settings; the same permission edits both.
+            Models\Office::class => SettingPolicy::class,
 
             Models\Project::class => ProjectPolicy::class,
             Models\ProjectUpdate::class => ProjectPolicy::class,

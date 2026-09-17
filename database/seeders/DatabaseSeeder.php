@@ -71,6 +71,7 @@ class DatabaseSeeder extends Seeder
                 // nothing.
                 MessageTemplateSeeder::class,
                 NewsletterSeeder::class,
+                OfficeSeeder::class,
             ]);
         } finally {
             activity()->enableLogging();

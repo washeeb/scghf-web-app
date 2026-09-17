@@ -40,6 +40,7 @@ class ContactMessage extends Model
         return [
             'consent_given' => 'boolean',
             'replied_at' => 'datetime',
+            'sla_reminded_at' => 'datetime',
         ];
     }
 
@@ -126,5 +127,16 @@ class ContactMessage extends Model
     protected function unresolved(Builder $query): void
     {
         $query->whereIn('status', ['new', 'assigned']);
+    }
+
+    /** Unresolved, past the department's target, and nobody told yet. */
+    #[Scope]
+    protected function needingSlaReminder(Builder $query): void
+    {
+        $query->unresolved()
+            ->whereNull('replied_at')
+            ->whereNull('sla_reminded_at')
+            ->whereHas('department', fn (Builder $q) => $q->whereNotNull('sla_hours')
+                ->whereRaw('contact_messages.created_at <= DATE_SUB(NOW(), INTERVAL contact_departments.sla_hours HOUR)'));
     }
 }

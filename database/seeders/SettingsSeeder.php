@@ -247,6 +247,21 @@ class SettingsSeeder extends Seeder
         ['site', 'footer_support_heading', 'Support us', SettingType::String, 'Footer column 2 heading', true],
         ['site', 'footer_newsletter_heading', 'Stay in touch', SettingType::String, 'Footer newsletter heading', true],
         ['site', 'show_back_to_top', '1', SettingType::Boolean, 'Show a back-to-top link', true],
+
+        // ── The newsletter popup (Phase 11) ──────────────────────────────────
+        // Off until somebody turns it on. When on: exit-intent on a laptop,
+        // after a delay on a phone, at most once per `frequency_days`, never
+        // to somebody who has subscribed, never on a page where money or a
+        // password is being entered.
+        ['site', 'newsletter_popup_enabled', '0', SettingType::Boolean, 'Show the newsletter popup', true,
+            'An invitation to subscribe that appears once as a visitor goes to leave. Off by default; it is a judgement about the foundation’s tone as much as a setting.'],
+        ['site', 'newsletter_popup_heading', 'Before you go', SettingType::String, 'Popup heading', true],
+        ['site', 'newsletter_popup_body', 'Once a month, one email: what your support did, and what comes next. No more than that, and you can stop any time.',
+            SettingType::Text, 'Popup text', true],
+        ['site', 'newsletter_popup_frequency_days', '30', SettingType::Integer, 'Days before the popup may show again', true,
+            'Counted from when it was closed. It never shows twice in one visit.'],
+        ['site', 'newsletter_popup_delay_seconds', '25', SettingType::Integer, 'Seconds on a phone before it may show', true,
+            'A phone has no cursor to leave the page with, so the popup waits this long and for the visitor to have scrolled half the page. On a laptop it waits for the cursor to head for the tabs.'],
     ];
 
     public function run(): void

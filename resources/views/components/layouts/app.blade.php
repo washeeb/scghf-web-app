@@ -134,6 +134,7 @@
     </main>
 
     <x-site.footer />
+    <x-site.newsletter-popup />
 
     {{--
         The live region.

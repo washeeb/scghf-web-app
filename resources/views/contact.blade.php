@@ -113,6 +113,55 @@
              template, and anything the foundation has not filled in is omitted
              rather than rendering an empty label. --}}
         <aside class="space-y-6 text-sm">
+            @if ($offices->isNotEmpty())
+                {{-- The offices table, once it has a row, replaces the single
+                     address from the settings. Each office: where, when it is
+                     open, how to reach it, how to get there. --}}
+                <div class="space-y-6">
+                    @foreach ($offices as $office)
+                        <section aria-labelledby="office-{{ $office->id }}" class="rounded-lg border border-[var(--border)] p-4">
+                            <h2 id="office-{{ $office->id }}" class="font-semibold text-[var(--text-primary)]">
+                                {{ $office->name }}
+                                @if ($office->is_primary && $offices->count() > 1)
+                                    <span class="ml-1 rounded-full border border-[var(--border)] px-2 py-0.5 text-xs font-normal text-[var(--text-muted)]">{{ __('Main office') }}</span>
+                                @endif
+                            </h2>
+
+                            <address class="mt-2 space-y-1 not-italic text-[var(--text-secondary)]">
+                                @if ($office->address)<p>{{ $office->address }}</p>@endif
+                                @if ($office->city || $office->region)<p>{{ collect([$office->city, $office->region])->filter()->implode(', ') }}</p>@endif
+                                @if ($office->gps_address)<p>{{ __('Ghana Post GPS') }}: {{ $office->gps_address }}</p>@endif
+                                @if ($office->notes)<p class="text-[var(--text-muted)]">{{ $office->notes }}</p>@endif
+                            </address>
+
+                            @if ($rows = $office->hoursRows())
+                                <h3 class="mt-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{{ __('Hours') }}</h3>
+                                <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 text-[var(--text-secondary)]">
+                                    @foreach ($rows as $row)
+                                        <dt>{{ $row['day'] }}</dt>
+                                        <dd>{{ $row['hours'] }}</dd>
+                                    @endforeach
+                                </dl>
+                            @endif
+
+                            <ul role="list" class="mt-3 space-y-1 text-[var(--text-secondary)]">
+                                @if ($office->phone)
+                                    <li><a class="hover:underline" href="tel:{{ preg_replace('/\s+/', '', $office->phone) }}">{{ $office->phone }}</a></li>
+                                @endif
+                                @if ($wa = $office->whatsappUrl())
+                                    <li><a class="hover:underline" href="{{ $wa }}" target="_blank" rel="noopener noreferrer">{{ __('WhatsApp') }}</a></li>
+                                @endif
+                                @if ($office->email)
+                                    <li><a class="hover:underline" href="mailto:{{ $office->email }}">{{ $office->email }}</a></li>
+                                @endif
+                                @if ($directions = $office->directionsUrl())
+                                    <li><a class="font-semibold text-[var(--brand-primary)] hover:underline" href="{{ $directions }}" target="_blank" rel="noopener noreferrer">{{ __('Get directions') }}</a></li>
+                                @endif
+                            </ul>
+                        </section>
+                    @endforeach
+                </div>
+            @else
             <div>
                 <h2 class="font-semibold text-[var(--text-primary)]">{{ __('Where we are') }}</h2>
 
@@ -182,6 +231,7 @@
                     @endif
                 </ul>
             </div>
+            @endif
 
             @if ($departments->isNotEmpty())
                 <div>

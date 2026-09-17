@@ -102,6 +102,11 @@ Schedule::command('scghf:event-reminders --execute')
     ->dailyAt('17:10')
     ->onOneServer();
 
+// An enquiry past its department's reply target tells its owner, once.
+Schedule::command('scghf:contact-sla --execute')
+    ->hourly()
+    ->onOneServer();
+
 /*
  * The retention sweep, weekly and DRY BY DEFAULT.
  *

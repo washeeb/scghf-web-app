@@ -9,6 +9,8 @@
     @if (Route::has('newsletter.subscribe'))
         <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex max-w-md flex-col gap-3 sm:flex-row">
             @csrf
+            <x-honeypot />
+            <input type="hidden" name="source" value="block">
 
             <label for="newsletter-{{ $section->getKey() }}" class="sr-only">{{ __('Email address') }}</label>
             <input

@@ -49,16 +49,24 @@ class NewsletterController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'string', 'email:rfc', 'max:191'],
             'name' => ['nullable', 'string', 'max:191'],
+            'source' => ['nullable', 'string', Rule::in(['footer', 'block', 'popup', 'website'])],
         ]);
 
         $email = mb_strtolower(trim($validated['email']));
 
-        $this->enrol($email, $validated['name'] ?? null, $request);
+        $this->enrol($email, $validated['name'] ?? null, $request, $validated['source'] ?? 'website');
 
-        return back()->with('status', __(
-            'Thank you. Please check your inbox — there is a link to confirm, and we will not send '
-            .'anything until you have followed it.'
-        ));
+        /*
+         * A year-long, http-only "has subscribed" cookie. Not a session and
+         * not the address — one bit, so the popup is never drawn again on
+         * this device. That promise is per-device, which is the honest scope.
+         */
+        return back()
+            ->withCookie(cookie('scghf_subscribed', '1', 60 * 24 * 365, null, null, null, true, false, 'lax'))
+            ->with('status', __(
+                'Thank you. Please check your inbox — there is a link to confirm, and we will not send '
+                .'anything until you have followed it.'
+            ));
     }
 
     /**
@@ -173,7 +181,7 @@ class NewsletterController extends Controller
      * signup for one is accepted silently and does nothing. Telling the person
      * would be the same existence oracle described above.
      */
-    private function enrol(string $email, ?string $name, Request $request): void
+    private function enrol(string $email, ?string $name, Request $request, string $source = 'website'): void
     {
         $suppressed = Suppression::query()
             ->where('channel', Suppression::CHANNEL_EMAIL)
@@ -211,7 +219,7 @@ class NewsletterController extends Controller
             ]);
         }
 
-        $subscriber->fill(['name' => $name, 'source' => 'website'])->save();
+        $subscriber->fill(['name' => $name, 'source' => $source])->save();
 
         $subscriber->recordConsent(
             $this->consentText(),

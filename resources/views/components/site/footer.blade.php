@@ -115,6 +115,7 @@
                     <form action="{{ route('newsletter.subscribe') }}" method="POST" class="space-y-2">
                         @csrf
                         <x-honeypot />
+                        <input type="hidden" name="source" value="footer">
 
                         <div class="flex gap-2">
                             <label for="footer-email" class="sr-only">{{ __('Email address') }}</label>

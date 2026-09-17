@@ -978,6 +978,31 @@ class MessageTemplateSeeder extends Seeder
              * template that sends an empty answer.
              */
             [
+                'key' => 'contact.sla_reminder',
+                'name' => 'Enquiry past its reply target',
+                'description' => 'Sent once, to whoever owns an enquiry (or the department mailbox), '
+                    .'when it has waited longer than the department’s reply target.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['reference', 'from_name', 'subject', 'department', 'waiting', 'target_hours', 'admin_url'],
+                'required' => ['reference', 'waiting', 'admin_url'],
+                'subject' => 'Waiting :waiting — {{reference}}',
+                'html' => <<<'HTML'
+                    <p>An enquiry has been waiting <strong>{{waiting}}</strong>, past the {{target_hours}}-hour
+                    reply target for {{department}}.</p>
+                    <p><strong>{{from_name}}</strong> — {{subject}}<br>{{reference}}</p>
+                    <p><a href="{{admin_url}}">Open it in the inbox</a></p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    An enquiry has been waiting {{waiting}}, past the {{target_hours}}-hour reply
+                    target for {{department}}.
+
+                    {{from_name}} — {{subject}}
+                    {{reference}}
+
+                    Open it: {{admin_url}}
+                    TEXT,
+            ],
+            [
                 'key' => 'contact.reply',
                 'name' => 'Reply to a contact enquiry',
                 'description' => 'Sent from the contact inbox when somebody answers an enquiry. '

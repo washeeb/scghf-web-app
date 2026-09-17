@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Community\EnquiryRecorder;
 use App\Http\Requests\ContactRequest;
 use App\Models\ContactDepartment;
+use App\Models\Office;
 use App\Support\PageMeta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -43,6 +44,7 @@ class ContactController extends Controller
     {
         return view('contact', [
             'departments' => $this->publicDepartments(),
+            'offices' => Office::query()->active()->get(),
             'meta' => PageMeta::site(
                 __('Contact us'),
                 __('How to reach :name.', ['name' => setting('general.short_name', config('app.name'))]),
