@@ -98,6 +98,10 @@ Schedule::command('scghf:shift-reminders --execute')
     ->dailyAt('17:00')
     ->onOneServer();
 
+Schedule::command('scghf:event-reminders --execute')
+    ->dailyAt('17:10')
+    ->onOneServer();
+
 /*
  * The retention sweep, weekly and DRY BY DEFAULT.
  *

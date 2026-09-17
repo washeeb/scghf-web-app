@@ -142,7 +142,8 @@ final class OrderNotifier
             $event = $tickets->first()->event;
 
             $list = $tickets->map(fn (IssuedTicket $t): string => sprintf(
-                '<li><strong>%s</strong> — %s</li>',
+                '<li><a href="%s"><strong>%s</strong></a> — %s</li>',
+                e($t->url()),
                 e($t->code),
                 e($t->holder_name),
             ))->implode("\n");

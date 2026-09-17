@@ -7,6 +7,8 @@ namespace App\Community;
 use App\Communications\MessageDispatcher;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\Models\IssuedTicket;
+use Illuminate\Support\HtmlString;
 use Throwable;
 
 /**
@@ -98,6 +100,87 @@ final class EventNotifier
                 $queued++;
             } catch (Throwable $e) {
                 report($e);
+            }
+        }
+
+        return $queued;
+    }
+
+    /**
+     * The day before. Email to everybody registered who agreed to be
+     * contacted about the event; a text as well where there is a number.
+     * Both expire at the event start — a reminder that arrives afterwards
+     * is worse than none.
+     *
+     * @return int how many people were queued a message
+     */
+    public function remind(Event $event): int
+    {
+        $queued = 0;
+
+        $registrations = $event->registrations()
+            ->with('tickets')
+            ->where('status', EventRegistration::STATUS_REGISTERED)
+            ->where('contact_consent', true)
+            ->get();
+
+        $where = collect([$event->venue_name, $event->address, $event->area, $event->region])->filter();
+        $directions = $event->is_online || $where->isEmpty()
+            ? null
+            : 'https://www.google.com/maps/search/?api=1&query='.urlencode($where->implode(', ').', Ghana');
+
+        foreach ($registrations as $registration) {
+            $tickets = $registration->tickets
+                ->filter(fn (IssuedTicket $t): bool => $t->cancelled_at === null)
+                ->map(fn (IssuedTicket $t): string => sprintf(
+                    '<li><a href="%s">%s</a> — %s</li>',
+                    e($t->url()),
+                    e($t->code),
+                    e($t->holder_name),
+                ));
+
+            if (filled($registration->email)) {
+                try {
+                    $this->dispatcher->queueEmail('event.reminder', (string) $registration->email, [
+                        'name' => $registration->name,
+                        'event_title' => $event->title,
+                        'event_date' => $event->starts_at->translatedFormat('l j F'),
+                        'event_time' => $event->starts_at->format('g:i a'),
+                        'venue' => $this->venue($event),
+                        'directions_url' => $directions,
+                        'online_url' => $event->is_online ? $event->online_url : null,
+                        'reference' => $registration->reference,
+                        'tickets' => $tickets->isEmpty()
+                            ? ''
+                            : new HtmlString('<p>'.__('Your tickets — show one at the door:').'</p><ul>'.$tickets->implode("\n").'</ul>'),
+                    ], [
+                        'to_name' => $registration->name,
+                        'related' => $registration,
+                        'user_id' => $registration->user_id,
+                        'expires_at' => $event->starts_at,
+                        'idempotency_key' => 'event.reminder:'.$registration->reference,
+                    ]);
+                    $queued++;
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            }
+
+            if (filled($registration->phone)) {
+                try {
+                    $this->dispatcher->queueSms('event.reminder', (string) $registration->phone, [
+                        'event_title' => $event->title,
+                        'event_time' => $event->starts_at->format('g:i a'),
+                        'venue' => trim($this->venue($event)) ?: ($event->is_online ? __('online') : ''),
+                    ], [
+                        'related' => $registration,
+                        'user_id' => $registration->user_id,
+                        'expires_at' => $event->starts_at,
+                        'idempotency_key' => 'event.reminder.sms:'.$registration->reference,
+                    ]);
+                } catch (Throwable $e) {
+                    report($e);
+                }
             }
         }
 

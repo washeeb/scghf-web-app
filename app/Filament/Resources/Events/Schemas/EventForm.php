@@ -8,6 +8,7 @@ use App\Filament\Support\MediaPicker;
 use App\Models\Cause;
 use App\Models\Division;
 use App\Models\Event;
+use App\Models\Gallery;
 use App\Models\Project;
 use App\Models\ShippingZone;
 use Filament\Forms\Components\DateTimePicker;
@@ -203,6 +204,27 @@ class EventForm
                         Toggle::make('is_featured')->label(__('Feature it')),
                     ]),
                 ]),
+
+                Tabs\Tab::make(__('Afterwards'))
+                    ->schema([
+                        RichEditor::make('outcomes')
+                            ->label(__('What came of it'))
+                            ->toolbarButtons(['bold', 'italic', 'link', 'bulletList', 'orderedList', 'undo', 'redo'])
+                            ->helperText(__('Shown on the page once the event has taken place. What was raised, who came, what happens next.')),
+                        Grid::make(2)->schema([
+                            TextInput::make('attendance_count')
+                                ->label(__('How many came'))
+                                ->numeric()
+                                ->minValue(0)
+                                ->helperText(__('A headcount from the day. The registrations count is what was expected; this is what happened.')),
+                            Select::make('gallery_id')
+                                ->label(__('Photographs'))
+                                ->options(fn (): array => Gallery::query()->orderByDesc('taken_on')->pluck('title', 'id')->all())
+                                ->searchable()
+                                ->nullable()
+                                ->helperText(__('A gallery from the media library. Its consent flag governs whether faces may appear.')),
+                        ]),
+                    ]),
             ]),
         ]);
     }

@@ -55,10 +55,10 @@ class Event extends Model
         'division_id', 'project_id', 'cause_id', 'title', 'slug', 'summary',
         'description', 'event_type', 'starts_at', 'ends_at',
         'venue_name', 'address', 'area', 'region', 'is_online', 'online_url',
-        'accessibility_notes', 'registration_required', 'capacity',
+        'accessibility_notes', 'outcomes', 'attendance_count', 'registration_required', 'capacity',
         'registration_opens_at', 'registration_closes_at',
         'is_ticketed', 'ticket_price', 'currency', 'status',
-        'featured_image_id', 'is_featured', 'is_published', 'published_at', 'created_by',
+        'featured_image_id', 'gallery_id', 'is_featured', 'is_published', 'published_at', 'created_by',
     ];
 
     /** @var array<string, mixed> */
@@ -151,6 +151,12 @@ class Event extends Model
     public function cause(): BelongsTo
     {
         return $this->belongsTo(Cause::class);
+    }
+
+    /** @return BelongsTo<Gallery, $this> */
+    public function gallery(): BelongsTo
+    {
+        return $this->belongsTo(Gallery::class);
     }
 
     /** @return BelongsTo<Media, $this> */

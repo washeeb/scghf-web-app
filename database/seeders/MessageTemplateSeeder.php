@@ -888,6 +888,33 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'event.reminder',
+                'name' => 'Event reminder',
+                'description' => 'Sent the day before an event to everybody registered who agreed to '
+                    .'be contacted about it. Expires at the event start so a backlog cannot deliver '
+                    .'it afterwards.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'event_title', 'event_date', 'event_time', 'venue', 'directions_url', 'online_url', 'reference', 'tickets'],
+                'required' => ['name', 'event_title', 'event_date'],
+                'subject' => 'Tomorrow: {{event_title}}',
+                'html' => <<<'HTML'
+                    <p>Dear {{name}},</p>
+                    <p>A reminder that <strong>{{event_title}}</strong> is tomorrow, {{event_date}} at
+                    {{event_time}}{{venue}}.</p>
+                    {{tickets}}
+                    <p>Your reference is {{reference}}. If you can no longer come, reply to this
+                    email so your place can go to somebody else.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Dear {{name}},
+
+                    A reminder that {{event_title}} is tomorrow, {{event_date}} at {{event_time}}{{venue}}.
+
+                    Your reference is {{reference}}. If you can no longer come, reply to this
+                    email so your place can go to somebody else.
+                    TEXT,
+            ],
+            [
                 'key' => 'event.cancelled',
                 'name' => 'Event cancelled',
                 'description' => 'Sent to everybody registered when an event is cancelled. '

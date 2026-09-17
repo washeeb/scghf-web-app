@@ -43,6 +43,7 @@ use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TestimonialsController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\VolunteerController;
 use Illuminate\Support\Facades\Route;
@@ -583,6 +584,13 @@ Route::middleware('feature:shop')->group(function (): void {
 | Paid tickets stay behind FEATURE_EVENT_TICKETING, off.
 */
 Route::middleware('feature:events')->group(function (): void {
+    /*
+     * A ticket on a phone. Signed, no expiry — the email link must work
+     * on the day however old the order is — and one code names one ticket.
+     */
+    Route::get('tickets/{ticket:code}', [TicketController::class, 'show'])->middleware('signed')->name('tickets.show');
+    Route::get('tickets/{ticket:code}/qr.svg', [TicketController::class, 'qr'])->middleware('signed')->name('tickets.qr');
+
     Route::get('events', [EventController::class, 'index'])->name('events.index');
     Route::get('events/{event:slug}', [EventController::class, 'show'])->name('events.show');
     Route::post('events/{event:slug}/register', [EventController::class, 'register'])

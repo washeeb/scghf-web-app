@@ -79,6 +79,28 @@
                     <div class="prose-scghf mt-8 space-y-4 text-[var(--text-primary)]">{!! $event->description !!}</div>
                 @endif
 
+                @if ($event->hasFinished() && ($event->outcomes || $event->attendance_count !== null || $event->gallery?->is_published))
+                    <section class="mt-8" aria-labelledby="outcomes-heading">
+                        <h2 id="outcomes-heading" class="text-lg font-semibold text-[var(--text-primary)]">{{ __('What happened') }}</h2>
+                        @if ($event->attendance_count !== null)
+                            <p class="mt-2 text-[var(--text-secondary)]">{{ trans_choice('{1}:count person came.|[2,*]:count people came.', $event->attendance_count, ['count' => number_format($event->attendance_count)]) }}</p>
+                        @endif
+                        @if ($event->outcomes)
+                            <div class="prose-scghf mt-3 space-y-4 text-[var(--text-primary)]">{!! $event->outcomes !!}</div>
+                        @endif
+                        @if ($event->gallery?->is_published)
+                            <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="{{ __('Photographs') }}">
+                                @foreach ($event->gallery->items()->with('media')->limit(6)->get() as $item)
+                                    @if ($item->media)
+                                        <li><x-media.image :media="$item->media" size="card" class="aspect-square w-full rounded-lg object-cover" /></li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                            <a class="mt-3 inline-block font-semibold text-[var(--brand-primary)] hover:underline" href="{{ route('galleries.show', $event->gallery) }}">{{ __('All the photographs') }}</a>
+                        @endif
+                    </section>
+                @endif
+
                 @if ($event->accessibility_notes)
                     <section class="mt-8" aria-labelledby="access-heading">
                         <h2 id="access-heading" class="text-lg font-semibold text-[var(--text-primary)]">{{ __('Getting in and around') }}</h2>

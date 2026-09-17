@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -97,6 +98,12 @@ class EventRegistration extends Model implements Retainable
     public function getRouteKeyName(): string
     {
         return 'ulid';
+    }
+
+    /** @return HasMany<IssuedTicket, $this> */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(IssuedTicket::class);
     }
 
     /** @return BelongsTo<Event, $this> */

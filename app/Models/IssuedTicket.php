@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\URL;
 
 /**
  * One admission to one event, held by one person.
@@ -79,6 +80,12 @@ class IssuedTicket extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** The signed page for this ticket — the link that goes in the email. */
+    public function url(): string
+    {
+        return URL::signedRoute('tickets.show', ['ticket' => $this->code]);
     }
 
     public function isValid(): bool
