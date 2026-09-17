@@ -9,6 +9,7 @@ use App\Support\ErrorReporter;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -134,4 +135,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->reportable(function (Throwable $e): void {
             app(ErrorReporter::class)->report($e);
         });
+
+        /*
+         * Sentry as well, when SENTRY_LARAVEL_DSN is set. The in-app error
+         * reports above are for the foundation's staff; Sentry is for
+         * whoever maintains the code, with the stack trace, the release and
+         * the request — and no personal data (send_default_pii is off).
+         * With no DSN the integration is a no-op.
+         */
+        Integration::handles($exceptions);
     })->create();

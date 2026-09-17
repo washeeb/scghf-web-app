@@ -13,6 +13,7 @@ use App\Filament\Resources\Users\UserResource;
 use App\Http\Middleware\RestrictAdminByIp;
 use App\Mail\RenderedMessage;
 use App\Models\AuditLog;
+use App\Models\BackupLogEntry;
 use App\Models\Donation;
 use App\Models\Donor;
 use App\Models\Media;
@@ -25,9 +26,11 @@ use App\Models\Suppression;
 use App\Models\User;
 use App\Models\VolunteerApplication;
 use App\Policies\BasePolicy;
+use App\Support\HealthCheck;
 use App\Support\Html;
 use App\Support\Sessions;
 use App\Support\Settings;
+use App\Support\SiteHealth;
 use App\Support\ThemeTokens;
 use Database\Seeders\CmsReferenceSeeder;
 use Database\Seeders\MessageTemplateSeeder;
@@ -41,6 +44,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -465,4 +469,75 @@ it('exports the data held about an address with no account, from the command lin
 
     array_map('unlink', $files);
     rmdir($dir);
+});
+
+// ── Infrastructure ──────────────────────────────────────────────────────────
+
+it('restores the newest backup into the scratch database, counts what came back, and records the test', function () {
+    $scratch = 'scghf_restore_test';
+    DB::statement("CREATE DATABASE IF NOT EXISTS `{$scratch}`");
+    config()->set('database.restore_test_database', $scratch);
+    config()->set('backup.backup.password', 'archive-secret');
+
+    $verifier = User::factory()->staff()->withTwoFactor()->create(['email' => 'grace@example.test'])->fresh();
+    User::factory()->count(2)->donor()->create();
+
+    // A dump the way mysqldump writes one, inside a password-protected zip
+    // where spatie puts it.
+    $sql = "-- MySQL dump\n/*!40101 SET NAMES utf8mb4 */;\nDROP TABLE IF EXISTS `users`;\nCREATE TABLE `users` (`id` int NOT NULL, `email` varchar(191) NOT NULL, PRIMARY KEY (`id`));\nINSERT INTO `users` VALUES (1,'a@example.test'),(2,'b@example.test'),(3,'c@example.test');\nCREATE TABLE `donations` (`id` int NOT NULL);\nINSERT INTO `donations` VALUES (1),(2);\n";
+    $zipPath = tempnam(sys_get_temp_dir(), 'bk').'.zip';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    $zip->addFromString('db-dumps/mysql-scghf.sql', $sql);
+    $zip->setEncryptionName('db-dumps/mysql-scghf.sql', ZipArchive::EM_AES_256, 'archive-secret');
+    $zip->close();
+
+    Storage::fake('backups');
+    Storage::disk('backups')->put('scghf/2026-09-17.zip', (string) file_get_contents($zipPath));
+    unlink($zipPath);
+
+    $backup = BackupLogEntry::create(['type' => 'backup', 'status' => 'completed', 'destination' => 'backups', 'filename' => 'scghf/2026-09-17.zip', 'size_bytes' => 1234, 'started_at' => now(), 'finished_at' => now()]);
+
+    $this->artisan('scghf:restore-test')->assertFailed();
+    $this->artisan('scghf:restore-test', ['--verified-by' => 'grace@example.test'])
+        ->expectsOutputToContain('Restore test recorded')
+        ->assertSuccessful();
+
+    $test = BackupLogEntry::lastRestoreTest();
+    expect($test)->not->toBeNull()
+        ->and($test->restored_row_count)->toBe(5)
+        ->and($test->verified_by)->toBe($verifier->id)
+        ->and($test->source_backup_id)->toBe($backup->id)
+        ->and(BackupLogEntry::restoreTestIsOverdue())->toBeFalse()
+        ->and(AuditLog::where('event', 'backup.restore_tested')->exists())->toBeTrue()
+        ->and(app(SiteHealth::class)->checks()->firstWhere('key', 'restore_test')->status)->toBe(HealthCheck::OK);
+
+    // The scratch database was wiped afterwards, and the live one untouched.
+    expect((int) DB::selectOne("SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = '{$scratch}'")->n)->toBe(0)
+        ->and(User::count())->toBe(3);
+
+    DB::statement("DROP DATABASE IF EXISTS `{$scratch}`");
+});
+
+it('refuses to run the restore test against the live database or with nobody signing it', function () {
+    config()->set('database.restore_test_database', (string) config('database.connections.mysql.database'));
+    $this->artisan('scghf:restore-test', ['--verified-by' => 'x@example.test'])->assertFailed();
+
+    config()->set('database.restore_test_database', 'scghf_restore_test');
+    $this->artisan('scghf:restore-test')->assertFailed();
+});
+
+it('reports error monitoring and the restore test on the health page', function () {
+    $health = fn (string $key) => app(SiteHealth::class)->checks()->firstWhere('key', $key);
+
+    expect($health('restore_test')->status)->toBe(HealthCheck::WARNING)
+        ->and($health('restore_test')->advice)->toContain('scghf:restore-test')
+        ->and($health('error_monitoring')->status)->toBe(HealthCheck::OK);
+
+    app()->detectEnvironment(fn () => 'production');
+    config()->set('sentry.dsn', '');
+    expect($health('error_monitoring')->status)->toBe(HealthCheck::WARNING);
+    config()->set('sentry.dsn', 'https://key@o0.ingest.sentry.io/1');
+    expect($health('error_monitoring')->value)->toBe('Sentry');
+    app()->detectEnvironment(fn () => 'testing');
 });

@@ -68,6 +68,11 @@ jobs:
       - name: Check code style
         run: vendor/bin/pint --test
 
+      # Known vulnerabilities in what we ship. Dependabot proposes the fix;
+      # this is what stops a deploy going out before the fix is merged.
+      - name: Audit PHP dependencies
+        run: composer audit --no-dev --locked
+
       - name: Run migrations against a real MySQL
         run: php artisan migrate --force --no-interaction
 
@@ -84,6 +89,9 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Audit JavaScript dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       # A 3G-first site cannot afford unbounded bundles. These numbers are the
       # Phase 1 performance budget; raising them is a deliberate decision, not

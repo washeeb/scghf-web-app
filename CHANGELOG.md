@@ -8,6 +8,134 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 12 — security hardening and compliance, completed — 2026-09-17
+
+An audit of everything built so far, and the hardening it called for.
+The findings that mattered most were things that read as done and were
+not: a comment saying rich text was sanitised, `users.*` and `consents.*`
+permissions protecting nothing, a restore-test method nobody called, a
+payment mismatch that was a log line, headers set only on files Apache
+served itself.
+
+#### Module 1 — application security
+
+- **`SecurityHeaders` on every response** — the public site and the
+  panel's own middleware stack — with a per-request **CSP nonce** on the
+  Vite tags and the inline scripts. The public site runs no Alpine and no
+  Livewire, so its policy is enforced with no `unsafe-inline` and no
+  `unsafe-eval`; the admin panel (Filament) gets the looser policy
+  report-only. Origins live once in `config/security.php`; `.htaccess`
+  keeps a nonce-less copy behind `setifempty` for files Apache serves
+  without PHP. HSTS from `HSTS_MAX_AGE`, when secure. Violations POST to
+  `/csp-report` and are logged
+- **`@clean` / `App\Support\Html`.** Every rich-text field on the public
+  site was printed unescaped because a comment said the editor sanitised
+  it. Nothing did. Sanitised on the way out now with Symfony's sanitizer
+  (already installed for Filament): an allowlist of tags, no scripts, no
+  event handlers, no `javascript:`, images from this origin only
+- **Admin sessions:** an absolute timeout as well as the idle one;
+  `ADMIN_SINGLE_SESSION` ends every other session on sign-in;
+  `ADMIN_IP_ALLOWLIST` (a 404 to anybody else); `TRUSTED_PROXIES` for
+  Cloudflare, without which every visitor is Cloudflare
+- **Sign out everywhere:** a donor from the security page with their
+  password; an administrator for a colleague. Session rows deleted, the
+  remember token rotated
+- **Staff accounts** as a screen at last. Create (a random password nobody
+  knows and a reset email), roles, suspend with a reason, reinstate, and
+  reset two-factor with a note of how it was verified — every one audited,
+  none on yourself
+
+#### Module 2 — payments
+
+- The webhook already could not be bypassed or replayed. What was missing
+  was anybody hearing: **`AnomalyAlerts`** emails the alerts address at
+  once for an amount or currency mismatch, and `scghf:payment-anomalies`
+  hourly for a run of failed payments or of refunds, one email per window
+- `docs/PHASE-12-PCI-DSS-SAQ-A.md`: what is held and where, why both
+  Paystack flows are SAQ-A, the annual paperwork, and what would break it
+
+#### Module 3 — data protection
+
+- **Photographs of people.** *Shows a person* / *shows a child* on the
+  media record; with either, the image **cannot be published** until a
+  valid photo consent is on its Consent tab — for a child, from a named
+  parent or guardian with the form attached. Revoking the consent, or
+  *Withdraw this image* with a reason, takes it off every page on the next
+  request. Nothing deleted; everything audited
+- **Your data**, in the account: a copy of everything held (JSON, behind
+  the password, third parties left out) and **Delete my account** with the
+  statutory carve-out — donations, orders and receipts stay six years
+  without the name; sessions ended; newsletter gone; the address suppressed
+  so no form puts it back. `scghf:export-data` for an address with no
+  account
+- **Encryption at rest** for disclosed convictions, next of kin, referees,
+  police-clearance numbers and safeguarding concerns; `scghf:encrypt-at-rest`
+  re-encrypts rows written before, idempotently
+- **The cookie notice**, with a preferences dialog. Essential only by
+  default; any later analytics or embed is written as `text/plain` and
+  activated only when its category is allowed; the decision timestamped in
+  `scghf_consent`. Off by a setting; text from the CMS
+- `docs/PHASE-12-DATA-PROTECTION.md`: Act 843 obligations mapped to the
+  code, **registration with the Data Protection Commission** (the one
+  action item that is an offence to leave), lawful bases, GDPR for donors
+  abroad, the retention schedule per table, the DSR procedure, the data
+  inventory
+
+#### Module 4 — infrastructure
+
+- **`scghf:restore-test`**: restores the newest backup into a scratch
+  database (never the live one — it refuses), counts what came back against
+  the live tables, records the test with the verifier's name, wipes the
+  scratch. `BackupLogEntry::recordRestoreTest()` was written in Phase 3 and
+  called by nobody; Site Health now has a *Restore test* row that goes
+  amber after 90 days
+- **Sentry** (`sentry/sentry-laravel`, pure PHP) behind `SENTRY_LARAVEL_DSN`,
+  errors only, no personal data; the in-app error reports stay. Site
+  Health *Error monitoring* row
+- **CI fails on a known vulnerability**: `composer audit` and `npm audit
+  --audit-level=high`
+- `docs/PHASE-12-INFRASTRUCTURE.md`: off-server backups (Backblaze B2 /
+  R2), the restore procedure, Cloudflare (DNS, Full-strict TLS, cache
+  bypass for anything carrying a session, WAF and rate-limit rules,
+  origin restriction), UptimeRobot on `/up`, the incident runbook (site
+  down, gateway down, breach, defacement, mail blacklisting), the monthly
+  patch routine
+- `docs/PHASE-12-SECURITY.md`: the OWASP Top 10 review with findings,
+  the headers as sent, the session controls, secrets rotation, and the
+  Paystack-key-leak playbook
+
+#### Fixed
+
+- The theme and consent cookies are written by the browser in clear;
+  `EncryptCookies` read them as absent, so the server-side theme had been
+  falling back to "system" for every real visitor since Phase 4
+- `Sessions::revokeAll()` and the single-session mode work whatever the
+  session driver, because the table is what decides
+
+#### Tests
+
+`SecurityHardeningTest` (22): headers and CSP, CSP reports, absolute
+timeout, sign-out-everywhere, single session, IP allowlist, staff
+accounts, the sanitiser, anomaly alerts, photo consent and withdrawal,
+export, erasure with the carve-out, encryption and re-encryption, the
+cookie notice, `scghf:export-data`, the restore test end to end, the
+health rows. Existing suites updated for the encrypted columns and the
+unencrypted theme cookie.
+
+#### Decided
+
+- **Virus scanning is not built.** ClamAV is not available on InMotion
+  shared hosting. Uploads are staff-only or strictly typed (image/PDF); a
+  scanner needs a VPS or a paid scanning API — a trustee decision, recorded
+- The admin panel's CSP stays report-only: Filament needs `unsafe-eval`
+- `APP_KEY` is never rotated; the encrypted columns and 2FA secrets depend
+  on it. The rotation table says so and why
+- HSTS ships at `0` until every subdomain is confirmed https; the doc
+  gives the two-step ramp
+- The cookie notice is honest rather than performative: the site sets
+  essential cookies only, and the banner says so. The gate exists for what
+  comes later
+
 ### Phase 11 — engagement, completed — 2026-09-17
 
 Volunteers, events, the newsletter, contact and partnerships were all

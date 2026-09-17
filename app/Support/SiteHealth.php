@@ -70,6 +70,8 @@ class SiteHealth
             $this->wrap('failed_jobs', __('Failed jobs'), fn () => $this->failedJobs()),
             $this->wrap('storage', __('File storage'), fn () => $this->storage()),
             $this->wrap('backup', __('Backups'), fn () => $this->backup()),
+            $this->wrap('restore_test', __('Restore test'), fn () => $this->restoreTest()),
+            $this->wrap('error_monitoring', __('Error monitoring'), fn () => $this->errorMonitoring()),
             $this->wrap('payments', __('Paystack'), fn () => $this->payments()),
             $this->wrap('mail', __('Email sending'), fn () => $this->mail()),
             $this->wrap('sms', __('SMS credits'), fn () => $this->sms()),
@@ -272,6 +274,53 @@ class SiteHealth
             'when' => $at?->diffForHumans() ?? __('unknown'),
             'size' => $last->humanSize() ?? __('size unknown'),
         ]));
+    }
+
+    /**
+     * A backup that has never been restored is a hypothesis.
+     *
+     * `BackupLogEntry::recordRestoreTest()` has existed since Phase 3;
+     * `scghf:restore-test` (Phase 12) is what writes it.
+     */
+    private function restoreTest(): HealthCheck
+    {
+        $last = BackupLogEntry::lastRestoreTest();
+        $days = (int) config('system.backups.restore_test_interval_days', 90);
+
+        if ($last === null) {
+            return HealthCheck::warning('restore_test', __('Restore test'), __('Never'),
+                __('No backup has ever been restored and checked. Run `php artisan scghf:restore-test '
+                    .'--verified-by=you@example.org` — it restores the newest backup into the scratch '
+                    .'database and counts what came back. Until then the backups are a hope.'));
+        }
+
+        if (BackupLogEntry::restoreTestIsOverdue()) {
+            return HealthCheck::warning('restore_test', __('Restore test'),
+                __('Last :when', ['when' => $last->created_at?->diffForHumans()]),
+                __('More than :days days since a backup was restored and checked. Run scghf:restore-test.', ['days' => $days]));
+        }
+
+        return HealthCheck::ok('restore_test', __('Restore test'), __('Last :when · :rows rows came back', [
+            'when' => $last->created_at?->diffForHumans(),
+            'rows' => number_format((int) $last->restored_row_count),
+        ]));
+    }
+
+    /** Whether somebody outside the admin panel hears about exceptions. */
+    private function errorMonitoring(): HealthCheck
+    {
+        $dsn = (string) config('sentry.dsn', '');
+
+        if ($dsn === '' || str_contains($dsn, '{{')) {
+            return app()->isProduction()
+                ? HealthCheck::warning('error_monitoring', __('Error monitoring'), __('Not connected'),
+                    __('Exceptions are recorded in the admin (Error reports) and the log only. Set '
+                        .'SENTRY_LARAVEL_DSN so whoever maintains the code is told the moment something '
+                        .'breaks, with the stack trace, rather than when somebody notices.'))
+                : HealthCheck::ok('error_monitoring', __('Error monitoring'), __('In-app only (not production)'));
+        }
+
+        return HealthCheck::ok('error_monitoring', __('Error monitoring'), __('Sentry'));
     }
 
     /**

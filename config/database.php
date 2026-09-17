@@ -30,6 +30,13 @@ return [
     |
     */
 
+    /*
+    | A separate, empty database that scghf:restore-test loads the newest
+    | backup into and counts. Never the live one; the command refuses if
+    | the names match.
+    */
+    'restore_test_database' => env('RESTORE_TEST_DATABASE', ''),
+
     'connections' => [
 
         'sqlite' => [
