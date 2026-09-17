@@ -8,6 +8,129 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 11 — engagement, completed — 2026-09-17
+
+Volunteers, events, the newsletter, contact and partnerships were all
+built in Phase 6. This phase is the gap between what was built and what
+the brief asks for — and, as in every phase, the things seeded earlier
+with nothing behind them.
+
+#### Module 1 — volunteers, after the application
+
+- **Two referees on the application** (name, relationship, phone or
+  email), required for a vulnerable-contact role. Two of the safeguarding
+  checks are "reference taken up"; nobody could take one up because the
+  form never asked who the referees were. Skills offered on the
+  application; skills needed as tags on the role, shown on its page
+- **Shortlisted** and **interviewed** as stages between review and
+  approval — the brief's `new → shortlisted → interviewed → approved` —
+  each an action on the application and a message to the applicant
+  (`volunteer.shortlisted`, `volunteer.interview` with the date and place,
+  email and SMS). Approve and decline work from any open stage
+- **Volunteers** as a screen. The `Volunteer` model has existed since
+  Phase 3 with no way to see one. Profile, clearance re-check (re-reads
+  the checks; nobody ticks "cleared"), concern raise and close, inactive
+  and active, and **leaving**, which closes the record and sends
+  `volunteer.thank_you` with the verified hours they gave
+- **Hours** on the volunteer: `volunteers.log_hours` — seeded in Phase 3
+  protecting nothing — records an entry; `volunteers.manage` verifies it,
+  and never the person who recorded it. Only verified hours reach any
+  total
+- **Shifts**: a volunteer, a start, an end, a place. Completing one writes
+  the hours entry once, recorded by whoever planned it and verified by
+  whoever confirmed it. `scghf:shift-reminders` at 17:00 sends
+  `volunteer.shift_reminder` (email and SMS) the evening before — the
+  reminder Phase 10 deferred here. A suspended or lapsed volunteer is
+  neither rostered nor reminded
+- Verified volunteer hours and active volunteers on the public impact
+  page, by the same rule as the admin total
+- `docs/PHASE-11-SAFEGUARDING.md`: what the code enforces before anybody
+  works with children, and the five decisions it leaves to the trustees
+- The site's form field component understands array names
+  (`referees[0][name]`), so errors and old input land on the right box
+
+#### Module 2 — events
+
+- **`scghf:event-reminders`** at 17:10: the day before, email and SMS to
+  everybody registered who agreed to be contacted about the event,
+  expiring at the event start so a backlog cannot deliver it afterwards.
+  `event.reminder` was seeded in Phase 3 and nothing sent it; the email
+  version is new
+- **QR-coded tickets.** A ticket is a page now — signed, no expiry, one
+  code names one ticket — with a QR that opens the door screen for
+  exactly that code, the code printed large under it, and the same square
+  as an SVG. Every ticket in `order.tickets` links to its page.
+  `chillerlan/php-qrcode` was already installed for two-factor
+- **The door**: one admin page, one box, one button. A ticket's QR opens
+  it with the code from a steward's phone camera; a code read out is
+  typed; a free event's registration reference works at the same door.
+  `events.view_registrations`, like the door list
+- **The archive**: a past event shows a headcount from the day, what came
+  of it, and a gallery from the media library — whose consent flag governs
+  whether faces appear
+
+#### Module 3 — lead capture and contact
+
+- **The newsletter popup**, as a `<dialog>` so the browser traps focus and
+  handles Escape and the backdrop. Exit intent on a laptop (the cursor
+  leaves through the top); on a phone, after a delay and half a page of
+  scrolling. Once per `frequency_days` (localStorage), never after
+  subscribing (a one-bit cookie set by the subscribe handler), never
+  rendered on the donation, basket, checkout, account or sign-in pages.
+  **Off by default** — heading, text, delay and frequency are settings
+- Subscribers record their source (footer, block, popup)
+- **`scghf:contact-sla`**, hourly: an enquiry past its department's reply
+  target emails whoever owns it, else the department mailbox, once.
+  `ContactMessage::isOverdue()` has driven a badge since Phase 5 and told
+  nobody
+- **Offices**: every place with a door — address, Ghana Post GPS, hours
+  as text per day ("by appointment" is a real answer), phone, WhatsApp
+  deep link, directions — listed on the contact page, edited under
+  `settings.manage`. The first one is seeded from the contact settings,
+  once; the settings stay the header's and footer's source
+
+#### Module 4 — partnerships
+
+Already built in Phase 6 and checked against the brief: the partner,
+corporate, in-kind and community-fundraising enquiry forms as page blocks
+on the seeded "Partner with us" page, filed to the right department; the
+partner logo wall from the CMS. Nothing to add.
+
+#### Fixed
+
+- **The in-content newsletter block was dropping every signup.** It
+  posted to the honeypot-protected subscribe route without the honeypot
+  fields, so the spam middleware rejected each one silently. The footer
+  form had the fields; the block did not
+- `VITE_APP_NAME` removed from `.env.example`: read by nothing
+
+#### Tests
+
+`VolunteersTest` (10), `EventEngagementTest` (6), `LeadsAndContactTest`
+(5). Existing volunteer and event suites updated for referees.
+
+#### Decided
+
+- Venue "map" stays a directions link, per Phase 6: a map widget is a
+  third-party script and a few hundred kilobytes on 3G for something
+  people tap once
+- Paid tickets stay behind `FEATURE_EVENT_TICKETING` (off). Ticket
+  types, quantity limits, promo codes (shop coupons), QR tickets, the
+  door and reminders are all built and tested behind it; the flag is the
+  foundation's decision to sell tickets
+- Shifts are the minimum that makes hours logging concrete and gives the
+  reminder something to remind about — not a rota, no self-service
+  sign-up. A volunteer portal is post-launch (Phase 18)
+- Volunteer recognition is the hours on the impact page, the summary on
+  the record, and the thank-you on leaving. Certificates and badges are
+  not built: a letter on request is what the thank-you offers
+- The offices table does not replace the contact settings. Two sources
+  for the primary office's address is a known cost; making the header
+  and footer read the table instead is a small Phase 12 change if the
+  foundation wants it
+- The popup is off. Whether a charity's site should ever put something
+  in a visitor's way is the trustees' call, and the setting is theirs
+
 ### Phase 10 — email and SMS, completed — 2026-09-13
 
 Phase 3 built the engine: templates, an outbox with quiet hours and a
