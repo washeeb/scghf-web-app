@@ -37,7 +37,6 @@ class ProjectUpdate extends Model
         'is_published' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -58,7 +58,6 @@ class SettingHistoryEntry extends Model
         'is_redacted' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

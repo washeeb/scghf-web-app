@@ -44,6 +44,8 @@ use RuntimeException;
  * ── Append-only ─────────────────────────────────────────────────────────────
  *
  * No soft delete, like donations and receipts. A correction is a new row.
+ *
+ * @property Money|null $amount
  */
 class Payout extends Model
 {
@@ -94,7 +96,6 @@ class Payout extends Model
         'currency' => 'GHS',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

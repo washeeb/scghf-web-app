@@ -35,6 +35,10 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * rows can change is a ledger nobody can audit.
  *
  * @property DonationStatus $status
+ * @property Money|null $amount
+ * @property Money|null $fee
+ * @property Money|null $net
+ * @property Money|null $deductible_amount
  */
 class Donation extends Model implements Payable
 {
@@ -65,7 +69,6 @@ class Donation extends Model implements Payable
         'consent_sms' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

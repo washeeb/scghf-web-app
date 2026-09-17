@@ -51,8 +51,8 @@ class EditPage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            static::previewAction(),
-            static::revisionsAction(),
+            self::previewAction(),
+            self::revisionsAction(),
             DeleteAction::make()
                 // A locked page is one the application links to by slug —
                 // deleting it breaks a route rather than removing content.

@@ -26,6 +26,10 @@ use RuntimeException;
  *
  * Append-only, and never withdrawn. A mistake is corrected by issuing a credit
  * note, which is its own document with its own number.
+ *
+ * @property Money|null $amount
+ * @property Money|null $deductible_amount
+ * @property Money|null $non_deductible_amount
  */
 class DonationReceipt extends Model
 {
@@ -54,7 +58,6 @@ class DonationReceipt extends Model
         'non_deductible_amount_minor' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

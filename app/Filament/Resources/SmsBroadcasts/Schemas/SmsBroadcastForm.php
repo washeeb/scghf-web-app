@@ -41,7 +41,7 @@ class SmsBroadcastForm
                     ->helperText(__('Plain text. The sender name (:sender) is added by the network. Say who you are in the first line anyway; a text from an unknown name is deleted.', ['sender' => (string) config('communications.sms.sender_id')])),
                 TextEntry::make('meter')
                     ->hiddenLabel()
-                    ->state(fn (Get $get): HtmlString => static::meter((string) $get('body'), (string) $get('audience'), (string) $get('custom_numbers'))),
+                    ->state(fn (Get $get): HtmlString => self::meter((string) $get('body'), (string) $get('audience'), (string) $get('custom_numbers'))),
             ]),
 
             Section::make(__('Who'))->columns(2)->schema([

@@ -28,7 +28,6 @@ class RetentionLogEntry extends Model
         'action', 'detail', 'legal_hold_id', 'run_id', 'performed_by', 'created_at',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['created_at' => 'datetime'];

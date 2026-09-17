@@ -218,3 +218,21 @@ gateway fee on one cedi.
 - [ ] Reconciliation run; "needs review" is zero
 - [ ] Test-mode band visible on staging; **absent** on production
 - [ ] One live cedi in, receipted, refunded
+
+---
+
+## 5. Run record
+
+A test plan that has never been run is a plan. Every staging run of §2 and
+every live cedi of §3 is recorded here, newest first — the reference
+numbers are what Finance matches against the Paystack dashboard, and the
+date is what an auditor asks for.
+
+| Date | Who | Environment | Keys | §2.1 cards | §2.2 MoMo | §2.3 webhook ×3 | §2.4 forged | §2.5 failures | §2.6 reconciled | References | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| _none yet_ | | staging | `sk_test_…` | | | | | | | | Phase 14: no Paystack test keys in hand; the client is covered by `PaystackClientTest` (25) against a faked HTTP layer, and the fake gateway by the feature and browser suites. The first staging run is a person's job once the keys exist — see `docs/PHASE-14-QA.md` §3.4 |
+
+How to fill a row: one line per run; tick each column with ✔, ✘ or n/a
+and put the Paystack reference of the last successful gift and the refund
+id in *References*. A ✘ anywhere means a bug report before anything else
+(§6 of the QA plan), and the row stays ✘ until a later row is all ✔.

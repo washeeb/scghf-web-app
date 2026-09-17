@@ -61,7 +61,6 @@ class ErrorReport extends Model
         'is_muted' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

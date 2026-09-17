@@ -48,7 +48,6 @@ class Post extends Model
         'view_count' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

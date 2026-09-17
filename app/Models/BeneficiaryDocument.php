@@ -68,7 +68,6 @@ class BeneficiaryDocument extends Model implements Retainable
         'is_sensitive' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

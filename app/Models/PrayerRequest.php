@@ -89,7 +89,6 @@ class PrayerRequest extends Model implements Retainable
         'is_published' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -25,6 +25,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * A standing commitment to give.
  *
  * @property SubscriptionStatus $status
+ * @property Money|null $amount
+ * @property Money|null $total_charged
  */
 class Subscription extends Model
 {
@@ -64,7 +66,6 @@ class Subscription extends Model
         'failed_attempts' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

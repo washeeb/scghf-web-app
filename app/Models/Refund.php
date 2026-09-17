@@ -24,6 +24,8 @@ use RuntimeException;
  * Two people are recorded: who requested it and who approved it. They are
  * allowed to differ, and a single `created_by` could not express an approval at
  * all. Money leaving a charity is exactly where that separation earns its keep.
+ *
+ * @property Money|null $amount
  */
 class Refund extends Model
 {
@@ -51,7 +53,6 @@ class Refund extends Model
         'currency' => 'GHS',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

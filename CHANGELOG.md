@@ -8,6 +8,121 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 14 — Testing and QA, completed — 2026-09-17
+
+#### Module 1 — the gaps in the automated suite
+
+- **`PaystackClientTest` (25)** — the real Paystack client against a faked
+  HTTP layer, for the first time: initialise, verify, chargeAuthorization,
+  chargeMobileMoney, submitOtp and refund. What goes on the wire (the
+  amount as an integer in pesewas, `currency: GHS` on every call, the
+  bearer token, the reference, the callback) and what is read back (the
+  amount, fee and channel from Paystack's answer, the allow-listed
+  authorisation without the BIN or signature, the scrubbed raw payload, a
+  200 with `status: false` as a refusal, one retry, no request without a
+  key)
+- **`AdminAccessMatrixTest` (17)** — every one of the 51 resources has a
+  policy and every custom page its own `canAccess()`; a guest is sent to
+  sign in from all 57 URLs; a donor and staff holding only `admin.access`
+  get 403 everywhere; a Super Admin gets 200 everywhere; and each of the
+  eight staff roles gets exactly what its policies say — Filament is held
+  to the policy, URL by URL
+- **`SmsGatewayContractTest` (29)** — what the dispatcher relies on from
+  any driver: a rejection and never an exception on a dead network, an
+  HTML error page or an unrecognised body; the E.164 digits and the whole
+  text on the wire; the credential out of the query string; nothing sent
+  without a key. **Found:** Twilio marked a 2xx with no message SID as
+  sent — now a rejection. **Recorded:** mNotify's API takes the key as a
+  query parameter and nothing else (`PHASE-10-SMS-SENDER-ID.md`)
+- **`SlugGenerationTest` (29)** and **`App\Support\Slug`** — the 26 models
+  with a slug hook shared the same six lines and none of them asked what
+  happens when `Str::slug()` returns `''`; a product with an empty slug is
+  the shop index. One rule now, and a title that yields no address is
+  refused at save. Pages: same slug under different parents allowed, under
+  the same parent refused
+- Phone normalisation, settings resolution and each SMS driver's own JSON
+  were already covered (`MessageTemplatesTest`, `SettingsTest`,
+  `SmsGatewaysTest`, `MnotifyGatewayTest`); nothing was added twice
+
+#### Module 2 — a real browser
+
+- **`tests/Browser/CriticalPathsTest` (11)** on `pestphp/pest-plugin-browser`
+  (Chromium through Playwright, the app served in-process so the database,
+  the fake gateway and the sync queue are the test's own): a donation from
+  the form to the thank-you with the ledger agreeing, a declined card,
+  a purchase from the product page through the basket and checkout to
+  the order page, the theme toggle with persistence across a reload, the
+  skip link → main → Donate by keyboard alone, axe on home/donate/shop in
+  both themes, and every public form — contact, newsletter, volunteer,
+  event — plus a field error tied to its field
+- A `Browser` test suite in `phpunit.xml`; the deploy gate and the main CI
+  job run `--exclude-testsuite Browser`; a **Browser tests** CI job builds
+  the assets, installs Chromium and runs it, keeping screenshots of
+  failures
+
+#### Module 3 — demo data and the Paystack run record
+
+- **`DemoDataSeeder`** — nine staff (one per role, password `password`,
+  no 2FA yet so the first sign-in enrols), four projects with updates,
+  three appeals partly raised, six posts, four products with stock, three
+  events, three volunteer roles and four volunteers (not cleared: no
+  police check behind them, and the roster says so), trustees,
+  testimonials, partners, 36 gifts across six months through the real
+  offline-gift service, eight paid orders, twelve subscribers. Idempotent.
+  **Refuses production** before touching anything. `DemoDataSeederTest` (3)
+- `PHASE-8-PAYMENTS-TEST-PLAN.md` §5 — a run record; no staging run yet,
+  and the row says so
+
+#### Module 4 — gates, the plan, triage
+
+- **Larastan** level 5 in CI with a 258-entry baseline
+  (`phpstan.neon.dist`, `phpstan-baseline.neon`). Getting there fixed
+  what was cheap and honest: `parseModelCastsMethod` so a datetime cast
+  is a Carbon to the analyser, the `@return array<string, string>`
+  docblock on every `casts()` that hid the keys, `@property` lines for
+  the MoneyCast attributes, `self::` for private static helpers,
+  `RecordsAuthor`'s hooks typed as `self`, and two `handleRecordUpdate()`
+  returns after `halt()`. 905 → 258
+- **Coverage** CI job under pcov with a floor (`COVERAGE_MIN`, default
+  60 %, to be raised from the first measured run — no driver on the dev
+  machine); the HTML report kept as an artifact. The main job runs with
+  `coverage: none` now, which it should always have
+- `.github/branch-protection.json` requires **Lint, analyse, test**,
+  **Coverage** and **Browser tests**
+- **`docs/PHASE-14-QA.md`** — what is automated and how to run it; the
+  matrix (Chrome/Firefox/Safari/Android/iOS × light/dark × 320–1536 ×
+  keyboard × screen reader × 200 % × slow 3G); fifteen journeys as a
+  person walks them, each naming its automated twin; the UAT checklist in
+  plain English for visitors, staff and the treasurer; load sanity on
+  shared hosting (entry processes, not requests per second) with
+  `scripts/load/browse.js` and `donate.js` for k6 — the latter refuses
+  any environment without the fake gateway; bug triage with four
+  severities and what each means for money
+- `.github/ISSUE_TEMPLATE/` — bug report and UAT finding forms; blank
+  issues off; **`SECURITY.md`** for what must never be an issue
+- `DEPENDENCIES.md`: Larastan moved from "under review" to required (the
+  brief asked); the browser plugin and Playwright recorded
+
+#### Tests
+
+New: `PaystackClientTest` (25), `AdminAccessMatrixTest` (17),
+`SmsGatewayContractTest` (29), `SlugGenerationTest` (29),
+`DemoDataSeederTest` (3), browser `CriticalPathsTest` (11).
+
+#### Decided
+
+- **Level 5, not higher**, with a baseline that only shrinks. Level 6+
+  is mostly annotating closures Filament passes untyped; the errors worth
+  having are all at 5
+- **60 % as the first coverage floor** is a floor against drift, not a
+  measured figure; the doc says to set it from the first CI run
+- **Chromium only** in the automated browser suite; Safari and Firefox
+  are the manual matrix's job
+- **Demo gifts carry no receipts** — a receipt is an email to an address
+  that belongs to nobody
+- **Not built:** a `DemoDataSeeder` teardown — the staging database is
+  reset by re-seeding, not by deleting demo rows out of a ledger
+
 ### Phase 13 — SEO, analytics and accessibility, completed — 2026-09-17
 
 #### Module 1 — search and sharing

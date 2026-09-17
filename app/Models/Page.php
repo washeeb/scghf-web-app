@@ -65,7 +65,6 @@ class Page extends Model
         'show_in_search' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

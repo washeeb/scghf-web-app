@@ -25,7 +25,6 @@ class IssuedTicket extends Model
         'seq', 'code', 'holder_name',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

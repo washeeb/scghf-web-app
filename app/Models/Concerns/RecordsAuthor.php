@@ -46,25 +46,25 @@ trait RecordsAuthor
 {
     public static function bootRecordsAuthor(): void
     {
-        static::creating(function (Model $model): void {
+        static::creating(function (self $model): void {
             if (! auth()->hasUser()) {
                 return;
             }
 
-            if (static::recordsColumn($model, 'created_by') && blank($model->created_by)) {
+            if (self::recordsColumn($model, 'created_by') && blank($model->created_by)) {
                 $model->created_by = auth()->id();
             }
 
             // A row created and never edited was last changed by its author.
             // Leaving `updated_by` null on creation makes "last changed by"
             // read as unknown on every brand-new record.
-            if (static::recordsColumn($model, 'updated_by') && blank($model->updated_by)) {
+            if (self::recordsColumn($model, 'updated_by') && blank($model->updated_by)) {
                 $model->updated_by = auth()->id();
             }
         });
 
-        static::updating(function (Model $model): void {
-            if (! auth()->hasUser() || ! static::recordsColumn($model, 'updated_by')) {
+        static::updating(function (self $model): void {
+            if (! auth()->hasUser() || ! self::recordsColumn($model, 'updated_by')) {
                 return;
             }
 

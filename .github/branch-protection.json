@@ -2,7 +2,7 @@
   "_comment": "Apply once the repo is on GitHub Pro. Free + private refuses this with 403. See docs/PHASE-2-RUNBOOK.md step 4. Apply with: gh api -X PUT repos/OWNER/REPO/branches/main/protection --input .github/branch-protection.json",
   "required_status_checks": {
     "strict": true,
-    "contexts": ["Lint, analyse, test"]
+    "contexts": ["Lint, analyse, test", "Coverage", "Browser tests"]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {

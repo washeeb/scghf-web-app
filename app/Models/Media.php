@@ -24,7 +24,6 @@ class Media extends BaseMedia
 {
     use HasFactory;
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return array_merge(parent::casts(), [

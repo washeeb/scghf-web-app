@@ -28,6 +28,10 @@ use RuntimeException;
  * `inventory_movements`; `recalculateStock()` rebuilds it. Nothing writes the
  * cache directly except the methods here, and each of them writes a movement in
  * the same transaction.
+ *
+ * @property Money|null $price
+ * @property Money|null $compare_at_price
+ * @property Money|null $member_price
  */
 class ProductVariant extends Model
 {
@@ -54,7 +58,6 @@ class ProductVariant extends Model
         'is_active' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

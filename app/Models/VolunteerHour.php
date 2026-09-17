@@ -32,7 +32,6 @@ class VolunteerHour extends Model
         'worked_on', 'minutes', 'activity', 'notes', 'recorded_by',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -49,7 +49,7 @@ class EmailTemplateForm
             Section::make(__('Variables'))->schema([
                 TextEntry::make('variables')
                     ->hiddenLabel()
-                    ->state(fn (?EmailTemplate $record): HtmlString => static::variableMenu($record)),
+                    ->state(fn (?EmailTemplate $record): HtmlString => self::variableMenu($record)),
             ])->collapsible(),
 
             Section::make(__('The message'))->schema([
@@ -61,13 +61,13 @@ class EmailTemplateForm
                     ->required()
                     ->rows(16)
                     ->extraInputAttributes(['class' => 'font-mono text-sm'])
-                    ->rule(fn (?EmailTemplate $record): \Closure => fn (string $attribute, mixed $value, \Closure $fail) => static::checkPlaceholders($record, (string) $value, $fail))
+                    ->rule(fn (?EmailTemplate $record): \Closure => fn (string $attribute, mixed $value, \Closure $fail) => self::checkPlaceholders($record, (string) $value, $fail))
                     ->helperText(__('Paragraphs, bold, links. Put a variable in double braces: {{donor_name}}. The layout, logo and footer are added around this.')),
                 Textarea::make('body_text')
                     ->label(__('Body (plain text)'))
                     ->rows(10)
                     ->extraInputAttributes(['class' => 'font-mono text-sm'])
-                    ->rule(fn (?EmailTemplate $record): \Closure => fn (string $attribute, mixed $value, \Closure $fail) => static::checkPlaceholders($record, (string) $value, $fail))
+                    ->rule(fn (?EmailTemplate $record): \Closure => fn (string $attribute, mixed $value, \Closure $fail) => self::checkPlaceholders($record, (string) $value, $fail))
                     ->helperText(__('What a reader with images and HTML off sees. Leave empty to send the HTML alone.')),
             ]),
 

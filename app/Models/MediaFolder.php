@@ -45,7 +45,6 @@ class MediaFolder extends Model implements HasMedia
         'is_locked' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['is_locked' => 'boolean'];

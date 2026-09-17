@@ -8,6 +8,7 @@ use App\Casts\MoneyCast;
 use App\Models\Concerns\BelongsToDivision;
 use App\Support\Anonymiser;
 use App\Support\Features;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -48,6 +49,8 @@ use RuntimeException;
  * **There is no route from sponsor to child.** No address, no phone, no message
  * thread — not disabled, absent. Correspondence goes through staff or it does
  * not happen.
+ *
+ * @property Money|null $amount
  */
 class Sponsorship extends Model
 {
@@ -83,7 +86,6 @@ class Sponsorship extends Model
         'may_know_given_name' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

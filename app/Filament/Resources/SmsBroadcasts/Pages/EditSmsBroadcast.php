@@ -123,7 +123,12 @@ class EditSmsBroadcast extends EditRecord
             return parent::handleRecordUpdate($record, $data);
         } catch (RuntimeException $e) {
             Notification::make()->title(__('Not saved'))->body($e->getMessage())->danger()->persistent()->send();
+
+            // halt() throws and the request ends there; the return is for the
+            // signature, which the analyser reads and the runtime never reaches.
             $this->halt();
+
+            return $record;
         }
     }
 

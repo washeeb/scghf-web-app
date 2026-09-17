@@ -41,7 +41,7 @@ class OrderInfolist
             Section::make(__('Lines'))->schema([
                 TextEntry::make('lines')
                     ->hiddenLabel()
-                    ->state(fn (Order $record): HtmlString => static::lines($record)),
+                    ->state(fn (Order $record): HtmlString => self::lines($record)),
             ]),
 
             Grid::make(2)->schema([
@@ -68,7 +68,7 @@ class OrderInfolist
             Section::make(__('History'))->collapsible()->schema([
                 TextEntry::make('history')
                     ->hiddenLabel()
-                    ->state(fn (Order $record): HtmlString => static::history($record)),
+                    ->state(fn (Order $record): HtmlString => self::history($record)),
             ]),
         ]);
     }

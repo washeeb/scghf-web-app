@@ -39,7 +39,6 @@ class Newsletter extends Model
         'sort_order' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['is_active' => 'boolean', 'sort_order' => 'integer'];

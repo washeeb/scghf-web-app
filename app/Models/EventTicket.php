@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Casts\MoneyCast;
 use App\Support\Features;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -23,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A price of zero is a real answer, not a missing one: a free ticket that still
  * reserves a place is the common case at an outreach event, and modelling free
  * places as "no ticket" would lose the count.
+ *
+ * @property Money|null $price
  */
 class EventTicket extends Model
 {
@@ -45,7 +48,6 @@ class EventTicket extends Model
         'sort_order' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -92,7 +92,7 @@ class PagesTable
             ])
             ->recordActions([
                 EditAction::make(),
-                static::viewAction(),
+                self::viewAction(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

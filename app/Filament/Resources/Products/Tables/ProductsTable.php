@@ -56,8 +56,8 @@ class ProductsTable
                 TextColumn::make('stock')
                     ->label(__('Stock'))
                     ->alignEnd()
-                    ->state(fn (Product $record): string => static::stockLabel($record))
-                    ->color(fn (Product $record): string => static::stockColour($record)),
+                    ->state(fn (Product $record): string => self::stockLabel($record))
+                    ->color(fn (Product $record): string => self::stockColour($record)),
 
                 TextColumn::make('regulatory')
                     ->label(__('Regulatory'))
@@ -102,7 +102,7 @@ class ProductsTable
                     'Category' => fn (Product $record) => $record->category?->name,
                     'SKUs' => fn (Product $record) => $record->variants->pluck('sku')->implode(', '),
                     'From price' => fn (Product $record) => $record->fromPrice()?->format(),
-                    'Available' => fn (Product $record) => static::stockLabel($record),
+                    'Available' => fn (Product $record) => self::stockLabel($record),
                     'On sale' => fn (Product $record) => $record->isLive(),
                     'Regulatory' => fn (Product $record) => $record->needsRegulatoryReview() ? 'needs review' : ($record->requires_regulatory_review ? 'reviewed' : 'clear'),
                 ], ['category', 'variants']),

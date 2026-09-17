@@ -62,7 +62,6 @@ class EventRegistration extends Model implements Retainable
         'newsletter_consent' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

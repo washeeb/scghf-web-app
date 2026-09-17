@@ -54,7 +54,6 @@ class TaxApproval extends Model
         'status' => self::STATUS_DRAFT,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

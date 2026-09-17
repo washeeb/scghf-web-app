@@ -29,6 +29,9 @@ use RuntimeException;
  * number.
  *
  * @property PaymentStatus $status
+ * @property Money|null $amount
+ * @property Money|null $amount_paid
+ * @property Money|null $fee
  */
 class PaymentTransaction extends Model
 {
@@ -55,7 +58,6 @@ class PaymentTransaction extends Model
         'status' => 'initialised',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

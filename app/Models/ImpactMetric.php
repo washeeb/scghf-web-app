@@ -71,7 +71,6 @@ class ImpactMetric extends Model
         'is_featured' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

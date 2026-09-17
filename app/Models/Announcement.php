@@ -45,7 +45,6 @@ class Announcement extends Model
         'clicks' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

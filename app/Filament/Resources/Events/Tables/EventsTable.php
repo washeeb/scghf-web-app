@@ -96,7 +96,7 @@ class EventsTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                static::cancelAction(),
+                self::cancelAction(),
                 EditAction::make(),
             ])
             ->toolbarActions([

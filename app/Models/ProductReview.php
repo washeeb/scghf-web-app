@@ -58,7 +58,6 @@ class ProductReview extends Model
         'status' => self::STATUS_PENDING,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

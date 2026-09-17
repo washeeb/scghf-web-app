@@ -77,7 +77,6 @@ class EmailLog extends Model implements Retainable
         'attempts' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

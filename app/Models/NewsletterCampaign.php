@@ -83,7 +83,6 @@ class NewsletterCampaign extends Model
         'skipped_count' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

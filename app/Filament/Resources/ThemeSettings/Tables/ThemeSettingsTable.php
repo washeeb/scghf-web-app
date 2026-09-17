@@ -117,7 +117,7 @@ class ThemeSettingsTable
             ])
             ->recordActions([
                 EditAction::make(),
-                static::suggestAction(),
+                self::suggestAction(),
             ]);
     }
 

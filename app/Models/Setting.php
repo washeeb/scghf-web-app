@@ -28,7 +28,6 @@ class Setting extends Model
         'updated_by',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

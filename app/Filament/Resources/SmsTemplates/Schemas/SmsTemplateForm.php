@@ -43,7 +43,7 @@ class SmsTemplateForm
             Section::make(__('Variables'))->schema([
                 TextEntry::make('variables')
                     ->hiddenLabel()
-                    ->state(fn (?SmsTemplate $record): HtmlString => static::variableMenu($record)),
+                    ->state(fn (?SmsTemplate $record): HtmlString => self::variableMenu($record)),
             ])->collapsible(),
 
             Section::make(__('The message'))->schema([
@@ -57,7 +57,7 @@ class SmsTemplateForm
 
                 TextEntry::make('meter')
                     ->hiddenLabel()
-                    ->state(fn (Get $get, ?SmsTemplate $record): HtmlString => static::meter((string) $get('body'), $record))
+                    ->state(fn (Get $get, ?SmsTemplate $record): HtmlString => self::meter((string) $get('body'), $record))
                     ->columnSpanFull(),
 
                 Grid::make(3)->schema([

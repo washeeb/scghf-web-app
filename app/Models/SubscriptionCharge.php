@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\MoneyCast;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A row exists for a cycle that was skipped or failed as well as one that paid.
  * "Nothing happened in April, and here is why" is an answer a donor and a
  * trustee can both use; a missing row is not.
+ *
+ * @property Money|null $amount
  */
 class SubscriptionCharge extends Model
 {
@@ -42,7 +45,6 @@ class SubscriptionCharge extends Model
         'attempt' => 1,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -1,0 +1,49 @@
+name: UAT finding
+description: A line on the UAT checklist you could not tick
+labels: [uat]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For the checklist in docs/PHASE-14-QA.md §4, on the staging site. Write it the way you would tell a colleague.
+  - type: input
+    id: line
+    attributes:
+      label: Which line of the checklist
+      placeholder: "As staff: I can record a cash gift a donor handed me"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened when you tried
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Is it
+      options:
+        - Broken — it did not work
+        - Confusing — it worked but I did not know how
+        - Wrong words — a label, a message or a page says the wrong thing
+        - Missing — the thing I needed is not there
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: On what
+      placeholder: Safari on an iPhone 11
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot

@@ -47,7 +47,6 @@ class NotificationLog extends Model
         'level' => self::LEVEL_INFO,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

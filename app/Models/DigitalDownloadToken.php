@@ -41,7 +41,6 @@ class DigitalDownloadToken extends Model
         'download_count' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

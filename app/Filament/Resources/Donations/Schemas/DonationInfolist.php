@@ -107,17 +107,17 @@ class DonationInfolist
             Section::make(__('Webhooks for this payment'))->collapsible()->schema([
                 TextEntry::make('webhooks')
                     ->hiddenLabel()
-                    ->state(fn (Donation $r): HtmlString => static::webhooks($r)),
+                    ->state(fn (Donation $r): HtmlString => self::webhooks($r)),
             ]),
 
             Section::make(__('Refunds'))
                 ->visible(fn (Donation $r): bool => $r->transaction?->refunds()->exists() ?? false)
                 ->schema([
-                    TextEntry::make('refunds')->hiddenLabel()->state(fn (Donation $r): HtmlString => static::refunds($r)),
+                    TextEntry::make('refunds')->hiddenLabel()->state(fn (Donation $r): HtmlString => self::refunds($r)),
                 ]),
 
             Section::make(__('Audit trail'))->collapsible()->collapsed()->schema([
-                TextEntry::make('audit')->hiddenLabel()->state(fn (Donation $r): HtmlString => static::audit($r)),
+                TextEntry::make('audit')->hiddenLabel()->state(fn (Donation $r): HtmlString => self::audit($r)),
             ]),
 
             Section::make(__('Internal notes'))->schema([

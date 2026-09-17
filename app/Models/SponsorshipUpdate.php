@@ -42,7 +42,6 @@ class SponsorshipUpdate extends Model
         'sponsorship_id', 'title', 'body', 'photograph_id', 'created_by',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

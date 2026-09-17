@@ -92,7 +92,6 @@ class Suppression extends Model
         'occurrences' => 1,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

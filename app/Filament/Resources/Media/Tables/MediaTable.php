@@ -126,8 +126,8 @@ class MediaTable
             ])
             ->recordActions([
                 EditAction::make(),
-                static::replaceAction(),
-                static::deleteAction(),
+                self::replaceAction(),
+                self::deleteAction(),
             ])
             ->emptyStateHeading(__('Nothing here yet'))
             ->emptyStateDescription(__(
@@ -170,7 +170,7 @@ class MediaTable
                      * `UploadPolicy` sniffs the bytes on the server, and that
                      * is what accepts or refuses.
                      */
-                    ->acceptedFileTypes(static::acceptedMimeTypes())
+                    ->acceptedFileTypes(self::acceptedMimeTypes())
                     /*
                      * No `AcceptableUpload` rule here, on purpose, and this is
                      * a real decision rather than an omission.

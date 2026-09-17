@@ -21,7 +21,6 @@ class FailedJob extends Model
 
     public $timestamps = false;
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['failed_at' => 'datetime'];

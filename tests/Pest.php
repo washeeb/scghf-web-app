@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\ValueObjects\Money;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /*
@@ -21,6 +22,15 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)->in('Feature');
+
+/*
+| Browser tests get the framework AND a fresh database per test, because a
+| real browser walking a donation leaves a donation behind.
+*/
+pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Browser');
+
+// A locator that never matches must fail the test, not hang the run.
+pest()->browser()->timeout(15_000);
 
 /*
 |--------------------------------------------------------------------------

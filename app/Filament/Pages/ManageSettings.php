@@ -428,7 +428,7 @@ class ManageSettings extends Page
 
             $validator = Validator::make(
                 [$setting->key => $value],
-                [$setting->key => static::splitRule($rule)],
+                [$setting->key => self::splitRule($rule)],
                 [],
                 [$setting->key => $setting->label ?? $setting->key],
             );

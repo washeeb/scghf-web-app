@@ -62,7 +62,6 @@ class ApiToken extends Model
 
     protected $hidden = ['token_hash'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

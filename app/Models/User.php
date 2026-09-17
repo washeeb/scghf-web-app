@@ -87,7 +87,6 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         'two_factor_recovery_codes',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

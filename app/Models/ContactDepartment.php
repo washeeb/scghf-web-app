@@ -23,7 +23,6 @@ class ContactDepartment extends Model
         'is_active' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['is_confidential' => 'boolean', 'is_active' => 'boolean'];

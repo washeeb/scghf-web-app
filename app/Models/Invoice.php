@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\MoneyCast;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -29,6 +30,11 @@ use RuntimeException;
  * holding it is the person most likely to assume otherwise at tax time.
  *
  * Snapshotted and append-only, for the same reasons as an acknowledgement.
+ *
+ * @property Money|null $subtotal
+ * @property Money|null $shipping
+ * @property Money|null $discount
+ * @property Money|null $total
  */
 class Invoice extends Model
 {
@@ -52,7 +58,6 @@ class Invoice extends Model
         'discount_minor' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

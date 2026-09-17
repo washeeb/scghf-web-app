@@ -11,6 +11,15 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!--
+            Browser tests drive Chromium through Playwright and need Node on the
+            machine. They run in their own CI job; the main job excludes them
+            with the exclude-testsuite flag so a missing browser is never a
+            failed build for something unrelated.
+        -->
+        <testsuite name="Browser">
+            <directory>tests/Browser</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

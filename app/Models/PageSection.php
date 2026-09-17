@@ -41,7 +41,6 @@ class PageSection extends Model
         'is_visible' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -18,14 +18,14 @@ Closes: <!-- #123, or "n/a" -->
 ## Checklist
 
 **Always**
-- [ ] `vendor/bin/pint` run; CI green
+- [ ] `vendor/bin/pint` and `vendor/bin/phpstan analyse` run; CI green (lint/test, coverage, browser)
 - [ ] No secrets added; any new `.env` key is documented in `.env.example`
 - [ ] `CHANGELOG.md` updated
 - [ ] No hardcoded content in Blade — strings, phone numbers, emails, addresses,
       colours and images all come from the CMS/settings layer
 
 **If this touches money, auth, or webhooks** *(required, not optional)*
-- [ ] Pest tests added and passing
+- [ ] Pest tests added and passing; a bug fix carries the test that fails without it
 - [ ] All amounts are integer pesewas — no floats anywhere in the money path
 - [ ] Every outbound Paystack call includes `"currency": "GHS"`
 - [ ] Payment state changes come only from the verified webhook, never the redirect

@@ -45,8 +45,8 @@ class MediaPicker
 
     public static function image(string $name): Select
     {
-        return static::base($name)
-            ->options(fn (): array => static::optionsFor(self::IMAGE_TYPES))
+        return self::base($name)
+            ->options(fn (): array => self::optionsFor(self::IMAGE_TYPES))
             ->helperText(__(
                 'Only images that are ready to publish appear here. One is missing if it has no '
                 .'alt text yet, or if its camera metadata has not been removed — the media '
@@ -64,7 +64,7 @@ class MediaPicker
      */
     public static function document(string $name): Select
     {
-        return static::base($name)
+        return self::base($name)
             ->options(fn (): array => Media::query()
                 ->whereIn('mime_type', self::DOCUMENT_TYPES)
                 ->orderByDesc('id')

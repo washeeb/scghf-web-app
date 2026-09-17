@@ -81,7 +81,7 @@ class PageForm
                         ->maxLength(500)
                         ->helperText(__('One or two sentences. Used in listings and as the fallback description in search results.')),
 
-                    static::sections(),
+                    self::sections(),
                 ]),
 
                 Tabs\Tab::make(__('Settings'))->schema([
@@ -216,7 +216,7 @@ class PageForm
                 Section::make(__('How it looks'))
                     ->description(__('Leave these alone and the block uses the site defaults, which is usually right.'))
                     ->collapsed()
-                    ->schema(static::presentationFields()),
+                    ->schema(self::presentationFields()),
             ]);
     }
 

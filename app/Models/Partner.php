@@ -31,7 +31,6 @@ class Partner extends Model
         'is_published' => true, 'is_featured' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

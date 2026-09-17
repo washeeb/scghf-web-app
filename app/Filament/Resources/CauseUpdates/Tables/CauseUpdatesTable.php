@@ -58,7 +58,7 @@ class CauseUpdatesTable
                 TernaryFilter::make('is_published')->label(__('Shown on the site')),
             ])
             ->recordActions([
-                static::notifyAction(),
+                self::notifyAction(),
                 EditAction::make(),
             ])
             ->toolbarActions([

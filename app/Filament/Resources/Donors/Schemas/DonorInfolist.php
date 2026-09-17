@@ -33,7 +33,7 @@ class DonorInfolist
                 TextEntry::make('average')->label(__('Average gift'))
                     ->state(fn (Donor $r): string => $r->donation_count > 0 ? Money::ofMinor(intdiv((int) $r->total_donated_minor, (int) $r->donation_count))->format() : '—'),
                 TextEntry::make('frequency')->label(__('Frequency'))
-                    ->state(fn (Donor $r): string => static::frequency($r)),
+                    ->state(fn (Donor $r): string => self::frequency($r)),
                 TextEntry::make('first_donated_at')->label(__('First gift'))->date('j M Y')->placeholder('—'),
                 TextEntry::make('last_donated_at')->label(__('Last gift'))->date('j M Y')->placeholder('—'),
                 TextEntry::make('regular')->label(__('Regular gifts'))
@@ -53,17 +53,17 @@ class DonorInfolist
             ]),
 
             Section::make(__('Gifts'))->schema([
-                TextEntry::make('gifts')->hiddenLabel()->state(fn (Donor $r): HtmlString => static::gifts($r)),
+                TextEntry::make('gifts')->hiddenLabel()->state(fn (Donor $r): HtmlString => self::gifts($r)),
             ]),
 
             Section::make(__('Regular gifts'))
                 ->visible(fn (Donor $r): bool => $r->subscriptions()->exists())
                 ->schema([
-                    TextEntry::make('subs')->hiddenLabel()->state(fn (Donor $r): HtmlString => static::subscriptions($r)),
+                    TextEntry::make('subs')->hiddenLabel()->state(fn (Donor $r): HtmlString => self::subscriptions($r)),
                 ]),
 
             Section::make(__('Sent to them'))->collapsible()->collapsed()->schema([
-                TextEntry::make('messages')->hiddenLabel()->state(fn (Donor $r): HtmlString => static::messages($r)),
+                TextEntry::make('messages')->hiddenLabel()->state(fn (Donor $r): HtmlString => self::messages($r)),
             ]),
         ]);
     }

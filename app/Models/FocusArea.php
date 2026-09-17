@@ -42,7 +42,6 @@ class FocusArea extends Model
         'is_active' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];

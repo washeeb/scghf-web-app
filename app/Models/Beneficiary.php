@@ -12,6 +12,7 @@ use App\Models\Concerns\HasConsents;
 use App\Models\Concerns\RecordsAuthor;
 use App\Support\Anonymiser;
 use App\Support\RetentionRunner;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -45,6 +46,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  *
  * @see RetentionRunner
  * @see Anonymiser
+ *
+ * @property Money|null $assistance
  */
 class Beneficiary extends Model implements Retainable
 {
@@ -89,7 +92,6 @@ class Beneficiary extends Model implements Retainable
         'currency' => 'GHS',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

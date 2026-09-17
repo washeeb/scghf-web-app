@@ -32,7 +32,6 @@ class SeoMeta extends Model
         'no_follow' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

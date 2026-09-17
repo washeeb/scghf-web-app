@@ -31,7 +31,9 @@ It accepts one-off and recurring donations in Ghanaian Cedis via Paystack (**Mob
 | **`FOUNDATION-WEBAPP-MASTER-PROMPT.md`** | The phase sequence, Phase 0 → 18. |
 | **`docs/PHASE-2-RUNBOOK.md`** | ⭐ Setup and deployment, step by step, with expected output and failure modes. |
 | **`docs/PHASE-3-DATA-ARCHITECTURE.md`** | The schema: ~150 tables by module, conventions, and the binding migration-safety policy. |
-| **`docs/PHASE-8-PAYMENTS-TEST-PLAN.md`** | Walking every payment path against Paystack test keys. |
+| **`docs/PHASE-8-PAYMENTS-TEST-PLAN.md`** | Walking every payment path against Paystack test keys, and the record of each run. |
+| **`docs/PHASE-14-QA.md`** | What is automated and how to run it, the quality gates, the manual test plan by browser and breakpoint, the UAT checklist, load sanity on shared hosting, bug triage, demo data. |
+| **`SECURITY.md`** | Where a security problem goes (never an issue). |
 | **`docs/PHASE-12-SECURITY.md`** | The OWASP review, headers and CSP, sessions, secrets rotation, the Paystack-key-leak playbook. |
 | **`docs/PHASE-12-PCI-DSS-SAQ-A.md`** | Why the foundation is SAQ-A and what would break it. |
 | **`docs/PHASE-12-DATA-PROTECTION.md`** | Act 843 and GDPR: obligations, DPC registration, lawful bases, retention schedule, DSR procedure. |
@@ -57,7 +59,15 @@ php artisan migrate
 npm run dev
 ```
 
-Then `php artisan serve`.
+Then `php artisan serve`. For a site with something on it, `php artisan db:seed --class=DemoDataSeeder` (never in production; it refuses).
+
+### Tests
+
+```bash
+php artisan test --exclude-testsuite Browser
+```
+
+That is the deploy gate. `vendor/bin/phpstan analyse` is the other one. The browser suite (`--testsuite Browser`) needs `npm ci && npm run build && npx playwright install chromium` first. All of it, and what a person tests by hand, is in **`docs/PHASE-14-QA.md`**.
 
 Full first-time setup — including generating the Laravel skeleton — is **`docs/PHASE-2-RUNBOOK.md`**.
 
@@ -139,7 +149,7 @@ docs/                    runbook, dependencies
 
 Commit format: `type(scope): subject` — see `.gitmessage` (`git config commit.template .gitmessage`).
 Every PR uses `.github/PULL_REQUEST_TEMPLATE.md`; the checklists are the review standard.
-Run `vendor/bin/pint` before pushing.
+Run `vendor/bin/pint` and `vendor/bin/phpstan analyse` before pushing. A bug fix lands with the test that fails without it. Bugs go through the issue templates; security problems through `SECURITY.md`.
 
 **Never commit a secret.** `.env` is ignored; `.env.example` documents every key. CI fails the build if a live key or a private key appears in tracked files.
 
@@ -168,6 +178,8 @@ Run `vendor/bin/pint` before pushing.
 **Phase 12 complete** — security and compliance. Landed: security headers with a per-request CSP nonce (enforced on the public site, report-only in Filament), the HTML sanitiser that a comment had claimed existed, admin session controls (absolute timeout, single session, IP allowlist, sign out everywhere), a Staff accounts screen at last; payment anomaly alerts and the PCI SAQ-A posture doc; photograph consent that gates publishing and withdraws an image everywhere, export-my-data and delete-my-account with the statutory carve-out, encryption at rest for the safeguarding columns, a cookie notice that gates what comes later, and the Act 843 / GDPR doc with the DPC registration steps; a restore test that actually restores, Sentry, `composer audit` in CI, the Cloudflare setup, the incident runbook and the patch routine. See `CHANGELOG.md` and `docs/PHASE-12-*.md`.
 
 **Phase 13 complete** — SEO, analytics and accessibility. Landed: search & sharing fields with character counts on every content type (the polymorphic table only pages reached before), Article/Product/FAQPage/DonateAction JSON-LD, a sitemap index regenerated on publish, CMS-managed robots extras, self-canonicals on lists, first-touch UTM attribution on donations and orders; a consent-gated analytics provider (none by default) with nine conversion events and the director's own dashboard from the database; an axe audit with four fixes, a structural accessibility check on every commit, and the accessibility statement; the keyword and content plan, local SEO and the Core Web Vitals checklist. See `CHANGELOG.md`, `docs/PHASE-13-SEO-AND-CONTENT.md` and `docs/PHASE-13-ACCESSIBILITY-REPORT.md`.
+
+**Phase 14 complete** — testing and QA. Landed: the Paystack client tested on the wire against a faked HTTP layer, an access matrix that walks every admin URL for every role, the SMS driver contract over all four gateways (and a Twilio bug it found), one slug rule with a test for every model that has one; a browser suite in Chromium — a donation, a purchase, the theme, the keyboard, every public form, axe in both themes — in its own CI job; Larastan at level 5 with a baseline, a coverage job with a floor, three required checks in branch protection; a demo data seeder that refuses production; the manual test plan by journey, browser, theme and breakpoint, the UAT checklist in plain English, load sanity for shared hosting with the k6 scripts, bug triage with issue templates, and `SECURITY.md`. See `CHANGELOG.md` and `docs/PHASE-14-QA.md`.
 
 > The admin panel is at **`/scghf-office`**, not `/admin` — set by `ADMIN_PATH`.
 > Donors sign in at **`/login`**. Staff cannot: see below.

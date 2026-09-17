@@ -50,7 +50,6 @@ class Subscriber extends Model
 
     protected $hidden = ['confirmation_token', 'unsubscribe_token'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

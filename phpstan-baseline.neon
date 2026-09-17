@@ -1,0 +1,1549 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method App\\Blocks\\BlockRegistry\:\:byCategory\(\) should return Illuminate\\Support\\Collection\<string, Illuminate\\Support\\Collection\<string, App\\Blocks\\BlockDefinition\>\> but returns Illuminate\\Support\\Collection\<\(int\|string\), Illuminate\\Support\\Collection\<int, App\\Blocks\\BlockDefinition\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Blocks/BlockRegistry.php
+
+		-
+			message: '#^Parameter \$syntax of method Carbon\\Carbon\:\:diffForHumans\(\) expects array\|int\|null, true given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Communications/AccountNotifier.php
+
+		-
+			message: '#^Result of method App\\Communications\\DeliveryEventProcessor\:\:suppressWithoutLog\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 2
+			path: app/Communications/DeliveryEventProcessor.php
+
+		-
+			message: '#^Result of method App\\Models\\EmailLog\:\:markBounced\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: app/Communications/DeliveryEventProcessor.php
+
+		-
+			message: '#^Result of method App\\Models\\EmailLog\:\:markComplained\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: app/Communications/DeliveryEventProcessor.php
+
+		-
+			message: '#^PHPDoc tag @var for constant App\\Communications\\MnotifyGateway\:\:PERMANENT_FAILURES with type array\<string, string\> is incompatible with value array\{1002\: ''mNotify could not…'', 1003\: ''Insufficient SMS…'', 1004\: ''The mNotify API key…'', 1005\: ''mNotify rejected…'', 1006\: ''mNotify rejected…'', 1008\: ''The message body…''\}\.$#'
+			identifier: classConstant.phpDocType
+			count: 1
+			path: app/Communications/MnotifyGateway.php
+
+		-
+			message: '#^Offset 1 on array\{list\<string\>, list\<non\-empty\-string\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Communications/TemplateRenderer.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Community/EnquiryRecorder.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>sla_hours" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Community/EnquiryRecorder.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 4
+			path: app/Community/VolunteerNotifier.php
+
+		-
+			message: '#^Parameter \#2 \$syntax of method Carbon\\Carbon\:\:diffForHumans\(\) expects array\|int\|null, true given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Console/Commands/ContactSlaReminders.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/ContactSlaReminders.php
+
+		-
+			message: '#^PHPDoc tag @var with type Illuminate\\Database\\Eloquent\\Model is not subtype of native type App\\Models\\SafeguardingCheck\|App\\Models\\Volunteer\|App\\Models\\VolunteerApplication\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: app/Console/Commands/EncryptAtRest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>full_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/ShiftReminders.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/ShiftReminders.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\ManageSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/ManageSettings.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$placement\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Announcements/AnnouncementResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:live\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Announcements/Tables/AnnouncementsTable.php
+
+		-
+			message: '#^Anonymous function never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Filament/Resources/Causes/Tables/CausesTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:accepting\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Causes/Tables/CausesTable.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ContactMessages/ContactMessageResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ContactMessages/ContactMessageResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ContactMessages/Pages/EditContactMessage.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/ContactMessages/Tables/ContactMessagesTable.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$document_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Documents/DocumentResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$year\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Documents/DocumentResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$interval\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Donations/Schemas/DonationInfolist.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>interval" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Donations/Schemas/DonationInfolist.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>response_payload" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Donations/Schemas/DonationInfolist.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Donations/Schemas/DonationInfolist.php
+
+		-
+			message: '#^Match arm comparison between App\\Enums\\DonationStatus\:\:NeedsReview and App\\Enums\\DonationStatus\:\:NeedsReview is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Filament/Resources/Donations/Tables/DonationsTable.php
+
+		-
+			message: '#^Parameter \#1 \$survivor of method App\\Payments\\DonorMerger\:\:merge\(\) expects App\\Models\\Donor, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Donors/Pages/ViewDonor.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: non\-falsy\-string, Closure\(App\\Models\\Subscription\)\: non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Donors/Schemas/DonorInfolist.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Filament/Resources/Donors/Schemas/DonorInfolist.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>available_variables" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/EmailTemplates/Schemas/EmailTemplateForm.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>required_variables" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/EmailTemplates/Schemas/EmailTemplateForm.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\FailedJob\)\: void given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/FailedJobs/Tables/FailedJobsTable.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$category\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Faqs/FaqResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Galleries/GalleryResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$file_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Media/MediaResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/Media/Pages/EditMedia.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isWithdrawn\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Resources/Media/Pages/EditMedia.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:reinstate\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Media/Pages/EditMedia.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:withdraw\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Media/Pages/EditMedia.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$depicts_children\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/Media/RelationManagers/ConsentsRelationManager.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Filament/Resources/Media/Schemas/MediaForm.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$max_depth\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Menus/Schemas/MenuForm.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>max_depth" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Menus/Schemas/MenuForm.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>blocks" in empty\(\) is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Filament/Resources/NewsletterCampaigns/Schemas/NewsletterCampaignForm.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Orders/Pages/ViewOrder.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Filament/Resources/Orders/Pages/ViewOrder.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$transaction\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Filament/Resources/Orders/Pages/ViewOrder.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:cancel\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Orders/Pages/ViewOrder.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:requiresDelivery\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Orders/Pages/ViewOrder.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:transitionTo\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Orders/Pages/ViewOrder.php
+
+		-
+			message: '#^Match expression does not handle remaining values\: App\\Enums\\OrderStatus\:\:Completed\|App\\Enums\\OrderStatus\:\:OutForDelivery\|App\\Enums\\OrderStatus\:\:Packed$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Filament/Resources/Orders/Tables/OrdersTable.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: bool\)\|null, Closure\(App\\Models\\Order\)\: bool given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Filament/Resources/Orders/Tables/OrdersTable.php
+
+		-
+			message: '#^Parameter \#1 \$orders of method App\\Shop\\OrderDocuments\:\:packingSlips\(\) expects iterable\<App\\Models\\Order\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Orders/Tables/OrdersTable.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Pages/PageResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Pages/PageResource.php
+
+		-
+			message: '#^Anonymous function never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Filament/Resources/Pages/Schemas/PageForm.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$partner_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Partners/PartnerResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$category\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Posts/PostResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Posts/PostResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:outsidePolicy\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/ProductCategories/Tables/ProductCategoriesTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:needsRegulatoryReview\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Products/Pages/EditProduct.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:recordRegulatoryReview\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Products/Pages/EditProduct.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:regulatoryFlags\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Products/Pages/EditProduct.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:variants\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Filament/Resources/Products/Pages/EditProduct.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>requires_regulatory_review" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Products/Schemas/ProductForm.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Products/Schemas/ProductForm.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:awaitingRegulatoryReview\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Products/Tables/ProductsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:unresolved404s\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Redirects/Tables/RedirectsTable.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reference\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Refunds/Tables/RefundsTable.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Refunds/Tables/RefundsTable.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>reference" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/Refunds/Tables/RefundsTable.php
+
+		-
+			message: '#^Anonymous function never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Filament/Resources/ShippingZones/Tables/ShippingZonesTable.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>available_variables" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Filament/Resources/SmsTemplates/Schemas/SmsTemplateForm.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>max_segments" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/SmsTemplates/Schemas/SmsTemplateForm.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>required_variables" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/SmsTemplates/Schemas/SmsTemplateForm.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$role_title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/TeamMembers/TeamMemberResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_published\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Testimonials/TestimonialResource.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>label" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/ThemeSettings/Schemas/ThemeSettingForm.php
+
+		-
+			message: '#^Anonymous function never returns string so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Filament/Resources/ThemeSettings/Tables/ThemeSettingsTable.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/Users/Pages/CreateUser.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Users/Pages/CreateUser.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$roles\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Users/Pages/CreateUser.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:disableTwoFactor\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasTwoFactorEnabled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isSuspended\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:reinstate\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:roles\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:suspend\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Parameter \#1 \$user of static method App\\Support\\Sessions\:\:revokeAll\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 3
+			path: app/Filament/Resources/Users/Pages/EditUser.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$assessor_notes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$interview_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$interview_location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$opportunity\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:approve\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:decline\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:markInterviewed\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:outstandingChecks\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:scheduleInterview\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:shortlist\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Parameter \#1 \$application of method App\\Community\\VolunteerNotifier\:\:approved\(\) expects App\\Models\\VolunteerApplication, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Parameter \#1 \$application of method App\\Community\\VolunteerNotifier\:\:declined\(\) expects App\\Models\\VolunteerApplication, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Parameter \#1 \$application of method App\\Community\\VolunteerNotifier\:\:interview\(\) expects App\\Models\\VolunteerApplication, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Parameter \#1 \$application of method App\\Community\\VolunteerNotifier\:\:shortlisted\(\) expects App\\Models\\VolunteerApplication, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Pages/ViewVolunteerApplication.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:awaitingDecision\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VolunteerApplications/Tables/VolunteerApplicationsTable.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$involves_vulnerable_contact\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasOpenConcern\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:leave\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:raiseConcern\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:refreshClearance\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:refreshTotalHours\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:resolveConcern\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Parameter \#1 \$volunteer of method App\\Community\\VolunteerNotifier\:\:thankYou\(\) expects App\\Models\\Volunteer, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Volunteers/Pages/ViewVolunteer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isAvailable\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/RelationManagers/ShiftsRelationManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:clearanceLapsing\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Tables/VolunteersTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:withOpenConcern\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Volunteers/Tables/VolunteersTable.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Payout\:\:\$payments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CauseController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Payout\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/CauseController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\ProjectLocation\:\:\$projects\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ImpactController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\ImpactController\:\:byRegion\(\) should return Illuminate\\Support\\Collection\<int, object\{region\: string, projects\: int\}\> but returns Illuminate\\Support\\Collection\<int, array\{region\: string, projects\: int\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/ImpactController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SearchController\:\:documents\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, array\{title\: string, url\: non\-falsy\-string, summary\: string\|null, kind\: \(array\|string\)\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SearchController\:\:faqs\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, array\{title\: string, url\: non\-falsy\-string, summary\: string, kind\: \(array\|string\)\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SearchController\:\:pages\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, array\{title\: string, url\: string, summary\: string\|null, kind\: \(array\|string\)\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SearchController\:\:posts\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, array\{title\: string, url\: string, summary\: string\|null, kind\: \(array\|string\)\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SearchController\:\:search\(\) should return Illuminate\\Support\\Collection\<int, array\{title\: string, url\: string, summary\: string\|null, kind\: string\}\> but returns Illuminate\\Support\\Collection\<int\|string, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>quantity" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Shop/CartController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Shop\\CheckoutController\:\:deliveryOptions\(\) should return Illuminate\\Support\\Collection\<int, array\{zone\: App\\Models\\ShippingZone, regions\: array\<int, string\>, label\: string\}\> but returns Illuminate\\Support\\Collection\<int, array\{zone\: App\\Models\\ShippingZone, regions\: non\-empty\-list, label\: string\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Shop/CheckoutController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>phone" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Shop/CheckoutController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SitemapController\:\:events\(\) should return Illuminate\\Support\\Collection\<int, array\{loc\: string, lastmod\: string\|null, priority\: string\}\> but returns Illuminate\\Support\\Collection\<int, array\{loc\: string, lastmod\: string\|null, priority\: ''0\.6''\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SitemapController\:\:posts\(\) should return Illuminate\\Support\\Collection\<int, array\{loc\: string, lastmod\: string\|null, priority\: string\}\> but returns Illuminate\\Support\\Collection\<int, array\{loc\: string, lastmod\: string\|null, priority\: ''0\.6''\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SitemapController\:\:shop\(\) should return Illuminate\\Support\\Collection\<int, array\{loc\: string, lastmod\: string\|null, priority\: string\}\> but returns Illuminate\\Support\\Collection\<int, array\{loc\: string, lastmod\: string\|null, priority\: ''0\.5''\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Method App\\Http\\Middleware\\CountVisit\:\:referrerHost\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Http/Middleware/CountVisit.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: app/Http/Requests/VolunteerApplicationRequest.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Announcement.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Announcement.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\ApiToken\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/ApiToken.php
+
+		-
+			message: '#^Method App\\Models\\ApiToken\:\:expiresIn\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/ApiToken.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditArchive\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/AuditArchive.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Method App\\Models\\BackupLogEntry\:\:nextRestoreTestDue\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/BackupLogEntry.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Beneficiary\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Beneficiary.php
+
+		-
+			message: '#^Method App\\Models\\Beneficiary\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/Beneficiary.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/Beneficiary.php
+
+		-
+			message: '#^Method App\\Models\\BeneficiaryDocument\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/BeneficiaryDocument.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/BeneficiaryDocument.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/BlockType.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>weight_grams" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Cart.php
+
+		-
+			message: '#^Method App\\Models\\Cause\:\:givingLevels\(\) should return Illuminate\\Support\\Collection\<int, array\{amount\: App\\ValueObjects\\Money, label\: string, description\: string\|null\}\> but returns Illuminate\\Support\\Collection\<int, array\{amount\: App\\ValueObjects\\Money, label\: string, description\: mixed\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/Cause.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>no_index" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Concerns/HasSeo.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>og_type" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Concerns/HasSeo.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:unresolved\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/ContactMessage.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_confidential" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/ContactMessage.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Coupon\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Coupon.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Document\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Document.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Document\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Document.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:published\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Document.php
+
+		-
+			message: '#^Method App\\Models\\EmailLog\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/EmailLog.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/EmailLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\EmailTemplate\:\:\$created_by\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/EmailTemplate.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Event\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Event.php
+
+		-
+			message: '#^Method App\\Models\\EventRegistration\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/EventRegistration.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/EventRegistration.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Faq\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Faq.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Gallery\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Gallery.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Gallery\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Gallery.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\InventoryMovement\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/InventoryMovement.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MediaFolder\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/MediaFolder.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:queued\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/MediaFolder.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Menu\:\:\$created_by\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Menu.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\MenuItem\)\: void given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Models/Menu.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/MenuItem.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>max_depth" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/MenuItem.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\NewsletterCampaign\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/NewsletterCampaign.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:live\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Page.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Partner\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Partner.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:open\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Models/Pledge.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Post\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: '#^Method App\\Models\\PrayerRequest\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/PrayerRequest.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/PrayerRequest.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Product\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Product.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Models/ProductImage.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/ProductVariant.php
+
+		-
+			message: '#^Property App\\Models\\ProjectMilestone\:\:\$achieved_on \(Carbon\\Carbon\|null\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Models/ProjectMilestone.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Redirect\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Redirect.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\ScheduledMessage\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/ScheduledMessage.php
+
+		-
+			message: '#^Method App\\Models\\ScheduledMessage\:\:claimBatch\(\) should return Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\ScheduledMessage\> but returns Illuminate\\Database\\Eloquent\\Collection\<int, static\(App\\Models\\ScheduledMessage\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/ScheduledMessage.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SeoMeta\:\:\$created_by\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/SeoMeta.php
+
+		-
+			message: '#^Method App\\Models\\SettingHistoryEntry\:\:forKey\(\) should return Illuminate\\Support\\Collection\<int, App\\Models\\SettingHistoryEntry\> but returns Illuminate\\Database\\Eloquent\\Collection\<int, static\(App\\Models\\SettingHistoryEntry\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/SettingHistoryEntry.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SmsBroadcast\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/SmsBroadcast.php
+
+		-
+			message: '#^Method App\\Models\\SmsBroadcast\:\:recipients\(\) should return Illuminate\\Support\\Collection\<int, array\{number\: string, name\: string\|null\}\> but returns Illuminate\\Support\\Collection\<int, array\{number\: string, name\: null\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/SmsBroadcast.php
+
+		-
+			message: '#^Method App\\Models\\SmsLog\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/SmsLog.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/SmsLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SmsTemplate\:\:\$created_by\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/SmsTemplate.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SponsorshipUpdate\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/SponsorshipUpdate.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Story\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Story.php
+
+		-
+			message: '#^Parameter \#1 \$from of method App\\Models\\Subscription\:\:advanceFrom\(\) expects Illuminate\\Support\\Carbon, Carbon\\Carbon given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Models/Subscription.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Suppression\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Suppression.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\TaxApproval\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/TaxApproval.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:validOn\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/TaxApproval.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\TeamMember\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TeamMember.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Testimonial\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Testimonial.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Testimonial\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Testimonial.php
+
+		-
+			message: '#^Method App\\Models\\VisitorStat\:\:top\(\) should return Illuminate\\Support\\Collection\<int, object\{value\: string, views\: int\}\> but returns Illuminate\\Support\\Collection\<int, object\{value\: string, views\: int\}&stdClass\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/VisitorStat.php
+
+		-
+			message: '#^Method App\\Models\\Volunteer\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/Volunteer.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/Volunteer.php
+
+		-
+			message: '#^Method App\\Models\\VolunteerApplication\:\:retentionAnchorDate\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/VolunteerApplication.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/VolunteerApplication.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>involves_vulnerable_contact" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Models/VolunteerApplication.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\VolunteerOpportunity\:\:\$updated_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/VolunteerOpportunity.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Payments/DonationNotifier.php
+
+		-
+			message: '#^PHPDoc tag @var above a method has no effect\.$#'
+			identifier: varTag.misplaced
+			count: 1
+			path: app/Payments/DonationService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$gifts\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Payments/GivingReports.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$label\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Payments/GivingReports.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$period\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Payments/GivingReports.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$raised\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Payments/GivingReports.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:chargeableAmount\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Payments/PaymentManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:payerEmail\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Payments/PaymentManager.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Payments/ReceiptIssuer.php
+
+		-
+			message: '#^Static property App\\Policies\\BasePolicy\:\:\$known \(array\<string, true\>\|null\) does not accept array\<mixed, bool\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Policies/BasePolicy.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\OrderItem\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Privacy/AccountDataExporter.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Privacy/AccountDataExporter.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Privacy/AccountDataExporter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Privacy/AccountDataExporter.php
+
+		-
+			message: '#^Method App\\Programmes\\CauseUpdateNotifier\:\:recipients\(\) should return Illuminate\\Support\\Collection\<string, string\> but returns Illuminate\\Support\\Collection\<lowercase\-string, string\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Programmes/CauseUpdateNotifier.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_pickup" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Shop/CheckoutService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Shop/CheckoutService.php
+
+		-
+			message: '#^Parameter \#1 \$key of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:contains\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|Illuminate\\Database\\Eloquent\\Model\|int\|string, Closure\(App\\Models\\DigitalDownloadToken\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Shop/OrderFulfilment.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: non\-falsy\-string, Closure\(App\\Models\\DigitalDownloadToken\)\: non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Shop/OrderNotifier.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>product_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Shop/OrderNotifier.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Shop/OrderNotifier.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>venue_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Shop/OrderNotifier.php
+
+		-
+			message: '#^PHPDoc tag @var above a method has no effect\.$#'
+			identifier: varTag.misplaced
+			count: 1
+			path: app/Support/Acknowledgement.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>reference" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Support/Acknowledgement.php
+
+		-
+			message: '#^Method App\\Support\\AnalyticsReports\:\:attribution\(\) should return Illuminate\\Support\\Collection\<int, array\{source\: string, campaign\: string, donations\: int, donated\: App\\ValueObjects\\Money, orders\: int, ordered\: App\\ValueObjects\\Money\}\> but returns Illuminate\\Support\\Collection\<int, array\{source\: mixed, campaign\: mixed, donations\: mixed, donated\: App\\ValueObjects\\Money, orders\: mixed, ordered\: App\\ValueObjects\\Money\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Support/AnalyticsReports.php
+
+		-
+			message: '#^Method App\\Support\\AnalyticsReports\:\:byDay\(\) should return Illuminate\\Support\\Collection\<int, array\{day\: string, views\: int, sessions\: int\}\> but returns Illuminate\\Support\\Collection\<int, array\{day\: non\-falsy\-string, views\: int, sessions\: int\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Support/AnalyticsReports.php
+
+		-
+			message: '#^Method App\\Support\\AuditLogger\:\:userAgent\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Support/AuditLogger.php
+
+		-
+			message: '#^Method App\\Support\\DisclosureControl\:\:apply\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, non\-empty\-array\<string, mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Support/DisclosureControl.php
+
+		-
+			message: '#^Method App\\Support\\ErrorReporter\:\:method\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Support/ErrorReporter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>no_follow" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Support/PageMeta.php
+
+		-
+			message: '#^Argument of an invalid type class\-string\<App\\Contracts\\Retainable&Illuminate\\Database\\Eloquent\\Model\> supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: app/Support/RetentionRunner.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<App\\Contracts\\Retainable&Illuminate\\Database\\Eloquent\\Model\>\:\:retentionCandidates\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/RetentionRunner.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Illuminate\\Database\\Eloquent\\Model and ''forceDelete'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Support/RetentionRunner.php
+
+		-
+			message: '#^Cannot assign new offset to class\-string\<App\\Contracts\\Retainable&Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: offsetAssign.dimType
+			count: 1
+			path: app/Support/RetentionRunner.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Support/TaxDeductibility.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Support/TaxDeductibility.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_enabled" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: database/seeders/BlockTypeSeeder.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: database/seeders/CmsReferenceSeeder.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>path" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: database/seeders/PageContentSeeder.php
+
+		-
+			message: '#^PHPDoc tag @var for constant Database\\Seeders\\SettingsSeeder\:\:SETTINGS with type array\<int, array\{0\: string, 1\: string, 2\: string\|null, 3\: App\\Enums\\SettingType, 4\: string, 5\: bool, 6\?\: string\|null, 7\?\: array\<string, string\>\}\> is not subtype of value array\{array\{''general'', ''legal_name'', ''St\. Cecilia\\''s…'', App\\Enums\\SettingType\:\:String, ''Registered legal…'', true, ''Must match the…''\}, array\{''general'', ''short_name'', ''Greater Hope…'', App\\Enums\\SettingType\:\:String, ''Display name'', true\}, array\{''general'', ''wordmark'', ''GreaterHOPE'', App\\Enums\\SettingType\:\:String, ''Wordmark'', true\}, array\{''general'', ''motto'', ''Faith\. Compassion\.…'', App\\Enums\\SettingType\:\:String, ''Motto'', true\}, array\{''general'', ''founded_on'', ''2025\-10\-25'', App\\Enums\\SettingType\:\:String, ''Date formed'', true\}, array\{''general'', ''registered_on'', ''2026\-01\-15'', App\\Enums\\SettingType\:\:String, ''Date registered'', true\}, array\{''general'', ''founder_name'', ''Adam Kingsley…'', App\\Enums\\SettingType\:\:String, ''Founder'', true\}, array\{''general'', ''in_memory_of'', ''Mrs Cecilia…'', App\\Enums\\SettingType\:\:String, ''In memory of'', true\}, \.\.\.\}\.$#'
+			identifier: classConstant.phpDocType
+			count: 1
+			path: database/seeders/SettingsSeeder.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 2
+			path: routes/console.php

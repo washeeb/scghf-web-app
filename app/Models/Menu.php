@@ -22,7 +22,6 @@ class Menu extends Model
 
     protected $fillable = ['key', 'name', 'description', 'is_locked', 'max_depth'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['is_locked' => 'boolean', 'max_depth' => 'integer'];

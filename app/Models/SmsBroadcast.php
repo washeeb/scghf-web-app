@@ -68,7 +68,6 @@ class SmsBroadcast extends Model
         'currency' => 'GHS',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

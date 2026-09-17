@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * "Sponsor a child — GH₵ 50 a month" fixes the amount; "Monthly giving" leaves
  * it to the donor. `amount_minor` is nullable for exactly that reason: zero
  * would mean free, which is a different and wrong thing.
+ *
+ * @property Money|null $amount
  */
 class DonationPlan extends Model
 {
@@ -45,7 +47,6 @@ class DonationPlan extends Model
         'is_active' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

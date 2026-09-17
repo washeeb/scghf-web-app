@@ -52,7 +52,6 @@ class ShippingZone extends Model
         'is_active' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

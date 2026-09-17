@@ -99,7 +99,7 @@ class CommentsTable
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->visible(fn (Comment $record): bool => ! $record->isApproved())
-                    ->action(fn (Comment $record) => $record->approve(static::moderator())),
+                    ->action(fn (Comment $record) => $record->approve(self::moderator())),
 
                 Action::make('spam')
                     ->label(__('Spam'))
@@ -107,7 +107,7 @@ class CommentsTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->visible(fn (Comment $record): bool => $record->status !== Comment::STATUS_SPAM)
-                    ->action(fn (Comment $record) => $record->markSpam(static::moderator())),
+                    ->action(fn (Comment $record) => $record->markSpam(self::moderator())),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -116,7 +116,7 @@ class CommentsTable
                         ->icon('heroicon-o-check')
                         ->color('success')
                         ->action(fn (Collection $records) => $records->each(
-                            fn (Comment $record) => $record->approve(static::moderator())
+                            fn (Comment $record) => $record->approve(self::moderator())
                         ))
                         ->deselectRecordsAfterCompletion(),
 
@@ -126,7 +126,7 @@ class CommentsTable
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each(
-                            fn (Comment $record) => $record->markSpam(static::moderator())
+                            fn (Comment $record) => $record->markSpam(self::moderator())
                         ))
                         ->deselectRecordsAfterCompletion(),
 

@@ -20,7 +20,6 @@ class BlockType extends Model
 {
     protected $fillable = ['key', 'is_enabled', 'sort_order', 'max_per_page'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['is_enabled' => 'boolean'];

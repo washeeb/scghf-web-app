@@ -66,7 +66,6 @@ class Volunteer extends Model implements Retainable
         'total_hours' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

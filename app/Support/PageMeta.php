@@ -63,8 +63,8 @@ class PageMeta implements Arrayable
     {
         $og = method_exists($model, 'seoOpenGraph') ? $model->seoOpenGraph() : [];
 
-        $image = static::resolveImage($og['image'] ?? null)
-            ?? static::defaultShareImage();
+        $image = self::resolveImage($og['image'] ?? null)
+            ?? self::defaultShareImage();
 
         $seo = $model->seo ?? null;
 
@@ -103,7 +103,7 @@ class PageMeta implements Arrayable
      */
     public static function site(string $title, ?string $description = null, bool $noindex = false): self
     {
-        $image = static::defaultShareImage();
+        $image = self::defaultShareImage();
         $suffix = (string) setting('seo.title_suffix', '');
 
         if ($suffix !== '' && str_ends_with($title, $suffix)) {
@@ -200,6 +200,6 @@ class PageMeta implements Arrayable
 
     private static function defaultShareImage(): ?object
     {
-        return static::resolveImage(setting('seo.og_image'));
+        return self::resolveImage(setting('seo.og_image'));
     }
 }

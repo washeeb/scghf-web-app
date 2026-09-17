@@ -332,12 +332,29 @@ class DonateController extends Controller
             'shareUrl' => $donation->cause !== null && ! $donation->cause->is_general_fund
                 ? route('causes.show', $donation->cause)
                 : route('donate'),
-            'meta' => PageMeta::site(__('Thank you'), noindex: true),
+            // The tab title and the breadcrumb follow the outcome. A declined
+            // card under a crumb that says "Thank you" reads as a mistake,
+            // and the browser suite is what noticed it.
+            'meta' => PageMeta::site($title = $this->thanksTitle($donation), noindex: true),
             'crumbs' => [
                 ['label' => __('Home'), 'url' => url('/')],
-                ['label' => __('Thank you'), 'url' => null],
+                ['label' => $title, 'url' => null],
             ],
         ]);
+    }
+
+    private function thanksTitle(Donation $donation): string
+    {
+        $status = $donation->status->value;
+        $awaiting = $status === 'pending' ? $donation->transaction?->awaiting_action : null;
+
+        return match (true) {
+            $status === 'completed' => __('Thank you'),
+            in_array($status, ['failed', 'abandoned'], true) => __('That payment did not go through'),
+            $awaiting === 'send_otp' => __('Enter the code from your phone'),
+            $awaiting === 'pay_offline' => __('Approve the payment on your phone'),
+            default => __('We are confirming your gift'),
+        };
     }
 
     /**

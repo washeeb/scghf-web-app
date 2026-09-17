@@ -24,7 +24,6 @@ class ThemeSetting extends Model
         'contrast_against', 'min_contrast', 'is_locked', 'sort_order', 'updated_by',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -71,7 +71,6 @@ class BackupLogEntry extends Model
         'status' => self::STATUS_STARTED,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -260,7 +259,7 @@ class BackupLogEntry extends Model
             $warnings[] = sprintf(
                 'The last backup was %s. Shared hosting counts inodes as well as bytes, so check '
                 .'the account quota before it is enforced for you.',
-                static::formatBytes($size),
+                self::formatBytes($size),
             );
         }
 
@@ -269,7 +268,7 @@ class BackupLogEntry extends Model
 
     public function humanSize(): ?string
     {
-        return $this->size_bytes === null ? null : static::formatBytes($this->size_bytes);
+        return $this->size_bytes === null ? null : self::formatBytes($this->size_bytes);
     }
 
     public function nextRestoreTestDue(): ?Carbon

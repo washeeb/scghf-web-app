@@ -107,7 +107,7 @@ class ExportAction
                      * of a single filter and there is no accessor for all of
                      * them.
                      */
-                    context: ['filters' => static::activeFilters($table)],
+                    context: ['filters' => self::activeFilters($table)],
                 );
 
                 $filename = str($what)->slug()->toString().'-'.now()->format('Y-m-d').'.csv';
@@ -124,7 +124,7 @@ class ExportAction
                     $query->chunk(500, function ($rows) use ($handle, $columns): void {
                         foreach ($rows as $row) {
                             fputcsv($handle, array_map(
-                                fn (string|\Closure $accessor): string => static::value($row, $accessor),
+                                fn (string|\Closure $accessor): string => self::value($row, $accessor),
                                 array_values($columns),
                             ));
                         }

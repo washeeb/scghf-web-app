@@ -44,7 +44,6 @@ class ProjectMilestone extends Model
         'is_public' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

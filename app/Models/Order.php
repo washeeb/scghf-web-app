@@ -43,6 +43,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * customer's hands already states.
  *
  * @property OrderStatus $status
+ * @property Money|null $subtotal
+ * @property Money|null $shipping
+ * @property Money|null $discount
+ * @property Money|null $total
+ * @property Money|null $fee
+ * @property Money|null $donation
  */
 class Order extends Model implements Payable
 {
@@ -72,7 +78,6 @@ class Order extends Model implements Payable
         'stock_committed' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

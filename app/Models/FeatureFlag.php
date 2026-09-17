@@ -49,7 +49,6 @@ class FeatureFlag extends Model
         'is_locked' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

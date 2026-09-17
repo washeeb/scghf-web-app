@@ -48,7 +48,6 @@ class SafeguardingCheck extends Model
     /** @var array<string, mixed> */
     protected $attributes = ['outcome' => self::OUTCOME_PENDING];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * `free_above_minor` is nullable rather than a huge sentinel, because "this
  * rate has no free-delivery threshold" and "free delivery above GH₵ 1,000,000"
  * are different statements and only one of them is honest.
+ *
+ * @property Money|null $price
+ * @property Money|null $free_above
  */
 class ShippingRate extends Model
 {
@@ -34,7 +37,6 @@ class ShippingRate extends Model
         'is_active' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

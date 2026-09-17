@@ -22,7 +22,6 @@ class BlogCategory extends Model
     /** @var array<string, mixed> */
     protected $attributes = ['sort_order' => 0, 'is_published' => true];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['is_published' => 'boolean'];

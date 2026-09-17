@@ -62,7 +62,6 @@ class AuditArchive extends Model
         'disk' => 'local',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

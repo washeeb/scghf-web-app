@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Casts\MoneyCast;
 use App\Support\Features;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -34,6 +35,9 @@ use RuntimeException;
  *
  * That exposure is the reason the whole feature is flagged off, and the review
  * gate is what would make turning it on defensible.
+ *
+ * @property Money|null $goal
+ * @property Money|null $raised
  */
 class Fundraiser extends Model
 {
@@ -62,7 +66,6 @@ class Fundraiser extends Model
         'currency' => 'GHS',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\MoneyCast;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Its own row rather than a counter alone, so "who used this and when" is
  * answerable and a per-customer limit can actually be enforced. The counter on
  * the coupon is the cache of these.
+ *
+ * @property Money|null $discount
  */
 class CouponRedemption extends Model
 {
@@ -27,7 +30,6 @@ class CouponRedemption extends Model
     /** @var array<string, mixed> */
     protected $attributes = ['currency' => 'GHS'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['discount' => MoneyCast::class.':discount_minor,currency'];

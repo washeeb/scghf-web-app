@@ -38,6 +38,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * `donations.cause_id` is NOT NULL, and this is what makes that safe.
  *
  * @property CauseStatus $status
+ * @property Money|null $goal
+ * @property Money|null $raised
  */
 class Cause extends Model
 {
@@ -74,7 +76,6 @@ class Cause extends Model
         'sort_order' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

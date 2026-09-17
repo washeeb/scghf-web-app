@@ -32,7 +32,6 @@ class ImpactMetricValue extends Model
         'notes', 'source', 'recorded_by', 'verified_at', 'verified_by',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

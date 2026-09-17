@@ -46,7 +46,6 @@ class MenuItem extends Model
         'opens_in_new_tab' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -24,6 +24,8 @@ Where a lighter alternative exists, it is named.
 | **sentry/sentry-laravel** ^4 | Error monitoring that reaches whoever maintains the code, with the stack trace and the release, the moment something breaks (Phase 12). Pure PHP over HTTP; nothing to install on the server; a no-op with no DSN. Errors only — tracing sampled at 0, `send_default_pii` off — so no donor data leaves. The in-app error reports (Phase 5) remain for the foundation's staff. | Flare (paid), or the in-app reports alone — which nobody outside the admin panel ever sees. |
 | **axe-core** (dev, npm) | The accessibility engine the Phase 13 audit used, kept so the run can be repeated after a redesign (`docs/PHASE-13-ACCESSIBILITY-REPORT.md`). Never shipped. | The browser extension does the same by hand. |
 | **laravel/pint** (dev) | One formatting standard, enforced in CI. Removes style from code review entirely. | PHP-CS-Fixer directly; Pint is a thin wrapper with sane Laravel defaults. |
+| **larastan/larastan** (dev) | Static analysis at level 5 with a baseline, in CI since Phase 14 (`phpstan.neon.dist`). The brief for Phase 14 asks for it, which resolved the "needs approval" note this row used to carry. Zero production weight. | PHPStan alone — Larastan is PHPStan plus the Laravel knowledge (casts, relations, facades) without which half the errors are noise. |
+| **pestphp/pest-plugin-browser** (dev) + **playwright** (dev, npm) | The browser suite (`tests/Browser`): a donation, a purchase, the theme, the keyboard and every public form in Chromium, on every pull request. The app is served in-process, so the test's database and fake gateway are the browser's. Never shipped; the deploy gate does not run it. | Laravel Dusk — needs ChromeDriver and a separate server; the Pest plugin needs neither. |
 | **pestphp/pest** (dev) | The test runner. `CLAUDE.md` requires tests for anything touching money, auth or webhooks. | PHPUnit — Pest sits on top of it, so this is a syntax preference, not a capability one. |
 
 ---
@@ -49,7 +51,6 @@ Where a lighter alternative exists, it is named.
 
 | Package | Decision needed |
 |---|---|
-| **larastan/larastan** (dev) | Static analysis would catch a whole class of bug before CI does, and it is what `.github/workflows/ci.yml` would use for a `phpstan` step. **It is not in the locked list in `CLAUDE.md`** — so it needs your approval before being added, per the "flag before introducing" rule. Zero production weight; dev-only. My recommendation: yes, at level 5. |
 | **barryvdh/laravel-dompdf** *or* **spatie/laravel-pdf** | Needed in Phase 8 for donation receipts. `dompdf` is pure PHP and works anywhere. `spatie/laravel-pdf` produces far better output but drives headless Chromium — **impossible on shared hosting.** Recommendation: dompdf. Decide in Phase 8. |
 | **propaganistas/laravel-phone** | E.164 normalisation for Ghanaian numbers (risk DEL-9). Wraps giggsey/libphonenumber, which is a few MB. Alternative: a ~40-line cast handling the `024…`/`+233…`/`233…` forms ourselves. Recommendation: hand-roll it — we only need one country. |
 

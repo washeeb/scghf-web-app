@@ -72,7 +72,7 @@ class MenuForm
 
             Section::make(__('Items'))
                 ->description(__('Drag to reorder. Drag onto an item to nest under it.'))
-                ->schema([static::items()]),
+                ->schema([self::items()]),
         ]);
     }
 
@@ -89,7 +89,7 @@ class MenuForm
             ->addActionLabel(__('Add an item'))
             ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
             ->schema([
-                ...static::itemFields(),
+                ...self::itemFields(),
 
                 Repeater::make('children')
                     ->label(__('Items under this one'))
@@ -100,7 +100,7 @@ class MenuForm
                     ->collapsed()
                     ->addActionLabel(__('Add a child item'))
                     ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-                    ->schema(static::itemFields())
+                    ->schema(self::itemFields())
                     /*
                      * Hidden on a flat menu rather than shown and refused.
                      * `max_depth` 0 means the layout draws one level, and the
@@ -149,7 +149,7 @@ class MenuForm
 
             Select::make('route_name')
                 ->label(__('Section'))
-                ->options(fn (): array => static::namedRoutes())
+                ->options(fn (): array => self::namedRoutes())
                 ->searchable()
                 ->visible(fn (Get $get): bool => $get('link_type') === MenuItemLinkType::Route->value)
                 ->required(fn (Get $get): bool => $get('link_type') === MenuItemLinkType::Route->value)

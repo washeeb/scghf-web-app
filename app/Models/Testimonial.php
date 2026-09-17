@@ -37,7 +37,6 @@ class Testimonial extends Model
         'has_consent' => false, 'is_published' => false, 'is_featured' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

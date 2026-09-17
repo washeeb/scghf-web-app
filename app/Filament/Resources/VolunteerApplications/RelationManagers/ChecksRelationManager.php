@@ -86,7 +86,7 @@ class ChecksRelationManager extends RelationManager
                         DatePicker::make('expires_on')->label(__('Expires'))->helperText(__('For a police clearance. Empty for a check that does not expire.')),
                         Textarea::make('notes')->label(__('Notes'))->rows(2),
                     ])
-                    ->action(fn (SafeguardingCheck $record, array $data) => static::record($record, [
+                    ->action(fn (SafeguardingCheck $record, array $data) => self::record($record, [
                         ...$data,
                         'outcome' => SafeguardingCheck::OUTCOME_PASSED,
                         'verified_by' => auth()->id(),
@@ -102,7 +102,7 @@ class ChecksRelationManager extends RelationManager
                     ->schema([
                         Textarea::make('notes')->label(__('What was found'))->required()->rows(3),
                     ])
-                    ->action(fn (SafeguardingCheck $record, array $data) => static::record($record, [
+                    ->action(fn (SafeguardingCheck $record, array $data) => self::record($record, [
                         ...$data,
                         'outcome' => SafeguardingCheck::OUTCOME_FAILED,
                         'verified_by' => auth()->id(),
@@ -118,7 +118,7 @@ class ChecksRelationManager extends RelationManager
                     ->schema([
                         Textarea::make('waiver_reason')->label(__('Why'))->required()->rows(3),
                     ])
-                    ->action(fn (SafeguardingCheck $record, array $data) => static::record($record, [
+                    ->action(fn (SafeguardingCheck $record, array $data) => self::record($record, [
                         ...$data,
                         'outcome' => SafeguardingCheck::OUTCOME_WAIVED,
                         'waived_by' => auth()->id(),

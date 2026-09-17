@@ -56,9 +56,9 @@ class ViewDonor extends ViewRecord
                                 ->orWhere('phone', 'like', "%{$search}%"))
                             ->limit(20)
                             ->get()
-                            ->mapWithKeys(fn (Donor $d): array => [$d->getKey() => static::describe($d)])
+                            ->mapWithKeys(fn (Donor $d): array => [$d->getKey() => self::describe($d)])
                             ->all())
-                        ->getOptionLabelUsing(fn ($value): ?string => ($d = Donor::find($value)) ? static::describe($d) : null),
+                        ->getOptionLabelUsing(fn ($value): ?string => ($d = Donor::find($value)) ? self::describe($d) : null),
                 ])
                 ->requiresConfirmation()
                 ->modalHeading(__('Merge donors'))

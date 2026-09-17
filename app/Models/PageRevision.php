@@ -20,7 +20,6 @@ class PageRevision extends Model
 
     protected $fillable = ['page_id', 'user_id', 'revision_number', 'snapshot', 'summary', 'created_at'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['created_at' => 'datetime'];

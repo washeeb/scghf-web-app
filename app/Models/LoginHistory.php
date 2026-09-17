@@ -37,7 +37,6 @@ class LoginHistory extends Model
         'is_new_device',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

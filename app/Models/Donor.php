@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\DB;
  * statutory minimum — so a donor record is soft-deletable for day-to-day
  * operations, and a genuine erasure request is a documented, logged path that
  * leaves the financial rows intact and anonymises the person.
+ *
+ * @property Money|null $total_donated
  */
 class Donor extends Model
 {
@@ -57,7 +59,6 @@ class Donor extends Model
         'is_anonymous_by_default' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

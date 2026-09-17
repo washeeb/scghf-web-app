@@ -9,6 +9,7 @@ use App\Enums\ProjectStatus;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
 use App\Support\Slug;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -31,6 +32,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * whether it was describing money raised or work done.
  *
  * @property ProjectStatus $status
+ * @property Money|null $budget
  */
 class Project extends Model
 {
@@ -56,7 +58,6 @@ class Project extends Model
         'is_published' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

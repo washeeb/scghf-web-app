@@ -48,7 +48,6 @@ class Comment extends Model
     /** Never expose a commenter's email or IP in a public payload. */
     protected $hidden = ['author_email', 'ip_address', 'user_agent'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['moderated_at' => 'datetime'];

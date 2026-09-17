@@ -74,7 +74,6 @@ class Consent extends Model
         'is_minor' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

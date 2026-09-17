@@ -27,6 +27,9 @@ use RuntimeException;
  *
  * A percentage coupon can carry a ceiling, because "20% off" applied to an
  * unusually large order is a discount nobody signed off.
+ *
+ * @property Money|null $minimum_spend
+ * @property Money|null $maximum_discount
  */
 class Coupon extends Model
 {
@@ -53,7 +56,6 @@ class Coupon extends Model
         'is_active' => true,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

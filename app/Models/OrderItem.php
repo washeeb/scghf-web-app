@@ -20,6 +20,9 @@ use RuntimeException;
  * trust problem at once, and it is the reason `product_variant_id` is nullable
  * with ON DELETE SET NULL. A product discontinued in two years takes nothing
  * with it; this row still prints the invoice correctly.
+ *
+ * @property Money|null $unit_price
+ * @property Money|null $line_total
  */
 class OrderItem extends Model
 {
@@ -34,7 +37,6 @@ class OrderItem extends Model
     /** @var array<string, mixed> */
     protected $attributes = ['currency' => 'GHS'];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

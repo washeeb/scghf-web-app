@@ -49,7 +49,6 @@ class InventoryMovement extends Model
         'reference', 'note', 'created_by', 'created_at',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['created_at' => 'datetime'];

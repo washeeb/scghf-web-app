@@ -39,7 +39,6 @@ class Cart extends Model
         'user_id', 'session_token', 'coupon_id', 'customer_email', 'expires_at',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return ['expires_at' => 'datetime'];

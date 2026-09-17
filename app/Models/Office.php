@@ -27,7 +27,6 @@ class Office extends Model
         'hours', 'directions_url', 'notes', 'is_primary', 'is_active', 'sort_order',
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

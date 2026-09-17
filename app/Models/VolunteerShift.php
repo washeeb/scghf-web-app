@@ -43,7 +43,6 @@ class VolunteerShift extends Model
     /** @var array<string, mixed> */
     protected $attributes = ['status' => self::STATUS_SCHEDULED];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

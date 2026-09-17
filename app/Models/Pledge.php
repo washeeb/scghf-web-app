@@ -41,6 +41,9 @@ use RuntimeException;
  * Harvest and thanksgiving pledging is ordinary practice in Ghanaian
  * church-linked giving. A foundation that cannot record a pledge either loses
  * track of it or, worse, books it as a gift.
+ *
+ * @property Money|null $amount
+ * @property Money|null $fulfilled
  */
 class Pledge extends Model
 {
@@ -85,7 +88,6 @@ class Pledge extends Model
         'consent_to_remind' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

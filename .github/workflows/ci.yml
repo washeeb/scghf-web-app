@@ -19,7 +19,7 @@ jobs:
   quality:
     name: Lint, analyse, test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     services:
       mysql:
@@ -42,7 +42,7 @@ jobs:
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql, sodium, tokenizer, xml, zip
-          coverage: xdebug
+          coverage: none
           tools: composer:v2
 
       - name: Cache Composer packages
@@ -68,6 +68,12 @@ jobs:
       - name: Check code style
         run: vendor/bin/pint --test
 
+      # Larastan, level 5, against a baseline taken in Phase 14. A new error
+      # fails the build; an old one stays in the baseline until somebody fixes
+      # it. The baseline count should only go down.
+      - name: Static analysis
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
       # Known vulnerabilities in what we ship. Dependabot proposes the fix;
       # this is what stops a deploy going out before the fix is merged.
       - name: Audit PHP dependencies
@@ -76,8 +82,10 @@ jobs:
       - name: Run migrations against a real MySQL
         run: php artisan migrate --force --no-interaction
 
+      # The browser suite runs in its own job below; it needs Chromium and
+      # the built assets, neither of which this job should wait for.
       - name: Run tests
-        run: php artisan test
+        run: php artisan test --exclude-testsuite Browser
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -117,3 +125,149 @@ jobs:
             exit 1
           fi
           echo "Clean."
+
+  # ── Coverage ──────────────────────────────────────────────────────────────
+  # The same suite once more, under pcov, with a floor. Kept apart from the
+  # gate above so a slow coverage run never delays the answer to "did the
+  # tests pass", and so the report is an artifact rather than log noise.
+  # The floor is raised, never lowered, as the number climbs; see
+  # docs/PHASE-14-QA.md §4 for the reasoning behind the first value.
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: scghf_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql, sodium, tokenizer, xml, zip
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+          echo "DB_HOST=127.0.0.1"        >> .env
+          echo "DB_PORT=3306"             >> .env
+          echo "DB_DATABASE=scghf_test"   >> .env
+          echo "DB_USERNAME=root"         >> .env
+          echo "DB_PASSWORD="             >> .env
+          php artisan migrate --force --no-interaction
+
+      - name: Run tests with coverage
+        run: |
+          php artisan test --exclude-testsuite Browser             --coverage --min=${{ vars.COVERAGE_MIN || 60 }}             --coverage-clover=storage/coverage/clover.xml             --coverage-html=storage/coverage/html
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: storage/coverage
+          retention-days: 14
+
+  # ── Browser ───────────────────────────────────────────────────────────────
+  # Chromium through Playwright, against the app served in-process by
+  # pest-plugin-browser: a donation, a purchase, the theme, the keyboard, and
+  # every public form. Needs the built assets, so Node comes first here.
+  browser:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: scghf_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql, sockets, sodium, tokenizer, xml, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build frontend assets and install Chromium
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps chromium
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+          echo "DB_HOST=127.0.0.1"        >> .env
+          echo "DB_PORT=3306"             >> .env
+          echo "DB_DATABASE=scghf_test"   >> .env
+          echo "DB_USERNAME=root"         >> .env
+          echo "DB_PASSWORD="             >> .env
+          php artisan migrate --force --no-interaction
+
+      - name: Run browser tests
+        run: php artisan test --testsuite Browser
+
+      - name: Keep the screenshots of what failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-screenshots
+          path: tests/Browser/Screenshots
+          if-no-files-found: ignore
+          retention-days: 7

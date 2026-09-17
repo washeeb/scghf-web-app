@@ -51,8 +51,8 @@ class AnnouncementsTable
                 TextColumn::make('state')
                     ->label(__('On the site'))
                     ->badge()
-                    ->state(fn (Announcement $record): string => static::state($record))
-                    ->color(fn (Announcement $record): string => match (static::state($record)) {
+                    ->state(fn (Announcement $record): string => self::state($record))
+                    ->color(fn (Announcement $record): string => match (self::state($record)) {
                         'Live' => 'success',
                         'Scheduled' => 'warning',
                         'Finished' => 'danger',

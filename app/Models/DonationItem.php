@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Casts\MoneyCast;
 use App\Support\TaxDeductibility;
+use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,8 @@ use RuntimeException;
  * the moment of the gift — which requires both a qualifying cause and a current
  * GRA approval. If the approval lapses next year, an acknowledgement already in
  * a donor's hands must not silently change meaning.
+ *
+ * @property Money|null $amount
  */
 class DonationItem extends Model
 {
@@ -40,7 +43,6 @@ class DonationItem extends Model
         'is_tax_deductible' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

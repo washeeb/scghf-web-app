@@ -123,7 +123,7 @@ class ContactMessagesTable
                         ->where('created_at', '<', now()->subWeek())),
             ])
             ->recordActions([
-                static::replyAction(),
+                self::replyAction(),
                 EditAction::make()->label(__('Open')),
             ])
             ->toolbarActions([
@@ -141,8 +141,8 @@ class ContactMessagesTable
                     'Replied' => 'replied_at',
                 ], ['department', 'assignee']),
                 BulkActionGroup::make([
-                    static::assignBulkAction(),
-                    static::markResolvedBulkAction(),
+                    self::assignBulkAction(),
+                    self::markResolvedBulkAction(),
                 ]),
             ]);
     }

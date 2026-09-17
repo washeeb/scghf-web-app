@@ -65,7 +65,6 @@ class InboundWebhookEvent extends Model
         'attempts' => 0,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -79,7 +79,6 @@ class VolunteerApplication extends Model implements Retainable
         'declaration_agreed' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

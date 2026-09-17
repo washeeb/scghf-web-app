@@ -34,7 +34,6 @@ class ContactMessage extends Model
         'consent_given' => false,
     ];
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
