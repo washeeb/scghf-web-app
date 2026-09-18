@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Filament\Pages\HelpPage;
 use App\Filament\Resources\Pages\PageResource;
 use App\Models\User;
 use App\Policies\BasePolicy;
@@ -168,14 +169,17 @@ it('refuses a donor every admin URL', function () {
     expect(walkAdmin(auth()->user(), $expectations))->toBe([]);
 });
 
-it('lets staff holding admin.access alone see the dashboard and nothing else', function () {
+it('lets staff holding admin.access alone see the dashboard and the manual, and nothing else', function () {
     $this->actingAs($staff = staffWithTwoFactor('admin.access'));
 
     $this->get(Dashboard::getUrl())->assertOk();
+    $this->get(HelpPage::getUrl())->assertOk();
 
     $expectations = [];
     foreach (adminResourceUrls() + adminPageUrls() as $class => $url) {
-        $expectations[$url] = [$class, 403];
+        // The manual is documentation, open to every member of staff by
+        // design; every other page needs the permission it protects.
+        $expectations[$url] = [$class, $class === HelpPage::class ? 200 : 403];
     }
 
     expect(walkAdmin($staff, $expectations))->toBe([]);

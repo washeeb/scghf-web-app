@@ -63,7 +63,7 @@ class DonationInfolist
             ]),
 
             Section::make(__('The donor'))->columns(3)->schema([
-                TextEntry::make('donor_name')->label(__('Name'))->formatStateUsing(fn (?string $s, Donation $r): string => ($s ?? '—').($r->is_anonymous ? ' '.__('(anonymous on the site)') : '')),
+                TextEntry::make('donor_name')->label(__('Name'))->formatStateUsing(fn (?string $state, Donation $r): string => ($state ?? '—').($r->is_anonymous ? ' '.__('(anonymous on the site)') : '')),
                 TextEntry::make('donor_email')->label(__('Email'))->visible($pii)->copyable()->placeholder('—'),
                 TextEntry::make('donor_phone')->label(__('Phone'))->visible($pii)->copyable()->placeholder('—'),
                 TextEntry::make('donor.name')->label(__('Donor record'))->placeholder(__('None'))

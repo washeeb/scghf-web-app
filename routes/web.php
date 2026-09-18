@@ -692,6 +692,20 @@ Route::get('pages/{page:ulid}/preview', [PageController::class, 'preview'])
     ->middleware(['signed', 'auth'])
     ->name('pages.preview');
 
+/*
+ * The admin manual's screenshots (resources/manual/images), for the Help
+ * page in the panel. Signed-in staff only: the pictures show the admin.
+ */
+Route::get('manual/images/{file}', function (string $file) {
+    abort_unless(auth()->user()?->canAccessPanel() ?? false, 403);
+
+    $path = resource_path('manual/images/'.$file);
+
+    abort_unless(preg_match('/^[a-z0-9._-]+\.png$/i', $file) === 1 && is_file($path), 404);
+
+    return response()->file($path, ['Cache-Control' => 'private, max-age=86400']);
+})->middleware('auth')->where('file', '[A-Za-z0-9._-]+')->name('manual.image');
+
 Route::get('/{path}', [PageController::class, 'show'])
     ->where('path', '.*')
     ->name('pages.show');

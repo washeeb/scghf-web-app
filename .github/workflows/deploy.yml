@@ -166,6 +166,7 @@ jobs:
             --exclude '.gitmessage' \
             --exclude 'phpunit.xml' \
             --exclude 'pint.json' \
+            --include 'resources/manual/***' \
             --exclude '*.md' \
             --exclude '*.png' \
             --exclude '*.jpg' \
@@ -224,10 +225,14 @@ jobs:
           PHP_BIN: ${{ secrets.PHP_BIN }}
           REL: ${{ steps.rel.outputs.name }}
           SKIP_MIGRATIONS: ${{ inputs.skip_migrations && '1' || '0' }}
+          # Set the variable PREFLIGHT_GATE=1 on the production environment once
+          # it is live: a failing preflight then stops the deploy before the
+          # flip. docs/DEPLOYMENT.md section 2.
+          PREFLIGHT_GATE: ${{ vars.PREFLIGHT_GATE || '0' }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' REL='$REL' PHP_BIN='$PHP_BIN' SKIP_MIGRATIONS='$SKIP_MIGRATIONS' bash -s" \
+            "DEPLOY_PATH='$DEPLOY_PATH' REL='$REL' PHP_BIN='$PHP_BIN' SKIP_MIGRATIONS='$SKIP_MIGRATIONS' PREFLIGHT_GATE='$PREFLIGHT_GATE' bash -s" \
             < deploy/scripts/activate.sh
 
       - name: Smoke test

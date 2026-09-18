@@ -82,6 +82,33 @@ fi
 if [ "$SKIP_MIGRATIONS" = "1" ]; then
   say "Skipping migrations (requested)"
 else
+  # A dump of the database as it is BEFORE this release's migrations touch
+  # it. Migrations are expand-only by policy, but a rollback after a
+  # migration that turned out to be wrong needs the data from before it, and
+  # the nightly backup is up to a day old. Kept in shared/backups, the last
+  # five, outside every release directory. Read the credentials the way the
+  # application does, from shared/.env.
+  say "Dumping the database before migrating"
+  mkdir -p "$SHARED_DIR/backups"
+  envval() { grep -E "^$1=" "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' '; }
+  DB_HOST_VAL=$(envval DB_HOST); DB_PORT_VAL=$(envval DB_PORT); DB_NAME_VAL=$(envval DB_DATABASE)
+  DB_USER_VAL=$(envval DB_USERNAME); DB_PASS_VAL=$(envval DB_PASSWORD)
+  DUMP="$SHARED_DIR/backups/pre-deploy-$REL.sql.gz"
+  if command -v mysqldump >/dev/null 2>&1 && [ -n "$DB_NAME_VAL" ]; then
+    if MYSQL_PWD="$DB_PASS_VAL" mysqldump --single-transaction --quick --no-tablespaces         -h "${DB_HOST_VAL:-127.0.0.1}" -P "${DB_PORT_VAL:-3306}" -u "$DB_USER_VAL" "$DB_NAME_VAL" 2>/dev/null | gzip -6 > "$DUMP"; then
+      chmod 600 "$DUMP"
+      ok "pre-deploy dump: $(du -h "$DUMP" | cut -f1) → shared/backups/$(basename "$DUMP")"
+      ls -1t "$SHARED_DIR"/backups/pre-deploy-*.sql.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+    else
+      rm -f "$DUMP"
+      printf '  [0;33m![0m mysqldump failed — continuing without a pre-deploy dump (the nightly backup still exists).
+'
+    fi
+  else
+    printf '  [0;33m![0m mysqldump not available — continuing without a pre-deploy dump.
+'
+  fi
+
   say "Running migrations"
   "$PHP_BIN" artisan migrate --force --no-interaction || die "Migration failed. Nothing was flipped — the live site is untouched."
   ok "Schema up to date"
@@ -108,6 +135,25 @@ say "Building caches"
 "$PHP_BIN" artisan filament:optimize --no-interaction 2>/dev/null && ok "filament" || true
 "$PHP_BIN" artisan icons:cache       --no-interaction 2>/dev/null && ok "icons"    || true
 "$PHP_BIN" artisan storage:link      --no-interaction 2>/dev/null || true
+
+# ── Preflight ────────────────────────────────────────────────────────────────
+# What is still a placeholder, which keys are missing, which flags are on
+# with nothing behind them, whether cron and the queue have run. Printed on
+# every deploy. It STOPS a production deploy only when PREFLIGHT_GATE=1 is set
+# in the environment — the very first deploy cannot pass it (cron points at
+# current/, which does not exist until the flip), and staging carries
+# placeholders by design. Once production is live, set PREFLIGHT_GATE=1 in
+# the GitHub environment so a site with {{PHONE_PRIMARY}} in its footer
+# cannot be put live again.
+say "Preflight"
+if "$PHP_BIN" artisan scghf:preflight --no-interaction; then
+  ok "preflight passed"
+elif [ "$APP_ENV_VAL" = "production" ] && [ "${PREFLIGHT_GATE:-0}" = "1" ]; then
+  die "Preflight failed. Nothing was flipped — fix the settings or the .env keys it named, then deploy again."
+else
+  printf '  [0;33m![0m Preflight reported problems (above). Not blocking this deploy; read them.
+'
+fi
 
 # ── robots.txt ───────────────────────────────────────────────────────────────
 # Generated at deploy time from APP_ENV rather than committed, so staging can

@@ -8,6 +8,64 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 16 — Documentation and handover, completed — 2026-09-18
+
+#### Technical docs (`docs/`)
+
+- **`ARCHITECTURE.md`** — the module map with counts, the request
+  lifecycle middleware by middleware, the services that matter, and
+  fourteen design decisions each with its reason
+- **`DATABASE.md`** — 135 tables filed under nine modules with every
+  column, key and foreign key, and the ER spine in Mermaid. **Generated**
+  from the live schema by `docs/tools/schema_reference.py`
+- **`DEPLOYMENT.md`** — the shape, a normal release step by step with
+  why the order, hotfix, automatic and manual rollback including the
+  database, secrets and variables, cron, staging. Built on the way: a
+  **pre-deploy `mysqldump`** in `activate.sh` (the rollback script had
+  been telling people to restore a dump nothing made) and a
+  **preflight step** before the flip, gated by `PREFLIGHT_GATE=1` once
+  production is live
+- **`PAYMENTS.md`** — the flow as a diagram, every class, the webhook in
+  seven steps, every event handled, the three state machines, and the
+  eight-row runbook for "the money was taken but nothing was recorded"
+- **`ENVIRONMENT.md`** — every `.env` key by section with its comment,
+  **generated** by `docs/tools/env_reference.py` with the cross-check.
+  The check found `QUEUE_RETRY_AFTER` documented but not read (the
+  config read `DB_QUEUE_RETRY_AFTER`; now both) and seven keys read but
+  not documented (`PAYSTACK_FEE_FLAT_PESEWAS`,
+  `PAYMENT_WEBHOOK_MAX_ATTEMPTS`, the three reconciliation keys,
+  `TURNSTILE_VERIFY_URL`, `VISITOR_STATS_ENABLED`, `APP_PREVIOUS_KEYS`)
+- **`SECURITY-MODEL.md`** — what is at stake, who can do what, the
+  controls by layer, what is deliberately not done, the incident short
+  form. A stale cross-reference in the data-protection doc fixed
+- **`TESTING.md`**, **`TROUBLESHOOTING.md`** (twenty failures →
+  cause → fix), **`OPERATIONS.md`** (what runs itself from the real
+  schedule; the daily/weekly/monthly/quarterly/annual calendar; the
+  monitoring checklist; escalation roles; a handover checklist),
+  **`LICENCES.md`** (fonts, icons, every non-MIT package, services,
+  the obligations), **`CONTRIBUTING.md`**
+- README reshaped: the documentation map, common commands, layout
+
+#### The admin manual (`resources/manual/`)
+
+- Ten chapters in plain English — signing in and the authenticator;
+  header, footer, menus and the homepage; creating each kind of content;
+  images, alt text and consent; donations (viewing, export, an offline
+  gift, resending a receipt, two-person refunds); orders; newsletters
+  and SMS with what they cost; colours and dark mode; what not to touch
+  and who to call — and a one-page quick-reference card
+- **33 real screenshots** from the demo data, taken by
+  `docs/tools/screenshots.mjs` (Playwright, signs in through the real
+  two-factor flow); re-run it after any admin screen changes
+- **Help & manual inside the panel** (`HelpPage`, *System → Help &
+  manual*): the chapters rendered from the same Markdown, images served
+  to signed-in staff only. `HelpPageTest` (6). The manual ships with the
+  release
+- Found on the way and fixed: the **donor's name never showed** on a
+  gift's page (a closure parameter named `$s` where Filament injects
+  `$state`); the **test-mode band rendered as unstyled text** (utility
+  classes Filament's stylesheet does not carry — now inline)
+
 ### Phase 15 — Performance and shared-hosting optimisation, completed — 2026-09-18
 
 #### Measured first

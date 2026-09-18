@@ -24,26 +24,25 @@ It accepts one-off and recurring donations in Ghanaian Cedis via Paystack (**Mob
 
 ## Documentation map
 
-| Document | What it covers |
+**Start here** if you are new: `CONTRIBUTING.md`, then `docs/ARCHITECTURE.md`.
+
+| For | Read |
 |---|---|
-| **`CLAUDE.md`** | Standing project context. Decisions already made — read before changing anything. |
-| **`docs/PHASE-1-BLUEPRINT.md`** | The project brief: brand tokens, sitemap, roles, user journeys, module list, risk register, environment plan. |
-| **`FOUNDATION-WEBAPP-MASTER-PROMPT.md`** | The phase sequence, Phase 0 → 18. |
-| **`docs/PHASE-2-RUNBOOK.md`** | ⭐ Setup and deployment, step by step, with expected output and failure modes. |
-| **`docs/PHASE-3-DATA-ARCHITECTURE.md`** | The schema: ~150 tables by module, conventions, and the binding migration-safety policy. |
-| **`docs/PHASE-8-PAYMENTS-TEST-PLAN.md`** | Walking every payment path against Paystack test keys, and the record of each run. |
-| **`docs/PHASE-15-PERFORMANCE.md`** | Caching without Redis (the generation number, the full-page cache), the query budgets, the cron worker, maintenance and inodes, Lighthouse before/after, and when to leave shared hosting. |
-| **`docs/PHASE-14-QA.md`** | What is automated and how to run it, the quality gates, the manual test plan by browser and breakpoint, the UAT checklist, load sanity on shared hosting, bug triage, demo data. |
-| **`SECURITY.md`** | Where a security problem goes (never an issue). |
-| **`docs/PHASE-12-SECURITY.md`** | The OWASP review, headers and CSP, sessions, secrets rotation, the Paystack-key-leak playbook. |
-| **`docs/PHASE-12-PCI-DSS-SAQ-A.md`** | Why the foundation is SAQ-A and what would break it. |
-| **`docs/PHASE-12-DATA-PROTECTION.md`** | Act 843 and GDPR: obligations, DPC registration, lawful bases, retention schedule, DSR procedure. |
-| **`docs/PHASE-12-INFRASTRUCTURE.md`** | Backups and the restore test, Cloudflare, monitoring, the incident runbook, patching. |
-| **`docs/PHASE-11-SAFEGUARDING.md`** | What must happen before a volunteer works with children, what the code enforces, and what the trustees still decide. |
-| **`docs/PHASE-10-EMAIL-DELIVERABILITY.md`** | Why receipts land in spam from shared hosting; the Resend decision; SPF/DKIM/DMARC; the setup, in order. |
-| **`docs/PHASE-10-SMS-SENDER-ID.md`** | Registering the sender ID in Ghana, and the SMS provider comparison. |
-| **`docs/DEPENDENCIES.md`** | Why each package is here, and what was deliberately rejected. |
-| **`CHANGELOG.md`** | What changed, when. |
+| The standing rules and decisions | **`CLAUDE.md`** — read before changing anything |
+| How the application is put together | **`docs/ARCHITECTURE.md`** — module map, request lifecycle, key services, decisions with reasons |
+| The schema | **`docs/DATABASE.md`** — every table by module, the ER spine (generated; `docs/tools/schema_reference.py`) |
+| Releasing and rolling back | **`docs/DEPLOYMENT.md`** — GitHub → cPanel, the activation script, the pre-deploy dump, rollback |
+| Money | **`docs/PAYMENTS.md`** — Paystack end to end, every webhook event, the state machines, "paid but not recorded" |
+| Every `.env` key | **`docs/ENVIRONMENT.md`** — generated from `.env.example` with the read/documented cross-check |
+| Security | **`docs/SECURITY-MODEL.md`** (the model and the incident short form) · **`SECURITY.md`** (reporting) |
+| Tests | **`docs/TESTING.md`** |
+| When it breaks | **`docs/TROUBLESHOOTING.md`** — the twenty likely failures |
+| Running it | **`docs/OPERATIONS.md`** — the calendar, monitoring, escalation, handover |
+| Third-party terms | **`docs/LICENCES.md`** |
+| For the foundation's staff | **`resources/manual/`** — the admin manual, also shown inside the panel under *Help & manual* |
+| What changed | **`CHANGELOG.md`** |
+
+The phase records — how each part was built and what was decided along the way — are `docs/PHASE-*.md`: the blueprint (1), the setup runbook (2), the data architecture (3), the payments test plan (8), email and SMS (10), safeguarding (11), security, data protection, PCI and infrastructure (12), SEO and accessibility (13), QA (14), performance (15). `docs/DEPENDENCIES.md` says why each package is here.
 
 ---
 
@@ -60,7 +59,25 @@ php artisan migrate
 npm run dev
 ```
 
-Then `php artisan serve`. For a site with something on it, `php artisan db:seed --class=DemoDataSeeder` (never in production; it refuses).
+Then `php artisan serve`. For a site with something on it, `php artisan db:seed --class=DemoDataSeeder` (never in production; it refuses). The admin is at `/scghf-office`; the demo Super Admin is `demo.superadmin@example.test` / `password`.
+
+### Common commands
+
+| Command | What |
+|---|---|
+| `php artisan serve` · `npm run dev` | the site on :8000 with hot-reloading assets |
+| `php artisan test --exclude-testsuite Browser` | the deploy gate (~1,900 tests) |
+| `php artisan test --testsuite Browser` | the Chromium journeys (`npm run build` and `npx playwright install chromium` first) |
+| `vendor/bin/pint` · `vendor/bin/phpstan analyse` | style · static analysis (level 5, baselined) |
+| `php artisan scghf:preflight` | what is still a placeholder or missing — run before any deploy |
+| `php artisan scghf:cache-clear` | empty the page and fragment caches (`cache:clear` alone is not enough) |
+| `php artisan scghf:reconcile-payments` | compare our ledger with Paystack (dry run; `--execute` to settle) |
+| `php artisan scghf:media-doctor` | what this server can do to images, and the inode budget |
+| `php artisan scghf:db-maintain` | the monthly housekeeping (dry run; `--execute`) |
+| `php artisan scghf:restore-test` | restore last night's backup into the scratch database and check it |
+| `php artisan db:seed --class=DemoDataSeeder` | a believable site for staging (refuses production) |
+| `node docs/tools/screenshots.mjs` | re-take the manual's screenshots |
+| `python docs/tools/schema_reference.py > docs/DATABASE.md` · `python docs/tools/env_reference.py > docs/ENVIRONMENT.md` | regenerate the generated docs |
 
 ### Tests
 
@@ -141,16 +158,15 @@ app/  bootstrap/  config/  database/  public/  resources/  routes/  tests/   Lar
 .github/workflows/       ci.yml (PR gate) · deploy.yml (build + ship)
 deploy/scripts/          bootstrap-server.sh · activate.sh · rollback.sh
 deploy/cpanel/           cron.txt · .cpanel.yml (documented fallback)
-docs/                    runbook, dependencies
+docs/                    the handover set (see the map above), the phase records, tools/ (generators)
+resources/manual/        the admin manual and its screenshots (shipped; shown in the panel)
 ```
 
 ---
 
 ## Contributing
 
-Commit format: `type(scope): subject` — see `.gitmessage` (`git config commit.template .gitmessage`).
-Every PR uses `.github/PULL_REQUEST_TEMPLATE.md`; the checklists are the review standard.
-Run `vendor/bin/pint` and `vendor/bin/phpstan analyse` before pushing. A bug fix lands with the test that fails without it. Bugs go through the issue templates; security problems through `SECURITY.md`.
+`CONTRIBUTING.md` — the loop, the rules that trip people, what to document. In short: branch from `develop`, the test that fails without your change, `pint` and `phpstan` before you push, the PR template, CI green.
 
 **Never commit a secret.** `.env` is ignored; `.env.example` documents every key. CI fails the build if a live key or a private key appears in tracked files.
 
@@ -181,6 +197,8 @@ Run `vendor/bin/pint` and `vendor/bin/phpstan analyse` before pushing. A bug fix
 **Phase 13 complete** — SEO, analytics and accessibility. Landed: search & sharing fields with character counts on every content type (the polymorphic table only pages reached before), Article/Product/FAQPage/DonateAction JSON-LD, a sitemap index regenerated on publish, CMS-managed robots extras, self-canonicals on lists, first-touch UTM attribution on donations and orders; a consent-gated analytics provider (none by default) with nine conversion events and the director's own dashboard from the database; an axe audit with four fixes, a structural accessibility check on every commit, and the accessibility statement; the keyword and content plan, local SEO and the Core Web Vitals checklist. See `CHANGELOG.md`, `docs/PHASE-13-SEO-AND-CONTENT.md` and `docs/PHASE-13-ACCESSIBILITY-REPORT.md`.
 
 **Phase 14 complete** — testing and QA. Landed: the Paystack client tested on the wire against a faked HTTP layer, an access matrix that walks every admin URL for every role, the SMS driver contract over all four gateways (and a Twilio bug it found), one slug rule with a test for every model that has one; a browser suite in Chromium — a donation, a purchase, the theme, the keyboard, every public form, axe in both themes — in its own CI job; Larastan at level 5 with a baseline, a coverage job with a floor, three required checks in branch protection; a demo data seeder that refuses production; the manual test plan by journey, browser, theme and breakpoint, the UAT checklist in plain English, load sanity for shared hosting with the k6 scripts, bug triage with issue templates, and `SECURITY.md`. See `CHANGELOG.md` and `docs/PHASE-14-QA.md`.
+
+**Phase 16 complete** — documentation and handover. Landed: the technical set (`ARCHITECTURE`, `DATABASE` generated from the schema, `DEPLOYMENT` with a pre-deploy dump and a preflight gate, `PAYMENTS` with the state machines and the debugging runbook, `ENVIRONMENT` generated and cross-checked, `SECURITY-MODEL`, `TESTING`, `TROUBLESHOOTING`, `OPERATIONS`, `LICENCES`, `CONTRIBUTING`); the admin manual in plain English with real screenshots (`resources/manual/`, ten chapters and a quick-reference card), shown inside the panel under *Help & manual*; a repeatable screenshot script. Found on the way: a donor's name never showed on the gift page, the test-mode band rendered unstyled, `QUEUE_RETRY_AFTER` was documented but not read, six payment keys were read but not documented. See `CHANGELOG.md`.
 
 **Phase 15 complete** — performance on shared hosting. Landed: a query budget on every public page that found the layout spending 20 queries before any content; one cache generation number that every content save bumps, menus and fragments cached as arrays under it, and a full-page cache for anonymous visitors that swaps the CSP nonce and CSRF token in per hit; a settings-cache bug that had stored `Money` objects since Phase 2, found because the database store refuses objects; visit counting after the response; streamed archives and bounded retention walks; monthly database housekeeping and webhook-payload archiving; the tuned worker line; an inodes row on Site Health; Lighthouse before/after and the VPS path. See `CHANGELOG.md` and `docs/PHASE-15-PERFORMANCE.md`.
 
