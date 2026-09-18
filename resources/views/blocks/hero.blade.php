@@ -19,6 +19,22 @@
     $opacity = max(0, min(90, (int) $section->field('overlay_opacity', 55)));
 @endphp
 
+@if ($desktop?->isPublishable())
+    {{-- The browser's preload scanner finds this in <head> before it has
+         parsed as far as the <picture> below: on a 3G connection that is
+         the difference between the hero starting to download with the CSS
+         and starting after it. The media queries mirror the <picture>, so
+         only the crop this screen will use is fetched. --}}
+    @push('head')
+        @if ($mobile?->isPublishable())
+            <link rel="preload" as="image" href="{{ $mobile->conversionUrl('card') }}" media="(max-width: 767px)" fetchpriority="high">
+            <link rel="preload" as="image" href="{{ $desktop->conversionUrl('hero') }}" media="(min-width: 768px)" fetchpriority="high">
+        @else
+            <link rel="preload" as="image" href="{{ $desktop->conversionUrl('hero') }}" fetchpriority="high">
+        @endif
+    @endpush
+@endif
+
 <section class="relative isolate {{ $presentation->sectionClasses() }}">
     @if ($desktop?->isPublishable())
         <picture>

@@ -9,7 +9,6 @@ use App\Models\Concerns\RecordsAuthor;
 use App\Support\SiteCache;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -135,12 +134,14 @@ class Announcement extends Model
         // visitor's dismissals is decided per request, in memory. The
         // "live" window is a time range, so the fragment TTL bounds how late
         // a scheduled start or end can be seen: ten minutes.
-        $live = SiteCache::remember('announcements:'.$placement, fn (): Collection => static::query()
+        $rows = SiteCache::remember('announcements:'.$placement, fn (): array => static::query()
             ->live()
             ->placement($placement)
-            ->get(), 600);
+            ->get()
+            ->map(fn (self $a): array => $a->getAttributes())
+            ->all(), 600);
 
-        return $live->first(fn (self $announcement): bool => $announcement->appliesTo($request->path())
+        return static::hydrate($rows)->first(fn (self $announcement): bool => $announcement->appliesTo($request->path())
             && ! $announcement->wasDismissedBy($request));
     }
 

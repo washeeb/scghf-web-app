@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use Closure;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -49,7 +50,7 @@ final class SiteCache
      */
     public static function remember(string $key, Closure $callback, ?int $ttl = null): mixed
     {
-        return Cache::remember(
+        return self::store()->remember(
             self::key($key),
             $ttl ?? (int) config('performance.fragments.ttl', 3600),
             $callback,
@@ -96,7 +97,7 @@ final class SiteCache
 
         $next = max((int) floor(microtime(true) * 1000), self::current() + 1);
 
-        Cache::forever(self::GENERATION_KEY, $next);
+        self::store()->forever(self::GENERATION_KEY, $next);
         self::$generation = $next;
         self::$bumped = true;
         self::$consultedSinceBump = false;
@@ -112,6 +113,17 @@ final class SiteCache
 
     private static function current(): int
     {
-        return self::$generation ??= (int) Cache::rememberForever(self::GENERATION_KEY, fn (): int => 1);
+        return self::$generation ??= (int) self::store()->rememberForever(self::GENERATION_KEY, fn (): int => 1);
+    }
+
+    /**
+     * Files by default, whatever the application's default store: a menu
+     * fragment read from the `cache` table is a database round trip, which
+     * is the cost the fragment exists to avoid. Arrays and scalars only —
+     * the store never unserializes an object (`cache.serializable_classes`).
+     */
+    private static function store(): Repository
+    {
+        return Cache::store((string) config('performance.fragments.store', 'file'));
     }
 }

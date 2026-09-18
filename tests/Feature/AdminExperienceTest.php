@@ -183,7 +183,7 @@ it('never lets a failing check take down the page it is reported on', function (
     $check = app(SiteHealth::class)->checks()->firstWhere('key', 'failed_jobs');
 
     expect($check->status)->toBe(HealthCheck::UNKNOWN)
-        ->and(app(SiteHealth::class)->checks())->toHaveCount(16);
+        ->and(app(SiteHealth::class)->checks())->toHaveCount(18);
 });
 
 // ── The preflight command ───────────────────────────────────────────────────

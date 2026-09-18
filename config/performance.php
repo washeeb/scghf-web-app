@@ -24,6 +24,7 @@ return [
     | a route the observers do not see (a raw query, a restore).
     */
     'fragments' => [
+        'store' => env('FRAGMENT_CACHE_STORE', 'file'),
         'ttl' => (int) env('FRAGMENT_CACHE_TTL', 3600),
     ],
 

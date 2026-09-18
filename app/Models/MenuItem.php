@@ -109,6 +109,52 @@ class MenuItem extends Model
         return $this->morphTo();
     }
 
+    /**
+     * The item and its subtree as plain arrays, for the fragment cache.
+     *
+     * The cache stores scalars and arrays only (`cache.serializable_classes`
+     * is false, deliberately — a cache that unserializes objects is a gadget
+     * chain the day APP_KEY leaks). Raw attributes round-trip exactly:
+     * `fromCacheable()` rebuilds the model as if it had come from a query.
+     *
+     * @return array<string, mixed>
+     */
+    public function toCacheable(): array
+    {
+        $linkable = $this->relationLoaded('linkable') ? $this->linkable : null;
+
+        return [
+            'attributes' => $this->getAttributes(),
+            'page' => $this->relationLoaded('page') && $this->page !== null ? $this->page->getAttributes() : null,
+            'linkable' => $linkable !== null ? ['class' => $linkable::class, 'attributes' => $linkable->getAttributes()] : null,
+            'children' => $this->relationLoaded('children')
+                ? $this->children->map(fn (self $child): array => $child->toCacheable())->all()
+                : [],
+        ];
+    }
+
+    /** @param array<string, mixed> $cached */
+    public static function fromCacheable(array $cached): self
+    {
+        /** @var self $item */
+        $item = (new self)->newFromBuilder($cached['attributes']);
+
+        $item->setRelation('page', $cached['page'] !== null ? (new Page)->newFromBuilder($cached['page']) : null);
+
+        $linkable = $cached['linkable'] ?? null;
+        if ($linkable !== null && class_exists($linkable['class'])) {
+            $item->setRelation('linkable', (new $linkable['class'])->newFromBuilder($linkable['attributes']));
+        } elseif ($linkable === null) {
+            $item->setRelation('linkable', null);
+        }
+
+        $item->setRelation('children', (new self)->newCollection(
+            array_map(fn (array $child): self => self::fromCacheable($child), $cached['children'] ?? []),
+        ));
+
+        return $item;
+    }
+
     // ── Resolution ───────────────────────────────────────────────────────────
 
     /**

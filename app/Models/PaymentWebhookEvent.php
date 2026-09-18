@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
@@ -26,6 +27,8 @@ use RuntimeException;
  *
  * Append-only, and enforced: an event row is a record of what arrived, and a
  * record that can be edited is not a record.
+ *
+ * @property Carbon|null $payload_archived_at
  */
 class PaymentWebhookEvent extends Model
 {

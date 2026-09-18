@@ -41,6 +41,7 @@ beforeEach(function () {
     config([
         'cache.default' => 'array',
         'cache.stores.pages' => ['driver' => 'array'],
+        'performance.fragments.store' => 'array',
         'performance.page_cache.enabled' => true,
     ]);
     Cache::store('pages')->flush();
@@ -259,7 +260,7 @@ it('survives a cache store that lost the generation key', function () {
     // last bump is the one case that could collide; clearing a cache takes
     // longer than that, and so does this line.
     expect(SiteCache::generation())->toBe(1);
-    usleep(2_000);
+    usleep(20_000);
     SiteCache::bump();
     expect(SiteCache::generation())->toBeGreaterThan($second);
 });

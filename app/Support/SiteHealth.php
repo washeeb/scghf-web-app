@@ -80,6 +80,8 @@ class SiteHealth
             $this->wrap('settings', __('Site settings'), fn () => $this->settings()),
             $this->wrap('contrast', __('Colour contrast'), fn () => $this->contrast()),
             $this->wrap('media', __('Image metadata'), fn () => $this->media()),
+            $this->wrap('inodes', __('File count (inodes)'), fn () => $this->inodes()),
+            $this->wrap('page_cache', __('Page cache'), fn () => $this->pageCache()),
         ]);
     }
 
@@ -236,6 +238,64 @@ class SiteHealth
         }
 
         return HealthCheck::ok('storage', __('File storage'), __('Writable'));
+    }
+
+    /**
+     * How much of the account's inode quota the media library is using.
+     *
+     * Shared hosting counts FILES, not only bytes, and a media library that
+     * writes an original plus four conversions per upload reaches the file
+     * limit long before the disk limit. When it does, the symptom is not "the
+     * disk is full": it is that a session cannot be written, a cache file
+     * cannot be created, and the site is a blank page. Summed from what the
+     * database asked for rather than by walking the disk, which takes minutes
+     * on a shared NFS mount; cached for an hour.
+     */
+    private function inodes(): HealthCheck
+    {
+        $budget = (int) config('media.inode_budget', 200_000);
+
+        $files = (int) Cache::remember('health:inodes', 3600, fn (): int => Media::query()
+            ->select(['id', 'generated_conversions'])
+            ->lazyById(500)
+            ->reduce(fn (int $carry, Media $media): int => $carry + $media->inodeCost(), 0));
+
+        $share = $budget > 0 ? ($files / $budget) * 100 : 0.0;
+        $value = __(':files files, :share% of :budget', ['files' => number_format($files), 'share' => number_format($share, 0), 'budget' => number_format($budget)]);
+        $advice = __('The media library is the file count that grows. Run `php artisan scghf:media-doctor` for the breakdown, '
+            .'delete unused uploads from the library, and set MEDIA_INODE_BUDGET to the real quota from cPanel → Statistics '
+            .'if this number is not it. Past the quota nothing can be written — sessions, caches, uploads — and the site goes blank.');
+
+        return match (true) {
+            $share >= 90 => HealthCheck::critical('inodes', __('File count (inodes)'), $value, $advice),
+            $share >= 70 => HealthCheck::warning('inodes', __('File count (inodes)'), $value, $advice),
+            default => HealthCheck::ok('inodes', __('File count (inodes)'), $value),
+        };
+    }
+
+    /**
+     * Whether anonymous visitors are being served from the page cache.
+     */
+    private function pageCache(): HealthCheck
+    {
+        if (! (bool) config('performance.page_cache.enabled', true)) {
+            return HealthCheck::warning('page_cache', __('Page cache'), __('Off'),
+                __('PAGE_CACHE_ENABLED is false. Every visit renders the page and runs its queries; on shared hosting that is the difference between a busy hour and a slow one.'));
+        }
+
+        $store = (string) config('performance.page_cache.store', 'pages');
+        $path = (string) config("cache.stores.{$store}.path", '');
+
+        if ($path !== '' && (! is_dir($path) || ! is_writable($path))) {
+            return HealthCheck::critical('page_cache', __('Page cache'), __('Cannot write'),
+                __('The page cache directory (:path) is missing or not writable, so nothing is cached and every request renders. Create it with 755 permissions.', ['path' => $path]));
+        }
+
+        $stored = $path !== '' && is_dir($path)
+            ? iterator_count(new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)))
+            : 0;
+
+        return HealthCheck::ok('page_cache', __('Page cache'), trans_choice('{0}On — no pages stored yet|{1}On — :count page stored|[2,*]On — :count pages stored', $stored, ['count' => number_format($stored)]));
     }
 
     /**

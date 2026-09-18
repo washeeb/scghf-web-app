@@ -8,6 +8,94 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 15 — Performance and shared-hosting optimisation, completed — 2026-09-18
+
+#### Measured first
+
+- **`QueryBudgetTest`** renders every public page against the demo data
+  and holds each to a query budget and to zero repeated statements. The
+  layout alone was 20 queries a page: four menus at three each, the
+  announcement, three lookups of the cookie-policy page, three `COUNT(*)`
+  for the visitor statistics. Home 24, a post 34
+
+#### Caching without Redis
+
+- **`App\Support\SiteCache`** — one generation number that every content
+  save bumps (an observer on 36 models, `Settings::flush()`,
+  `Cause::recordDonation()`); every fragment and page key carries it, so
+  nothing has to know what to forget. Inside a request a second bump is
+  skipped while nothing has read the number since the first; a console
+  process bumps every time
+- Menus, the announcement list and the policy-page links cached as plain
+  arrays in the file store and rebuilt with `newFromBuilder()`. Home
+  24 → 7 queries, four of which are the statistics upserts
+- **`CachePublicPage`** — a full-page cache for anonymous visitors in its
+  own file store: public GET pages, no flash, no query string but
+  `page=`, never the basket, checkout, account, admin, search or anything
+  personal, never a response that sets its own cookie; varies on the
+  `scghf_*` cookies; the **CSP nonce and CSRF token are swapped into the
+  stored body on every hit**; `X-Page-Cache: hit|miss|skip`.
+  `PageCacheTest` (23). Off for the test suite, on by default
+- **Found and fixed: the settings cache had stored `Money` objects since
+  Phase 2**, which the database store returned as
+  `__PHP_Incomplete_Class` (`cache.serializable_classes` is `false`, and
+  should stay so) while the array store under test passed them through.
+  Settings now cache the stored string and its type and cast per process;
+  encrypted settings stay encrypted in the cache table
+- `CountVisit` writes its four upserts in `terminate()`, after the
+  response has gone; the per-dimension `COUNT` is cached five minutes
+- `scghf:cache-clear`, run by the deploy script after the symlink flips
+- Site Health: a *Page cache* row and a *File count (inodes)* row (18
+  rows now)
+
+#### Queries, memory, the queue
+
+- Related posts in one ordered query; the post and its related load
+  their shared relations once
+- Maintenance indexes: `activity_log`, `email_logs`, `sms_logs` on
+  `created_at`; the webhook tables on `(payload_archived_at, received_at)`
+- `ArchiveAuditLog` streams a year through a gzip handle 500 rows at a
+  time — the same JSON document, never held whole. `RetentionRunner`
+  walks candidates with `lazyById()` and stops one past the ceiling; the
+  delivery logs get a ceiling of their own (20,000) so a normal month is
+  not an aborted run
+- The worker line: `--timeout=50 --memory=128 --sleep=1 --max-jobs=250`
+  alongside `flock`, `--stop-when-empty`, `--max-time=55`; explicit
+  `$timeout = 45` on both webhook jobs
+
+#### Maintenance and inodes
+
+- **`scghf:db-maintain --execute`** monthly: expired sessions, visitor
+  rows over 26 months, stale reset tokens, failed jobs over 30 days, the
+  activity log past its window; `OPTIMIZE TABLE` on the churning tables;
+  the ten largest tables reported
+- **`scghf:archive-webhook-payloads --execute`** monthly: raw bodies of
+  processed, year-old webhook events into monthly gzipped JSON-lines files
+  with a SHA-256 per body; the rows stay; replay hidden for them
+- `DatabaseMaintenanceTest` (4)
+- The inode plan and the cleanup order, `docs/PHASE-15-PERFORMANCE.md` §3.6
+
+#### Assets and the report
+
+- The hero's LCP image preloaded from `<head>` for the crop the screen
+  will use; everything else in the brief was already built and is
+  verified in the doc. Decided against an SVG sprite and inlining the
+  stylesheet, with the reasons
+- Lighthouse 12 mobile on five pages before and after, the budget, what
+  to measure on staging, and the signs and the path for leaving shared
+  hosting: `docs/PHASE-15-PERFORMANCE.md`
+
+#### Configuration
+
+`PAGE_CACHE_ENABLED`, `PAGE_CACHE_STORE`, `PAGE_CACHE_TTL`,
+`FRAGMENT_CACHE_STORE`, `FRAGMENT_CACHE_TTL` — all read, all documented;
+`config/performance.php`; a `pages` store in `config/cache.php`.
+
+#### Tests
+
+New: `QueryBudgetTest` (2), `PageCacheTest` (23),
+`DatabaseMaintenanceTest` (4). `AdminExperienceTest` counts 18 health rows.
+
 ### Phase 14 — Testing and QA, completed — 2026-09-17
 
 #### Module 1 — the gaps in the automated suite

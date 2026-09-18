@@ -6,8 +6,10 @@ namespace App\Support;
 
 use App\Enums\SettingType;
 use App\Models\Setting;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * Read/write access to the settings table, cached as a single array.
@@ -115,11 +117,7 @@ class Settings
      */
     public function publicValues(): array
     {
-        return Cache::rememberForever(self::CACHE_KEY.'.public', fn (): array => Setting::query()
-            ->public()
-            ->get()
-            ->mapWithKeys(fn (Setting $s): array => [$s->qualifiedKey() => $s->typedValue()])
-            ->all());
+        return $this->cast(Cache::rememberForever(self::CACHE_KEY.'.public', fn (): array => $this->rows(Setting::query()->public())));
     }
 
     /**
@@ -129,13 +127,62 @@ class Settings
      */
     public function all(): array
     {
-        return $this->loaded ??= Cache::rememberForever(
+        return $this->loaded ??= $this->cast(Cache::rememberForever(
             self::CACHE_KEY,
-            fn (): array => Setting::query()
-                ->get()
-                ->mapWithKeys(fn (Setting $s): array => [$s->qualifiedKey() => $s->typedValue()])
-                ->all(),
-        );
+            fn (): array => $this->rows(Setting::query()),
+        ));
+    }
+
+    /**
+     * What goes into the cache: the stored string and its type, nothing else.
+     *
+     * ── Why not the cast value ──────────────────────────────────────────────
+     *
+     * The cache stores only scalars and arrays (`cache.serializable_classes`
+     * is false, and should stay so: a cache that unserializes objects is a
+     * gadget chain the moment APP_KEY leaks). A Money setting cast before
+     * caching came back from the database store as `__PHP_Incomplete_Class`
+     * — which the test suite, on the array store, never saw. So the cast
+     * happens on the way OUT, per process, and an encrypted setting stays
+     * encrypted in the cache table too.
+     *
+     * @param  Builder<Setting>  $query
+     * @return array<string, array{t: string, v: string|null, e: bool}>
+     */
+    private function rows(Builder $query): array
+    {
+        return $query->get(['group', 'key', 'type', 'value', 'is_encrypted'])
+            ->mapWithKeys(fn (Setting $s): array => [$s->qualifiedKey() => [
+                't' => $s->type->value,
+                'v' => $s->value,
+                'e' => (bool) $s->is_encrypted,
+            ]])
+            ->all();
+    }
+
+    /**
+     * @param  array<string, array{t: string, v: string|null, e: bool}>  $rows
+     * @return array<string, mixed>
+     */
+    private function cast(array $rows): array
+    {
+        $out = [];
+
+        foreach ($rows as $key => $row) {
+            $raw = $row['v'];
+
+            if ($raw !== null && $row['e']) {
+                try {
+                    $raw = Crypt::decryptString($raw);
+                } catch (\Throwable) {
+                    $raw = null;
+                }
+            }
+
+            $out[$key] = SettingType::from($row['t'])->cast($raw);
+        }
+
+        return $out;
     }
 
     /**

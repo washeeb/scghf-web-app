@@ -241,11 +241,14 @@ class Page extends Model
     /** The live top-level page itself, for a link that needs its title too. */
     public static function liveBySlug(string $slug): ?self
     {
-        return SiteCache::remember('page:'.$slug, function () use ($slug): ?self {
+        $attributes = SiteCache::remember('page:'.$slug, function () use ($slug): array {
             $page = static::query()->where('slug', $slug)->whereNull('parent_id')->first();
 
-            return $page?->isLive() ? $page : null;
+            // The cache holds arrays, not models; [] is "no such live page".
+            return $page?->isLive() ? $page->getAttributes() : [];
         });
+
+        return $attributes === [] ? null : (new self)->newFromBuilder($attributes);
     }
 
     public function isLive(): bool

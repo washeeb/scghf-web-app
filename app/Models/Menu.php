@@ -79,18 +79,23 @@ class Menu extends Model
     {
         try {
             // Four menus on every page, three queries each. Cached under the
-            // site generation, so a menu edit reaches the next request.
-            return SiteCache::remember('menu:'.$key.':'.($authenticated ? 'auth' : 'guest'), function () use ($key, $authenticated): Collection {
+            // site generation as plain arrays (the cache holds no objects),
+            // rebuilt into models here; a menu edit reaches the next request.
+            $cached = SiteCache::remember('menu:'.$key.':'.($authenticated ? 'auth' : 'guest'), function () use ($key, $authenticated): array {
                 $menu = static::query()->where('key', $key)->first();
 
                 if ($menu === null) {
-                    return new Collection;
+                    return [];
                 }
 
                 return $menu->tree($authenticated)
                     ->filter(fn (MenuItem $item): bool => $item->isRenderable())
-                    ->values();
+                    ->values()
+                    ->map(fn (MenuItem $item): array => $item->toCacheable())
+                    ->all();
             });
+
+            return (new MenuItem)->newCollection(array_map(fn (array $item): MenuItem => MenuItem::fromCacheable($item), $cached));
         } catch (\Throwable) {
             return new Collection;
         }
@@ -111,7 +116,7 @@ class Menu extends Model
         $audiences = ['all', $authenticated ? 'auth' : 'guest'];
 
         $items = $this->items()
-            ->with('page:id,title,path,status,published_at')
+            ->with(['page:id,title,path,status,published_at', 'linkable'])
             ->where('is_visible', true)
             ->whereIn('visible_to', $audiences)
             ->orderBy('sort_order')
