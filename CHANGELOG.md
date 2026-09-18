@@ -8,6 +8,33 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 17 — Launch, completed — 2026-09-18
+
+- **`scghf:launch-check`** (`App\Support\LaunchChecks`) — the go-live
+  checklist as far as the application can answer it: the ten legal pages
+  published, contact details filled, team and trustees with photographs,
+  at least three projects and three appeals plus the General Fund, the
+  shop stocked or off, **a live gift taken and refunded** on live keys, a
+  signed webhook received, **SPF, DKIM and DMARC looked up in DNS** for
+  the sending domain, a live SMS delivered, **the certificate's expiry by
+  a TLS handshake**, one canonical host, analytics chosen, **feature
+  flags honest**, two-factor enrolled on every active staff account, no
+  demo accounts, no demo data. Runs `preflight` first; exit 1 on any
+  blocker. Offline it says "could not check" rather than failing.
+  `LaunchCheckTest` (8) with the DNS and TLS lookups replaced
+- **`docs/LAUNCH.md`** — pre-launch by area (content, Paystack, email,
+  SMS, domain and SSL, search, backups and cron, security, performance
+  and accessibility, rollback tested) each row with an owner and how it
+  is checked; the go/no-go; the launch-day cut-over with timings; the
+  smoke test; the monitoring window and its stop conditions; the first
+  thirty days; the staff training session; the feedback loop; the
+  prioritised backlog of everything deferred
+- **Flags made honest:** `FEATURE_PWA_OFFLINE` was on with no manifest
+  and no service worker behind it — off, and on the Phase 18 roadmap;
+  `FEATURE_SITE_SEARCH` was off while the search page was live and
+  ungated — on, and `/search` now honours it. The launch check refuses
+  any unbuilt flag that is on
+
 ### Phase 16 — Documentation and handover, completed — 2026-09-18
 
 #### Technical docs (`docs/`)

@@ -333,7 +333,7 @@ Route::get('team', TeamController::class)->name('team');
 Route::get('partners', PartnersController::class)->name('partners');
 Route::get('testimonials', TestimonialsController::class)->name('testimonials');
 
-Route::get('search', SearchController::class)->name('search');
+Route::get('search', SearchController::class)->middleware('feature:site_search')->name('search');
 
 /*
 | Contact.

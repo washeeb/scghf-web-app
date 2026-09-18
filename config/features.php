@@ -28,7 +28,8 @@ return [
     'blog_comments' => env('FEATURE_BLOG_COMMENTS', false),
     'prayer_requests' => env('FEATURE_PRAYER_REQUESTS', true),
     'multilingual' => env('FEATURE_MULTILINGUAL', false),
-    'site_search' => env('FEATURE_SITE_SEARCH', false),
+    'site_search' => env('FEATURE_SITE_SEARCH', true),
     'dark_mode' => env('FEATURE_DARK_MODE', true),
-    'pwa_offline' => env('FEATURE_PWA_OFFLINE', true),
+    // Not built (Phase 18). Off until it is; the launch check enforces it.
+    'pwa_offline' => env('FEATURE_PWA_OFFLINE', false),
 ];
