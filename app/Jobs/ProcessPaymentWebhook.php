@@ -31,6 +31,13 @@ class ProcessPaymentWebhook implements ShouldQueue
     public int $tries = 5;
 
     /**
+     * Under the worker's own --timeout (50) and QUEUE_RETRY_AFTER (90): a
+     * job that hangs on the gateway is killed here, retried by the next
+     * minute's worker, and never running twice at once.
+     */
+    public int $timeout = 45;
+
+    /**
      * Backoff in seconds, growing.
      *
      * The failure this is retrying is almost always transient — a database

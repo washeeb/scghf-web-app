@@ -24,6 +24,13 @@ class ProcessDeliveryWebhook implements ShouldQueue
 
     public int $tries = 5;
 
+    /**
+     * Under the worker's own --timeout (50) and QUEUE_RETRY_AFTER (90): a
+     * job that hangs on the gateway is killed here, retried by the next
+     * minute's worker, and never running twice at once.
+     */
+    public int $timeout = 45;
+
     public array $backoff = [10, 30, 120, 300];
 
     public function __construct(public readonly int $eventId) {}

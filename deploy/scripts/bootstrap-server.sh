@@ -161,7 +161,7 @@ cat <<CRON
 
   * * * * * $PHP_BIN $DEPLOY_PATH/current/artisan schedule:run >> /dev/null 2>&1
 
-  * * * * * /usr/bin/flock -n $DEPLOY_PATH/shared/queue.lock $PHP_BIN $DEPLOY_PATH/current/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --memory=96 >> /dev/null 2>&1
+  * * * * * /usr/bin/flock -n $DEPLOY_PATH/shared/queue.lock $PHP_BIN $DEPLOY_PATH/current/artisan queue:work --stop-when-empty --max-time=55 --timeout=50 --tries=3 --memory=128 --sleep=1 --max-jobs=250 >> /dev/null 2>&1
 
 CRON
 

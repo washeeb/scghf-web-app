@@ -71,10 +71,13 @@ class RetentionRunner
             'detail' => [],
         ];
 
-        $ceiling = (int) config('compliance.retention.max_records_per_run', 500);
-
         foreach ($this->subjects as $retentionClass => $models) {
             $policy = $this->policy($retentionClass);
+
+            // The ceiling guards against a wrong anchor date sweeping a table.
+            // A class whose normal volume is thousands a month (the delivery
+            // logs) names its own in config, or the guard fires every month.
+            $ceiling = (int) ($policy['batch_ceiling'] ?? config('compliance.retention.max_records_per_run', 500));
 
             // 'retain' classes are never swept. Financial records have a
             // statutory MINIMUM, not a deletion date — destroying accounting
@@ -84,7 +87,7 @@ class RetentionRunner
             }
 
             foreach ($models as $model) {
-                $due = $this->dueFor($model, $retentionClass, $policy);
+                $due = $this->dueFor($model, $retentionClass, $policy, $ceiling);
                 $summary['due'] += $due->count();
 
                 if ($due->count() > $ceiling) {
@@ -116,11 +119,19 @@ class RetentionRunner
     /**
      * Records past their retention date plus the grace period.
      *
+     * Walked in slices, never loaded whole: the email and SMS logs are the
+     * largest tables a retention run reads, and this ran monthly under a
+     * worker memory limit. The walk stops one past the batch ceiling —
+     * that is enough to know the run must abort, and the run needs nothing
+     * beyond the ceiling in any case. The anchor date is a method on the
+     * record, not a column, so the filter is in PHP; the slice keeps that
+     * honest about memory.
+     *
      * @param  class-string<Model&Retainable>  $model
      * @param  array<string, mixed>  $policy
      * @return Collection<int, Model&Retainable>
      */
-    public function dueFor(string $model, string $retentionClass, array $policy): Collection
+    public function dueFor(string $model, string $retentionClass, array $policy, ?int $ceiling = null): Collection
     {
         $months = $policy['months'] ?? null;
 
@@ -130,26 +141,39 @@ class RetentionRunner
 
         $grace = (int) config('compliance.retention.grace_period_days', 30);
         $cutoff = now()->subMonths((int) $months)->subDays($grace);
+        $ceiling ??= (int) config('compliance.retention.max_records_per_run', 500);
 
-        return $model::query()
+        $due = collect();
+
+        $records = $model::query()
             ->when(
                 method_exists($model, 'scopeRetentionCandidates'),
                 fn (Builder $q) => $q->retentionCandidates(),
             )
-            ->get()
-            ->filter(function (Model $record) use ($retentionClass, $cutoff): bool {
-                /** @var Model&Retainable $record */
-                if ($record->retentionClass() !== $retentionClass) {
-                    return false;
-                }
+            ->lazyById(200);
 
-                $anchor = $record->retentionAnchorDate();
+        foreach ($records as $record) {
+            /** @var Model&Retainable $record */
+            if ($record->retentionClass() !== $retentionClass) {
+                continue;
+            }
 
-                // No anchor means the clock has not started. An open case has
-                // no closure date and must never be swept up.
-                return $anchor !== null && $anchor->lte($cutoff);
-            })
-            ->values();
+            $anchor = $record->retentionAnchorDate();
+
+            // No anchor means the clock has not started. An open case has
+            // no closure date and must never be swept up.
+            if ($anchor === null || $anchor->gt($cutoff)) {
+                continue;
+            }
+
+            $due->push($record);
+
+            if ($due->count() > $ceiling) {
+                break;
+            }
+        }
+
+        return $due;
     }
 
     /**

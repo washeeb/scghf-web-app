@@ -7,7 +7,7 @@ namespace App\Console\Commands;
 use App\Models\AuditArchive;
 use App\Models\AuditLog;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -86,30 +86,43 @@ class ArchiveAuditLog extends Command
             return self::FAILURE;
         }
 
-        $entries = AuditLog::query()
-            ->whereYear('occurred_at', $year)
-            ->orderBy('id')
-            ->get();
+        $query = AuditLog::query()->whereYear('occurred_at', $year);
+        $count = (clone $query)->count();
 
-        if ($entries->isEmpty()) {
+        if ($count === 0) {
             $this->line("No entries for {$year}.");
 
             return self::SUCCESS;
         }
 
-        $this->line(sprintf('%s entries in %d.', number_format($entries->count()), $year));
+        $this->line(sprintf('%s entries in %d.', number_format($count), $year));
 
-        if (! $this->verifyBlock($entries)) {
+        /*
+         * One pass, streamed. A year of audit entries is the largest thing
+         * this application ever reads, and on shared hosting the worker has
+         * a memory limit a full year does not fit under. So the rows come
+         * through 500 at a time, the chain is checked as they pass, and — on
+         * --execute — each is written straight into the gzip stream. Nothing
+         * holds more than one chunk.
+         */
+        $writer = $this->option('execute') ? $this->openArchive($year, $count) : null;
+        $block = $this->walk($query, $writer);
+
+        if ($block === null) {
+            $writer?->discard();
+
             return self::FAILURE;
         }
 
-        if (! $this->option('execute')) {
+        $this->line('Chain verified over the block being archived.');
+
+        if ($writer === null) {
             $this->warn('DRY RUN — nothing written, nothing removed. Add --execute to archive.');
 
             return self::SUCCESS;
         }
 
-        $archive = $this->write($year, $entries);
+        $archive = $writer->finish($block);
 
         $this->info("Archive written: {$archive->filename} ({$archive->humanSize()}).");
 
@@ -130,7 +143,7 @@ class ArchiveAuditLog extends Command
             return self::SUCCESS;
         }
 
-        $this->prune($archive, $entries->pluck('id')->all());
+        $this->prune($archive, $year);
 
         $this->info(sprintf(
             '%s entries removed from the live table. The chain continues from %s…',
@@ -165,19 +178,24 @@ class ArchiveAuditLog extends Command
     }
 
     /**
-     * Check the chain over exactly the block being archived.
+     * Walk the year in order: check the chain as it passes, and hand each
+     * entry to the writer if there is one.
      *
      * A year that is already broken must not be archived — archiving it would
      * file the break away in a directory nobody opens, and the live table would
      * come back clean.
      *
-     * @param  Collection<int, AuditLog>  $entries
+     * @param  Builder<AuditLog>  $query
+     * @return array{first: AuditLog, last: AuditLog}|null the ends of the block, or null when the chain is broken
      */
-    private function verifyBlock($entries): bool
+    private function walk(Builder $query, ?ArchiveWriter $writer): ?array
     {
         $previous = null;
+        $first = null;
+        $last = null;
 
-        foreach ($entries as $entry) {
+        foreach ($query->orderBy('id')->lazyById(500) as $entry) {
+            /** @var AuditLog $entry */
             if ($previous !== null && $entry->previous_hash !== $previous) {
                 $this->error(
                     "The chain is already broken at entry {$entry->ulid} (id {$entry->id}). "
@@ -185,70 +203,33 @@ class ArchiveAuditLog extends Command
                     .'somewhere nobody looks. Investigate first.'
                 );
 
-                return false;
+                return null;
             }
 
             if (! $entry->hashIsIntact()) {
                 $this->error("Entry {$entry->ulid} has been edited. Nothing will be archived.");
 
-                return false;
+                return null;
             }
 
+            $writer?->write($entry);
+
             $previous = $entry->hash;
+            $first ??= $entry;
+            $last = $entry;
         }
 
-        $this->line('Chain verified over the block being archived.');
-
-        return true;
+        return $first === null || $last === null ? null : ['first' => $first, 'last' => $last];
     }
 
-    /**
-     * @param  Collection<int, AuditLog>  $entries
-     */
-    private function write(int $year, $entries): AuditArchive
+    private function openArchive(int $year, int $count): ArchiveWriter
     {
-        $disk = (string) config('system.audit.archive_disk', 'local');
-        $filename = "audit-archives/audit-{$year}.json.gz";
-
-        /*
-         * The full row, not a summary. An archive that dropped columns to save
-         * space would be an archive somebody could not verify against the
-         * hashes — the hash is taken over every field.
-         */
-        $payload = json_encode([
-            'year' => $year,
-            'exported_at' => now()->toIso8601String(),
-            'entry_count' => $entries->count(),
-            'entries' => $entries->map(fn (AuditLog $e): array => $e->getAttributes())->all(),
-        ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
-
-        $compressed = gzencode($payload, 9);
-
-        if ($compressed === false) {
-            throw new RuntimeException('The archive could not be compressed.');
-        }
-
-        Storage::disk($disk)->put($filename, $compressed);
-
-        $first = $entries->first();
-        $last = $entries->last();
-
-        return AuditArchive::create([
-            'year' => $year,
-            'entry_count' => $entries->count(),
-            'first_entry_id' => $first->id,
-            'last_entry_id' => $last->id,
-            'period_start' => $first->occurred_at,
-            'period_end' => $last->occurred_at,
-            // What the block started from, and what the entries after the gap
-            // will chain onto.
-            'first_entry_hash' => (string) $first->hash,
-            'last_entry_hash' => (string) $last->hash,
-            'archive_hash' => hash('sha256', $compressed),
-            'filename' => $filename,
-            'disk' => $disk,
-            'size_bytes' => strlen($compressed),
-        ]);
+        return new ArchiveWriter(
+            year: $year,
+            count: $count,
+            disk: (string) config('system.audit.archive_disk', 'local'),
+            filename: "audit-archives/audit-{$year}.json.gz",
+        );
     }
 
     /**
@@ -258,18 +239,119 @@ class ArchiveAuditLog extends Command
      * guard is what stops somebody tidying away an inconvenient entry. This
      * goes round it deliberately and only here, in a transaction, after the
      * archive has been written AND verified, and it records the archive first
-     * so the gap is explained before it exists.
-     *
-     * @param  array<int, int>  $ids
+     * so the gap is explained before it exists. Deleted in bounded slices so
+     * the transaction never holds a whole year.
      */
-    private function prune(AuditArchive $archive, array $ids): void
+    private function prune(AuditArchive $archive, int $year): void
     {
-        DB::transaction(function () use ($archive, $ids): void {
-            foreach (array_chunk($ids, 500) as $chunk) {
-                DB::table('audit_logs')->whereIn('id', $chunk)->delete();
-            }
+        DB::transaction(function () use ($archive, $year): void {
+            do {
+                $deleted = DB::table('audit_logs')
+                    ->whereYear('occurred_at', $year)
+                    ->whereBetween('id', [$archive->first_entry_id, $archive->last_entry_id])
+                    ->orderBy('id')
+                    ->limit(500)
+                    ->delete();
+            } while ($deleted > 0);
 
             $archive->markPruned();
         });
+    }
+}
+
+/**
+ * The archive file, written one entry at a time into a gzip stream.
+ *
+ * The full row, not a summary. An archive that dropped columns to save
+ * space would be an archive somebody could not verify against the hashes —
+ * the hash is taken over every field. The result is one JSON document,
+ * `{"year", "exported_at", "entry_count", "entries": [...]}`, exactly as
+ * before; it is only built without ever being held whole.
+ */
+final class ArchiveWriter
+{
+    private readonly string $temp;
+
+    /** @var resource|null */
+    private $stream;
+
+    private bool $first = true;
+
+    public function __construct(
+        private readonly int $year,
+        private readonly int $count,
+        private readonly string $disk,
+        public readonly string $filename,
+    ) {
+        $temp = tempnam(sys_get_temp_dir(), 'audit-archive-');
+        $stream = $temp === false ? false : gzopen($temp, 'wb9');
+
+        if ($temp === false || $stream === false) {
+            throw new RuntimeException('The archive could not be opened for writing.');
+        }
+
+        $this->temp = $temp;
+        $this->stream = $stream;
+
+        gzwrite($this->stream, sprintf(
+            '{"year":%d,"exported_at":%s,"entry_count":%d,"entries":[',
+            $this->year,
+            json_encode(now()->toIso8601String(), JSON_THROW_ON_ERROR),
+            $this->count,
+        ));
+    }
+
+    public function write(AuditLog $entry): void
+    {
+        gzwrite($this->stream, ($this->first ? '' : ',').json_encode($entry->getAttributes(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+        $this->first = false;
+    }
+
+    /** @param array{first: AuditLog, last: AuditLog} $block */
+    public function finish(array $block): AuditArchive
+    {
+        gzwrite($this->stream, ']}');
+        gzclose($this->stream);
+        $this->stream = null;
+
+        $handle = fopen($this->temp, 'rb');
+
+        if ($handle === false) {
+            throw new RuntimeException('The archive could not be read back.');
+        }
+
+        Storage::disk($this->disk)->put($this->filename, $handle);
+        fclose($handle);
+
+        $hash = hash_file('sha256', $this->temp);
+        $size = filesize($this->temp);
+        @unlink($this->temp);
+
+        return AuditArchive::create([
+            'year' => $this->year,
+            'entry_count' => $this->count,
+            'first_entry_id' => $block['first']->id,
+            'last_entry_id' => $block['last']->id,
+            'period_start' => $block['first']->occurred_at,
+            'period_end' => $block['last']->occurred_at,
+            // What the block started from, and what the entries after the gap
+            // will chain onto.
+            'first_entry_hash' => (string) $block['first']->hash,
+            'last_entry_hash' => (string) $block['last']->hash,
+            'archive_hash' => (string) $hash,
+            'filename' => $this->filename,
+            'disk' => $this->disk,
+            'size_bytes' => (int) $size,
+        ]);
+    }
+
+    public function discard(): void
+    {
+        if (is_resource($this->stream)) {
+            gzclose($this->stream);
+            $this->stream = null;
+        }
+
+        @unlink($this->temp);
     }
 }

@@ -71,6 +71,7 @@ class InboundWebhookEvent extends Model
             'signature_valid' => 'boolean',
             'received_at' => 'datetime',
             'processed_at' => 'datetime',
+            'payload_archived_at' => 'datetime',
             'attempts' => 'integer',
         ];
     }

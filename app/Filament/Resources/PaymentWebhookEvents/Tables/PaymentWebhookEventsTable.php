@@ -55,7 +55,7 @@ class PaymentWebhookEventsTable
                 Action::make('replay')
                     ->label(__('Reprocess'))
                     ->icon('heroicon-o-arrow-path')
-                    ->visible(fn (PaymentWebhookEvent $e): bool => $e->signature_valid && auth()->user()->can('payments.replay_webhook'))
+                    ->visible(fn (PaymentWebhookEvent $e): bool => $e->signature_valid && $e->payload_archived_at === null && auth()->user()->can('payments.replay_webhook'))
                     ->requiresConfirmation()
                     ->modalDescription(__('Runs the event through the same idempotent path as the first delivery. A settled payment stays settled once.'))
                     ->action(function (PaymentWebhookEvent $e): void {

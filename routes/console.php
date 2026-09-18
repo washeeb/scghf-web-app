@@ -263,6 +263,28 @@ Schedule::command('backup:clean')
 
 /*
 |--------------------------------------------------------------------------
+| Database housekeeping (Phase 15)
+|--------------------------------------------------------------------------
+|
+| Shared hosting counts disk and inodes against a quota and gives deleted
+| InnoDB space back only on OPTIMIZE. Monthly, in the quiet hours, after the
+| backup has finished and been pruned: expired sessions, old visitor rows,
+| failed jobs and the activity log go; the churning tables are rebuilt; the
+| raw bodies of year-old webhook events move to compressed files, their
+| rows and hashes staying behind.
+*/
+Schedule::command('scghf:db-maintain --execute')
+    ->monthlyOn(1, '04:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+Schedule::command('scghf:archive-webhook-payloads --execute')
+    ->monthlyOn(2, '04:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+/*
+|--------------------------------------------------------------------------
 | The scheduler's own heartbeat
 |--------------------------------------------------------------------------
 |

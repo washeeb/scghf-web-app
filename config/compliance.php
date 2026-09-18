@@ -211,6 +211,11 @@ return [
                 'months' => 24,
                 'anchor' => 'created_at',
                 'action' => 'delete',
+                // Thousands of rows a month is this class's normal volume, not
+                // a sign of a wrong anchor; the general ceiling would abort
+                // every run. Walked in slices, so the number is about the
+                // month's work, not memory.
+                'batch_ceiling' => 20_000,
                 'purpose' => 'Answering delivery queries, diagnosing deliverability problems and '
                     .'reconciling SMS invoices. Not a permanent archive of correspondence.',
             ],
