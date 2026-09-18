@@ -221,6 +221,21 @@
                         class="shrink-0 hover:text-[var(--brand-primary)] hover:underline"
                     >{{ __('Back to top') }}</a>
                 @endif
+
+                {{--
+                    Add to home screen. Hidden until the browser says the site
+                    is installable (`beforeinstallprompt`, in pwa.js); most
+                    browsers never fire it, so most visitors never see this.
+                    Nothing on the page asks — the link just becomes available.
+                --}}
+                @if (app(App\Support\Pwa::class)->enabled())
+                    <a
+                        href="{{ route('pwa.offline') }}"
+                        hidden
+                        data-pwa-install
+                        class="shrink-0 hover:text-[var(--brand-primary)] hover:underline"
+                    >{{ __('Add to your phone') }}</a>
+                @endif
             </div>
         </div>
     </div>

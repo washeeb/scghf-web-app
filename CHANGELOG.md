@@ -8,6 +8,111 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Wave 1 — PWA, live thermometer, donor portal, case-management design — 2026-09-18
+
+#### Added — W1.1 Progressive web app (`FEATURE_PWA_OFFLINE`, now **on** by default)
+
+- **`App\Support\Pwa`** — the manifest from the settings (`general.short_name`,
+  `general.wordmark`, `seo.default_description`, the theme tokens for
+  `theme_color` and `background_color`), 192 and 512 px maskable icons
+  **rendered with GD from the uploaded light-background logo on a square of
+  the primary brand colour** (a brand-coloured tile until a logo is
+  uploaded), cached on the local disk under a hash of the logo, its
+  `updated_at` and the colour, so a new logo is a new URL; shortcuts to
+  `/donate` and `/give`
+- **The service worker** (`resources/js/sw.template.js`, served as `/sw.js`
+  with the precache list, the never-cache list and the flag's state
+  filled in): navigations network-first with the cached page or `/offline`
+  as the fallback; hashed build assets and fonts cache-first; same-origin
+  images network-first; **never** anything on `performance.page_cache.except`,
+  the admin path, `livewire/*`, `donate`, `search`, `screen/*`. With the
+  flag off the worker deletes its caches and unregisters itself on the next
+  visit, so switching the flag off is the whole rollback
+- **`/offline`** — the foundation's own page when the connection drops, with
+  the Mobile Money and bank details from *Offline giving* and the phone
+  number, so a lost connection is a delayed gift rather than a lost one
+- **`resources/js/pwa.js`** — registers the worker only when `<body
+  data-pwa="on">`; captures `beforeinstallprompt` and reveals a hidden
+  **"Add to your phone"** link in the footer — no banner, no modal
+- Routes `pwa.manifest`, `pwa.sw`, `pwa.icon`, `pwa.offline`; `<link
+  rel="manifest">` in the layout when enabled; `sw.js`,
+  `manifest.webmanifest`, `offline` and `screen/*` excluded from the page
+  cache; `pwa_offline` removed from `LaunchChecks::UNBUILT_FLAGS`
+- `tests/Feature/PwaTest.php` — 11 tests: manifest from settings, tile and
+  logo icons (pixel-checked) and their cache/version, the worker's precache
+  and never list and its `ENABLED` state either way, the offline page with
+  and without banking details, 404s and no manifest link with the flag off
+
+#### Added — W1.2 Live thermometer
+
+- **`/screen/{appeal}`** (`ScreenController`) — a standalone dark page for a
+  projector (`?theme=light` for a bright room): the appeal's title, the
+  total in the largest type on the site, the bar and percentage, the gift
+  count, the last five gifts by **first name only** (anonymous gifts as
+  "Anonymous", no amounts, the donor-wall switch honoured), and a **QR code**
+  (`chillerlan/php-qrcode`, inline SVG) that opens the donate page for the
+  appeal with `utm_source=screen`. `noindex`; 404 unless the appeal is live
+- **`/screen/{appeal}/feed.json`** — the same figures as JSON, cached for
+  five seconds under the site generation (which every completed gift bumps,
+  so a gift is on the screen at the next poll); `resources/js/screen.js`
+  polls it every five seconds, pauses when the tab is hidden, and keeps the
+  last good figures on a failed poll
+- **Live screen** header action on the appeal's edit page, shown once the
+  appeal is live
+- `tests/Feature/ScreenTest.php` — 8 tests including the privacy rules
+  (first names, anonymity, no amounts anywhere in the feed), the feed
+  updating after a gift, the page-cache exclusion
+
+#### Added — W1.3 Donor portal
+
+- **Your impact** (`/account/impact`, `App\Donors\ImpactTimeline`) — every
+  completed gift; every appeal update **published after the donor's first
+  gift to that appeal** (an update from before they gave is the appeal's
+  history, not their story); and, per project behind those appeals, the
+  public impact figures **since the first gift**, through
+  `ImpactMetric::publishedTotal()` and therefore the same disclosure control
+  as the public page — a signed-in donor sees nothing about beneficiaries
+  the public cannot. Worded "since your first gift", never "because of"
+- **Receipts** (`/account/receipts`) — every receipt filed by tax year with
+  the year's total and, where an appeal held a Section 97 approval, the
+  deductible total; each opens as the PDF; gifts completed but not yet
+  receipted are counted rather than hidden
+- Both tabs in the account shell; both behind `auth` + `verified`
+- **Subscription pause/resume/change/cancel inside the account** — already
+  built in Phase 9 (*Regular giving* tab, `RegularGivingController`); the
+  roadmap listed it as missing. Pinned by a test rather than rebuilt
+- `tests/Feature/DonorPortalTest.php` — 10 tests; query budgets for both
+  pages against the busiest demo donor, and for the screen, feed, manifest
+  and offline pages
+
+#### Added — W1.4 Design note
+
+- **`docs/DESIGN-BENEFICIARY-CASES.md`** — what exists (the whole schema,
+  the policy, the retention classes, the audit events, the privacy-element
+  map), what does not (**the beneficiary columns are not encrypted at rest**
+  — Phase 12 encrypted the volunteer equivalents; `beneficiary.viewed` is
+  defined and called by nothing), the data list with visibility per role in
+  three tiers, the screens (staff intake only, no public form; no bulk
+  actions; no delete; signed five-minute document downloads; export for
+  the data-protection lead only), the audit granularity, the access-matrix
+  test that must exist before the first real record, and nine questions for
+  the safeguarding lead and the trustees. Design only; nothing built
+
+#### Changed
+
+- **`ReceiptController`** — the signed-in owner is now the account that
+  made the gift **or** the account that has claimed the gift's donor record,
+  so a receipt for a gift made from a phone before the account existed
+  opens from the archive (it was in the list and refused to open)
+- **`ThemeTokens`** — the palette rows are read once per process and memoised
+  (the manifest asked five times); `flush()` clears the memo, and the test
+  base class flushes it per test
+- `config/features.php` `pwa_offline` default `true`; `.env.example` comment
+  rewritten; `LaunchCheckTest` now proves the rule with `p2p_fundraising`
+- Manual: the live screen under *An appeal*, "What a donor sees when they
+  sign in" under *Donations*, the phone icon and offline page under *Theme
+  and appearance*, two quick-reference rows
+
 ### Phase 18 — Phase-two roadmap, proposed — 2026-09-18
 
 - **`docs/ROADMAP.md`** — the sixteen items in the brief and seven from

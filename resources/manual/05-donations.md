@@ -68,6 +68,18 @@ change the email first if it was mistyped (the *donor record*, not the
 gift — the gift keeps what was entered). Every receipt has a number in
 sequence; resending does not issue a new number.
 
+## What a donor sees when they sign in
+
+A donor with an account sees, under *Your account*: **Overview** (totals and
+recent gifts), **Your impact** (every gift, followed by the appeal updates
+you published after it and the public impact figures since their first
+gift — so *Appeal Updates are what fill this page*), **Receipts** (every
+receipt filed by year, with the year's total and the deductible total, each
+as the PDF), **Regular giving** (pause, resume, change the amount or stop a
+standing gift), their details, security and data. Nothing on these pages
+needs staff: a donor who asks "can I have my receipts for last year" can be
+told where to look.
+
 ## Regular gifts
 
 *Finance → Regular gifts* is every monthly or weekly gift: when it next

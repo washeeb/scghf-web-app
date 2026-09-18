@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Cause;
+use App\Models\Donor;
 use App\Models\Event;
 use App\Models\Post;
 use App\Models\Product;
@@ -90,6 +91,10 @@ function queryBudgets(): array
         'sitemap index' => [route('sitemap'), 8],
         'login' => [route('login'), 8],
         '404' => ['/nothing-here', 8],
+        'offline' => [route('pwa.offline'), 8],
+        'screen' => [route('screen.show', $cause), 12],
+        'screen feed' => [route('screen.feed', $cause), 8],
+        'manifest' => [route('pwa.manifest'), 8],
     ];
 }
 
@@ -159,6 +164,27 @@ it('renders the account pages within budget for a donor with a giving history', 
     $this->actingAs($user);
 
     foreach ([route('account.profile') => 15, route('account.giving') => 20] as $url => $budget) {
+        test()->get($url);
+        $measured = measureQueries($url);
+
+        expect($measured['count'])->toBeLessThanOrEqual($budget, $url)
+            ->and($measured['duplicates'])->toBe([], $url);
+    }
+});
+
+it('renders the impact timeline and the receipts archive within budget for the busiest demo donor', function () {
+    /*
+     * The timeline reads per appeal (its updates) and per project (its
+     * metrics), so the budget grows with how widely a donor has given —
+     * bounded by the number of appeals, which is small, not by the number
+     * of gifts, which is not.
+     */
+    $donor = Donor::query()->orderByDesc('donation_count')->firstOrFail();
+    $user = User::factory()->donor()->create(['email' => $donor->email])->fresh();
+    $donor->forceFill(['user_id' => $user->id])->save();
+    $this->actingAs($user);
+
+    foreach ([route('account.impact') => 40, route('account.receipts') => 15] as $url => $budget) {
         test()->get($url);
         $measured = measureQueries($url);
 

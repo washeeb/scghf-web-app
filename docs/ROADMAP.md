@@ -1,7 +1,12 @@
 # Roadmap — phase two, proposed
 
-What to build after launch, in what order, and why. **Nothing here is
-built.** Each item is scored against what the code already has, and the
+> **Wave 1 was approved and built on 18 September 2026**: 1.1 (PWA), 1.14
+> (live thermometer), 1.4 (donor portal) are live behind the flags and
+> routes described in `CHANGELOG.md`; 1.7 has its design note in
+> `docs/DESIGN-BENEFICIARY-CASES.md` awaiting the safeguarding lead's
+> answers. Everything else below is still proposed.
+
+What to build after launch, in what order, and why. Each item is scored against what the code already has, and the
 sequence at the end is a recommendation for the trustees to approve,
 change or cut. When an item is approved it becomes a phase of its own
 with a brief, tests, docs and a changelog entry, as the eighteen before it.
@@ -301,14 +306,12 @@ Cloudflare; `COVERAGE_MIN`, `MEDIA_INODE_BUDGET`, `PREFLIGHT_GATE` set from
 real numbers; the Paystack staging run recorded; the thirty-day review.
 **Nothing from the list until the review.**
 
-### Wave 1 — months 2–3 (small, high-value, no partners)
+### Wave 1 — months 2–3 (small, high-value, no partners) — **built**
 
-1. **PWA** (1.1) — one week, immediate for phone donors.
-2. **Live thermometer and screen mode** (1.14) — one week, in time for the first event.
-3. **Donor portal: impact timeline and receipts archive** (1.4) — two weeks.
-4. **Beneficiary case management** (1.7) — start the design with the
-   safeguarding lead now; build in wave 2. It is the highest-value item
-   for the *programme* and the one with the most to get right.
+1. **PWA** (1.1) — built: `/manifest.webmanifest`, `/sw.js`, `/offline`, icons from the logo.
+2. **Live thermometer and screen mode** (1.14) — built: `/screen/{appeal}` and its feed.
+3. **Donor portal: impact timeline and receipts archive** (1.4) — built: *Your impact* and *Receipts* tabs; subscription management was already in the account (Phase 9).
+4. **Beneficiary case management** (1.7) — designed: `docs/DESIGN-BENEFICIARY-CASES.md`, with nine questions for the safeguarding lead; build in wave 2.
 
 ### Wave 2 — months 4–6 (partners and paperwork started in wave 1)
 

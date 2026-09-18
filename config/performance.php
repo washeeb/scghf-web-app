@@ -69,6 +69,8 @@ return [
             'search',
             'sitemap.xml', 'sitemaps/*', 'robots.txt',
             'up', 'webhooks/*', 'csp-report', 't/*',
+            'sw.js', 'manifest.webmanifest', 'offline', // the worker sets its own caching; the offline page is precached by it
+            'screen/*',                                 // the live thermometer polls; its JSON is cached by its own controller
         ],
     ],
 

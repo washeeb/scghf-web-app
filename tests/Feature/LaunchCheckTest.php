@@ -120,11 +120,11 @@ it('refuses a database that still carries the demo seeder', function () {
 it('refuses a flag that is on with nothing built behind it', function () {
     expect(byKey('flags')->status)->toBe(HealthCheck::OK);
 
-    config(['features.pwa_offline' => true]);
+    config(['features.p2p_fundraising' => true]);
     app(Features::class)->flush();
 
     expect(byKey('flags')->status)->toBe(HealthCheck::CRITICAL)
-        ->and(byKey('flags')->value)->toBe('pwa_offline on');
+        ->and(byKey('flags')->value)->toBe('p2p_fundraising on');
 });
 
 it('names the staff who have never enrolled a second factor', function () {

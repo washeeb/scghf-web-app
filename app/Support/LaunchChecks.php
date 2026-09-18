@@ -353,7 +353,6 @@ final class LaunchChecks
      * with nothing behind them yet; each is a Phase 18 roadmap item.
      */
     private const UNBUILT_FLAGS = [
-        'pwa_offline' => 'offline pages and add-to-home-screen (Phase 18)',
         'p2p_fundraising' => 'peer-to-peer fundraising pages (Phase 18)',
         'multilingual' => 'a second language (Phase 18)',
     ];

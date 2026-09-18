@@ -12,7 +12,8 @@
 | write a news post | Content → **Posts** → New | headline, excerpt, body, image, Publish |
 | add a project | Programmes → **Projects** → New | title, summary, area, dates, image, Publish |
 | add an appeal people can give to | Programmes → **Appeals** → New | title, goal, project, Publish |
-| tell donors how an appeal is going | Programmes → **Appeal Updates** → New | *it is emailed to everyone who gave* |
+| tell donors how an appeal is going | Programmes → **Appeal Updates** → New | *it is emailed to everyone who gave, and fills their "Your impact" page* |
+| put an appeal's total on a projector at an event | Programmes → Appeals → open it → **Live screen** | full screen; add `?theme=light` for a bright room |
 | add a product | Shop → **Products** → New | name, kind, variants with price and stock, photos |
 | add an event | Community → **Events** → New | when, where, places, Publish |
 | upload a photograph | Library → **Media** | upload; **alt text**; *shows a person?* → **record consent** |

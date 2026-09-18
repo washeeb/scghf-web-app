@@ -51,6 +51,15 @@ choose one. It always exists; do not unpublish it.
 **and are emailed to everybody who gave to it**. Write them when there is
 something to show.
 
+**The live screen.** Every published appeal has a page made for a
+projector: open the appeal and press **Live screen** (top right). It shows
+the total in very large type, the bar, the last five first names and a QR
+code that opens the donate page for that appeal — put it on the screen at a
+dinner and watch it climb as guests give by MoMo. It refreshes itself every
+five seconds. It is dark; add `?theme=light` to the address for a bright
+room. Anonymous gifts show as "Anonymous"; amounts are never shown beside
+names.
+
 ![Appeals](images/21-causes.png)
 
 ## A news post

@@ -30,9 +30,18 @@ class ReceiptController extends Controller
 {
     public function download(Request $request, DonationReceipt $receipt, ReceiptPdf $pdf): BinaryFileResponse
     {
-        $ownsIt = $request->user() !== null
-            && $receipt->donation?->user_id !== null
-            && $receipt->donation->user_id === $request->user()->getKey();
+        /*
+         * The owner: the account that made the gift, or the account that has
+         * since claimed the donor record the gift belongs to (a gift from a
+         * phone before the account existed carries no user_id, but it is in
+         * the account's receipts archive and must open from there).
+         */
+        $user = $request->user();
+        $donation = $receipt->donation;
+        $ownsIt = $user !== null && $donation !== null && (
+            ($donation->user_id !== null && $donation->user_id === $user->getKey())
+            || ($donation->donor_id !== null && $donation->donor_id === $user->donor?->getKey())
+        );
 
         abort_unless($request->hasValidSignature() || $ownsIt, 403);
 

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailController;
+use App\Http\Controllers\Account\ImpactController as AccountImpactController;
 use App\Http\Controllers\Account\PrivacyController;
 use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Account\ReceiptsController;
 use App\Http\Controllers\Account\RegularGivingController;
 use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\TwoFactorController;
@@ -35,7 +37,9 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\ScreenController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Shop\CartController;
 use App\Http\Controllers\Shop\CheckoutController;
@@ -187,6 +191,10 @@ Route::middleware(['auth', 'auth.session'])
     ->name('account.')
     ->group(function (): void {
         Route::get('/', DashboardController::class)->middleware('verified')->name('dashboard');
+
+        // The story and the paperwork: gifts and what followed them; receipts by tax year.
+        Route::get('impact', AccountImpactController::class)->middleware('verified')->name('impact');
+        Route::get('receipts', ReceiptsController::class)->middleware('verified')->name('receipts');
 
         Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
 
@@ -705,6 +713,25 @@ Route::get('manual/images/{file}', function (string $file) {
 
     return response()->file($path, ['Cache-Control' => 'private, max-age=86400']);
 })->middleware('auth')->where('file', '[A-Za-z0-9._-]+')->name('manual.image');
+
+/*
+ * The progressive web app: manifest, icons, worker and the offline page.
+ * The worker lives at the root so its scope is the whole site. Everything
+ * but the worker 404s while FEATURE_PWA_OFFLINE is off; the worker is
+ * always served so an installed one can fetch the version that unregisters.
+ */
+Route::get('manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
+Route::get('pwa/icon-{size}.png', [PwaController::class, 'icon'])->whereNumber('size')->name('pwa.icon');
+Route::get('offline', [PwaController::class, 'offline'])->name('pwa.offline');
+
+/*
+ * The live thermometer for a projector, and the feed it polls. Public
+ * (the link is projected and typed into phones), noindex, excluded from
+ * the page cache; the feed caches itself for a few seconds.
+ */
+Route::get('screen/{cause:slug}', [ScreenController::class, 'show'])->name('screen.show');
+Route::get('screen/{cause:slug}/feed.json', [ScreenController::class, 'feed'])->name('screen.feed');
 
 Route::get('/{path}', [PageController::class, 'show'])
     ->where('path', '.*')

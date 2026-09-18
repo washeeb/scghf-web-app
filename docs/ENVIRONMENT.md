@@ -260,9 +260,9 @@ Generated from `.env.example` by `docs/tools/env_reference.py`; regenerate after
 | `FEATURE_BLOG_COMMENTS` | `false` |  |
 | `FEATURE_PRAYER_REQUESTS` | `true` |  |
 | `FEATURE_MULTILINGUAL` | `false` | scaffolding built, English at launch |
-| `FEATURE_SITE_SEARCH` | `false` | post-launch — §3.2 |
+| `FEATURE_SITE_SEARCH` | `true` | built in Phase 6; the /search route is gated on it |
 | `FEATURE_DARK_MODE` | `true` |  |
-| `FEATURE_PWA_OFFLINE` | `true` |  |
+| `FEATURE_PWA_OFFLINE` | `true` | Built (Wave 1): the web manifest, home-screen icons rendered from the logo, a service worker that precaches the shell and shows /offline (with the Mobile Money number) when the connection drops. Off: no manifest is linked and an installed worker unregisters itself on the next visit. |
 
 ### Delivery webhook secrets
 

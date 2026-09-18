@@ -107,7 +107,18 @@ class ThemeTokens
     public static function flush(): void
     {
         Cache::forget(self::CACHE_KEY);
+        self::$loaded = null;
     }
+
+    /**
+     * The rows, once per process. `value()` is asked several times in one
+     * request (the manifest asks for two colours and every icon URL hashes
+     * one), and `app(ThemeTokens::class)` is a fresh instance each time, so
+     * the memo is static. Cleared with the CSS by `flush()`.
+     *
+     * @var array<string, array<string, string>>|null
+     */
+    private static ?array $loaded = null;
 
     private function build(): string
     {
@@ -153,6 +164,12 @@ class ThemeTokens
      * @return array<string, array<string, string>>
      */
     private function tokens(): array
+    {
+        return self::$loaded ??= $this->load();
+    }
+
+    /** @return array<string, array<string, string>> */
+    private function load(): array
     {
         try {
             $rows = ThemeSetting::query()

@@ -47,6 +47,19 @@ The logos (a light-background version and a dark-background version)
 are in *Site settings → Header*. The typefaces are part of the design and
 are not changed from the admin.
 
+## The phone icon and the offline page
+
+Visitors on Android can add the site to their home screen ("Add to your
+phone" appears in the footer when their browser offers it). The icon is made
+from the **light-background logo** on a square of the primary brand colour,
+so uploading a new logo or changing the colour changes the icon; nothing to
+do. When a visitor loses their connection, they see the foundation's own
+"You are offline" page with the Mobile Money and bank details from *Site
+settings → Offline giving* instead of the browser's error — so keep those
+filled in. If the feature must be switched off, `FEATURE_PWA_OFFLINE=false` in the
+server's `.env` (ask the developer); a phone that installed the site will
+quietly forget it on its next visit.
+
 ## What you cannot change here
 
 The layout of the pages, the spacing, the shapes of buttons. Those are

@@ -24,6 +24,7 @@
 @php
     $theme = app(App\Support\ThemePreference::class);
     $preference = $theme->resolve(request());
+    $pwaEnabled = app(App\Support\Pwa::class)->enabled();
 
     /*
      * The head tags, as one object.
@@ -103,9 +104,15 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    {{-- The web app manifest, only while FEATURE_PWA_OFFLINE is on. With
+         it off the manifest URL 404s, so the link would be a broken one. --}}
+    @if ($pwaEnabled)
+        <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    @endif
+
     @stack('head')
 </head>
-<body class="min-h-screen bg-[var(--bg)] text-[var(--text-primary)] antialiased">
+<body class="min-h-screen bg-[var(--bg)] text-[var(--text-primary)] antialiased" data-pwa="{{ $pwaEnabled ? 'on' : 'off' }}">
     {{--
         The skip link. First focusable element on the page, visually hidden
         until focused.
