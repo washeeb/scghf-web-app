@@ -8,6 +8,27 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Phase 18 — Phase-two roadmap, proposed — 2026-09-18
+
+- **`docs/ROADMAP.md`** — the sixteen items in the brief and seven from
+  the phases, each scored for value to this foundation, effort in
+  developer-weeks at the existing quality bar, risk (money and
+  beneficiaries first), what the code already has, and dependencies.
+  Notable: beneficiary case management has a complete schema, encryption,
+  retention and audit and **no screen** — the highest-value programme
+  item and the most sensitive; the PWA, the live thermometer and the
+  donor portal upgrades are a week or two each with nothing to wait for;
+  USSD and WhatsApp need partners with months of lead time
+- Four waves recommended: wave 0 (the first month: Cloudflare and the
+  gates from real numbers, no features), wave 1 (PWA, thermometer, donor
+  portal; design case management), wave 2 (case management, WhatsApp,
+  grants, accounting export, multi-currency display), wave 3
+  (segmentation and the lapsed-donor journey, USSD, matching gifts, AI
+  drafting, a board view). Multilingual content, a public API, A/B
+  testing and foreign-currency charging on triggers
+- Six decisions listed for the trustees; four things deliberately not
+  proposed. **Nothing built** — the brief says on approval
+
 ### Phase 17 — Launch, completed — 2026-09-18
 
 - **`scghf:launch-check`** (`App\Support\LaunchChecks`) — the go-live
