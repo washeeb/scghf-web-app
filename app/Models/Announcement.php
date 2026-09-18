@@ -6,8 +6,10 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\SiteCache;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -129,12 +131,17 @@ class Announcement extends Model
      */
     public static function forRequest(string $placement, Request $request): ?self
     {
-        return static::query()
+        // The live list is cached; which one applies to this path and this
+        // visitor's dismissals is decided per request, in memory. The
+        // "live" window is a time range, so the fragment TTL bounds how late
+        // a scheduled start or end can be seen: ten minutes.
+        $live = SiteCache::remember('announcements:'.$placement, fn (): Collection => static::query()
             ->live()
             ->placement($placement)
-            ->get()
-            ->first(fn (self $announcement): bool => $announcement->appliesTo($request->path())
-                && ! $announcement->wasDismissedBy($request));
+            ->get(), 600);
+
+        return $live->first(fn (self $announcement): bool => $announcement->appliesTo($request->path())
+            && ! $announcement->wasDismissedBy($request));
     }
 
     /**

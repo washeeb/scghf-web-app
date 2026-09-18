@@ -190,6 +190,9 @@ ok "current → releases/$REL"
 # ── Post-activation ──────────────────────────────────────────────────────────
 say "Post-activation"
 "$PHP_BIN" "$CURRENT_LINK/artisan" queue:restart --no-interaction 2>/dev/null && ok "queue workers signalled to restart" || true
+# Pages stored by the previous release must not be the first thing this one
+# serves. Empties the page cache and starts a new fragment generation.
+"$PHP_BIN" "$CURRENT_LINK/artisan" scghf:cache-clear --no-interaction 2>/dev/null && ok "page and fragment caches emptied" || true
 "$PHP_BIN" "$CURRENT_LINK/artisan" up --no-interaction 2>/dev/null || true
 echo "$REL" > "$SHARED_DIR/current_release"
 

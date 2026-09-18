@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Events\TwoFactorChallengeFailed;
+use App\Http\Middleware\CountVisit;
 use App\Listeners\AttachGuestCart;
 use App\Listeners\RecordAuthenticationEvent;
 use App\Listeners\RecordBackupOutcome;
@@ -13,23 +14,49 @@ use App\Media\ImageToolchain;
 use App\Media\MediaLibrary;
 use App\Media\MediaUsage;
 use App\Media\UploadPolicy;
+use App\Models\Announcement;
 use App\Models\Beneficiary;
 use App\Models\BeneficiaryDocument;
+use App\Models\BlogCategory;
 use App\Models\Cause;
+use App\Models\CauseUpdate;
+use App\Models\Division;
 use App\Models\Document;
+use App\Models\Donation;
 use App\Models\EmailLog;
 use App\Models\EventRegistration;
 use App\Models\Faq;
+use App\Models\FaqCategory;
 use App\Models\FocusArea;
 use App\Models\Gallery;
+use App\Models\ImpactMetric;
+use App\Models\Media;
+use App\Models\Menu;
+use App\Models\MenuItem;
+use App\Models\Office;
 use App\Models\Page;
+use App\Models\PageSection;
+use App\Models\Partner;
 use App\Models\Post;
 use App\Models\PrayerRequest;
 use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProductReview;
+use App\Models\ProductVariant;
 use App\Models\Project;
+use App\Models\ProjectUpdate;
+use App\Models\Redirect;
 use App\Models\SmsLog;
+use App\Models\Story;
+use App\Models\Tag;
+use App\Models\TeamDepartment;
+use App\Models\TeamMember;
+use App\Models\Testimonial;
+use App\Models\ThemeSetting;
 use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
+use App\Models\VolunteerOpportunity;
+use App\Observers\SiteCacheObserver;
 use App\Observers\SitemapObserver;
 use App\Shop\RegulatoryScreener;
 use App\Support\Anonymiser;
@@ -183,6 +210,31 @@ class AppServiceProvider extends ServiceProvider
         foreach ([Page::class, Post::class, Project::class, Cause::class, Product::class, \App\Models\Event::class, FocusArea::class, Faq::class, Gallery::class, Document::class] as $listed) {
             $listed::observe(SitemapObserver::class);
         }
+
+        /*
+         * Everything the public site shows starts a new cache generation when
+         * it changes — the fragment cache and the full-page cache both key on
+         * it (App\Support\SiteCache). Over-inclusive on purpose: a bump is one
+         * cache write, a stale page is a support ticket.
+         */
+        foreach ([
+            Page::class, PageSection::class, Menu::class, MenuItem::class,
+            Announcement::class, ThemeSetting::class, Division::class,
+            Post::class, BlogCategory::class, Tag::class,
+            Project::class, ProjectUpdate::class, Cause::class, CauseUpdate::class,
+            Donation::class, ImpactMetric::class, Story::class,
+            Product::class, ProductVariant::class, ProductCategory::class, ProductReview::class,
+            \App\Models\Event::class, EventRegistration::class,
+            FocusArea::class, Faq::class, FaqCategory::class, Gallery::class, Document::class,
+            Testimonial::class, Partner::class, TeamMember::class, TeamDepartment::class,
+            Office::class, VolunteerOpportunity::class, Media::class, Redirect::class,
+        ] as $shown) {
+            $shown::observe(SiteCacheObserver::class);
+        }
+
+        // The visit counter writes in terminate(); a singleton is what carries
+        // its pending rows from handle() to there.
+        $this->app->singleton(CountVisit::class);
 
         $this->recordAuthenticationEvents();
         $this->registerRateLimiters();

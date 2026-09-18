@@ -77,7 +77,12 @@ class NewsController extends Controller
             throw new NotFoundHttpException;
         }
 
-        $post->loadMissing(['category', 'author', 'featuredImage', 'tags']);
+        $post->loadMissing('tags');
+
+        // The post and its related posts share a category and usually an
+        // author; loaded together, once, rather than once for each.
+        $related = $this->related($post);
+        $post->newCollection([$post])->merge($related)->loadMissing(['category', 'author', 'featuredImage']);
 
         /*
          * Counted here rather than on the queue.
@@ -93,7 +98,7 @@ class NewsController extends Controller
 
         return view('news.show', [
             'post' => $post,
-            'related' => $this->related($post),
+            'related' => $related,
             'meta' => $meta->with([
                 'canonical' => $post->seo?->canonical_url ?: route('news.show', $post),
                 'imageUrl' => $post->featuredImage?->isPublishable()
@@ -125,21 +130,17 @@ class NewsController extends Controller
      */
     private function related(Post $post): Collection
     {
-        $query = $this->livePosts()->whereKeyNot($post->getKey());
-
-        $sameCategory = $post->blog_category_id === null
-            ? collect()
-            : (clone $query)->where('blog_category_id', $post->blog_category_id)->limit(3)->get();
-
-        if ($sameCategory->count() >= 3) {
-            return $sameCategory;
-        }
-
-        return $sameCategory->concat(
-            $query->whereNotIn('posts.id', $sameCategory->pluck('id')->all())
-                ->limit(3 - $sameCategory->count())
-                ->get()
-        );
+        // One query: the same category sorts first, recency breaks the tie.
+        // Relations are loaded by the caller together with the post itself.
+        return $this->livePosts()
+            ->without(['category', 'author', 'featuredImage'])
+            ->whereKeyNot($post->getKey())
+            ->when($post->blog_category_id !== null, fn (Builder $q) => $q
+                ->reorder()
+                ->orderByRaw('(blog_category_id = ?) desc', [$post->blog_category_id])
+                ->latest('published_at'))
+            ->limit(3)
+            ->get();
     }
 
     /** @return Builder<Post> */

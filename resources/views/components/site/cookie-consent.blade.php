@@ -27,8 +27,7 @@
 --}}
 @if ((bool) setting('site.cookie_banner_enabled', true) && ! request()->routeIs('filament.*'))
     @php
-        $policy = App\Models\Page::query()->where('slug', 'cookie-policy')->first();
-        $policyUrl = $policy?->isLive() ? url($policy->path) : null;
+        $policyUrl = App\Models\Page::liveUrl('cookie-policy');
     @endphp
     <div
         data-cookie-consent

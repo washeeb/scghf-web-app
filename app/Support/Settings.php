@@ -163,6 +163,10 @@ class Settings
         $this->loaded = null;
         Cache::forget(self::CACHE_KEY);
         Cache::forget(self::CACHE_KEY.'.public');
+
+        // A setting is on every page: the phone number in the footer, the
+        // theme, the presets. Every cached fragment and page is now stale.
+        SiteCache::bump();
     }
 
     /** @return array{0: string, 1: string} */

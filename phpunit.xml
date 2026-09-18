@@ -49,6 +49,12 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!--
+            Off for the suite: a test that moves time past a publish date
+            and fetches the page again must see the render, not a stored
+            copy. PageCacheTest switches it on for itself.
+        -->
+        <env name="PAGE_CACHE_ENABLED" value="false"/>
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="scghf_test"/>
         <env name="DB_URL" value=""/>

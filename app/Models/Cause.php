@@ -9,6 +9,7 @@ use App\Enums\CauseStatus;
 use App\Models\Concerns\BelongsToDivision;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\SiteCache;
 use App\Support\Slug;
 use App\Support\TaxDeductibility;
 use App\ValueObjects\Money;
@@ -196,6 +197,10 @@ class Cause extends Model
             'donation_count' => DB::raw('donation_count + 1'),
             'updated_at' => now(),
         ]);
+
+        // A query-builder write fires no model event; the cached total is
+        // told directly.
+        SiteCache::bump();
     }
 
     /**

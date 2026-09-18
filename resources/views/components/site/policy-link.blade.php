@@ -13,9 +13,9 @@
 @props(['slug', 'label' => null])
 
 @php
-    $page = App\Models\Page::query()->where('slug', $slug)->whereNull('parent_id')->first();
+    $page = App\Models\Page::liveBySlug($slug);
 @endphp
 
-@if ($page?->isLive())
+@if ($page !== null)
     <a {{ $attributes->class(['underline hover:text-[var(--brand-primary)]']) }} href="{{ url($page->path) }}">{{ $label ?? $page->title }}</a>
 @endif

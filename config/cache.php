@@ -53,6 +53,17 @@ return [
             'lock_path' => storage_path('framework/cache/data'),
         ],
 
+        /*
+         * The full-page cache (App\Http\Middleware\CachePublicPage). Files,
+         * whatever the default store is: a stored page is tens of kilobytes
+         * and the point of a hit is to not open a database connection.
+         */
+        'pages' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/pages'),
+            'lock_path' => storage_path('framework/cache/pages'),
+        ],
+
         'memcached' => [
             'driver' => 'memcached',
             'persistent_id' => env('MEMCACHED_PERSISTENT_ID'),

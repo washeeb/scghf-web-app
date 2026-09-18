@@ -32,33 +32,53 @@ use Throwable;
  * Deliberately so — the alternative is minting an identifier for people who did
  * not ask to be counted.
  *
- * ── It runs AFTER the response ──────────────────────────────────────────────
+ * ── It runs AFTER the response has been SENT ───────────────────────────────
  *
  * Counting is not worth a millisecond of a donor's time on a 3G connection, and
- * it is certainly not worth a 500. Every failure is swallowed: a broken counter
- * must never break a page.
+ * it is certainly not worth a 500. What to count is decided in `handle()`
+ * (the session flag has to be written before the session is saved); the four
+ * writes happen in `terminate()`, after PHP-FPM has flushed the response to
+ * the visitor. Every failure is swallowed: a broken counter must never break a
+ * page. Bound as a singleton so the pending rows survive to `terminate()`.
  */
 class CountVisit
 {
     private const SESSION_FLAG = 'visit_counted';
+
+    /** @var array<int, array{string, string, bool}> dimension, value, new session */
+    private array $pending = [];
 
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
 
         try {
-            $this->count($request, $response);
+            $this->pending = $this->rowsFor($request, $response);
         } catch (Throwable) {
-            // Statistics are never worth an error page.
+            $this->pending = [];
         }
 
         return $response;
     }
 
-    private function count(Request $request, Response $response): void
+    public function terminate(Request $request, Response $response): void
+    {
+        $rows = $this->pending;
+        $this->pending = [];
+
+        foreach ($rows as [$dimension, $value, $newSession]) {
+            try {
+                VisitorStat::increment_($dimension, $value, $newSession);
+            } catch (Throwable) {
+            }
+        }
+    }
+
+    /** @return array<int, array{string, string, bool}> */
+    private function rowsFor(Request $request, Response $response): array
     {
         if (! $this->shouldCount($request, $response)) {
-            return;
+            return [];
         }
 
         $newSession = ! $request->session()->has(self::SESSION_FLAG);
@@ -67,29 +87,23 @@ class CountVisit
             $request->session()->put(self::SESSION_FLAG, true);
         }
 
-        VisitorStat::increment_(VisitorStat::DIMENSION_TOTAL, '', $newSession);
+        $rows = [[VisitorStat::DIMENSION_TOTAL, '', $newSession]];
 
-        /** @var array<int, string> $dimensions */
-        $dimensions = config('system.visitors.dimensions', []);
-
-        foreach ($dimensions as $dimension) {
+        foreach (config('system.visitors.dimensions', []) as $dimension) {
             $value = $this->value($dimension, $request);
 
             if ($value === null) {
                 continue;
             }
 
-            /*
-             * Past the daily ceiling, fold into `(other)` rather than dropping.
-             * The totals still add up, which matters more than knowing which of
-             * ten thousand crawler URLs was hit.
-             */
             if (VisitorStat::dimensionIsFull($dimension)) {
                 $value = '(other)';
             }
 
-            VisitorStat::increment_($dimension, $value, $newSession);
+            $rows[] = [$dimension, $value, $newSession];
         }
+
+        return $rows;
     }
 
     private function shouldCount(Request $request, Response $response): bool

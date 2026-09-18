@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -110,11 +111,17 @@ class VisitorStat extends Model
     public static function dimensionIsFull(string $dimension, ?Carbon $date = null): bool
     {
         $max = (int) config('system.visitors.max_values_per_dimension', 200);
+        $day = ($date ?? now())->toDateString();
 
-        return static::query()
-            ->whereDate('date', ($date ?? now())->toDateString())
+        // A COUNT per dimension per page view was three queries on every
+        // request to answer a question whose answer changes once a day at
+        // most. Five minutes stale at the cap costs at worst a few extra rows.
+        $count = Cache::remember("visitors:count:{$dimension}:{$day}", 300, fn (): int => static::query()
+            ->whereDate('date', $day)
             ->where('dimension', $dimension)
-            ->count() >= $max;
+            ->count());
+
+        return $count >= $max;
     }
 
     // ── Reading ──────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\PageStatus;
 use App\Models\Concerns\HasSeo;
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\SiteCache;
 use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -217,6 +218,36 @@ class Page extends Model
      * A scheduled page becomes visible the moment its date passes, with nobody
      * touching it — which is the whole point of scheduling.
      */
+    /**
+     * The public URL of a live top-level page by slug, or null.
+     *
+     * For the layout's policy links — privacy, cookies, terms — which every
+     * page renders and which are three queries nobody notices until a
+     * shared host bills for them. Cached under the site generation, so
+     * publishing the page makes the link appear on the next request.
+     */
+    public static function liveUrl(string $slug): ?string
+    {
+        $path = SiteCache::remember('page-url:'.$slug, function () use ($slug): string {
+            $page = static::query()->where('slug', $slug)->whereNull('parent_id')->first();
+
+            // '' rather than null: a cache cannot tell "absent" from "nothing yet".
+            return $page?->isLive() ? (string) $page->path : '';
+        });
+
+        return $path === '' ? null : url($path);
+    }
+
+    /** The live top-level page itself, for a link that needs its title too. */
+    public static function liveBySlug(string $slug): ?self
+    {
+        return SiteCache::remember('page:'.$slug, function () use ($slug): ?self {
+            $page = static::query()->where('slug', $slug)->whereNull('parent_id')->first();
+
+            return $page?->isLive() ? $page : null;
+        });
+    }
+
     public function isLive(): bool
     {
         if (! $this->status->isPubliclyVisible()) {

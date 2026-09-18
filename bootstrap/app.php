@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CachePublicPage;
 use App\Http\Middleware\CaptureAttribution;
 use App\Http\Middleware\CountVisit;
 use App\Http\Middleware\EnsureFeatureEnabled;
@@ -91,6 +92,12 @@ return Application::configure(basePath: dirname(__DIR__))
             // Which campaign brought them, kept for the visit. See Attribution.
             CaptureAttribution::class,
             CountVisit::class,
+            /*
+             * Inside CountVisit, so a page served from the cache is still a
+             * page view; before HandleRedirects, which only looks at 404s and
+             * a cached page is never one.
+             */
+            CachePublicPage::class,
             HandleRedirects::class,
             /*
              * `X-Robots-Tag` when indexing is off. The meta tag in the layout

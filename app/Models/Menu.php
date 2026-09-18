@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\RecordsAuthor;
+use App\Support\SiteCache;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -77,15 +78,19 @@ class Menu extends Model
     public static function renderable(string $key, bool $authenticated = false): Collection
     {
         try {
-            $menu = static::query()->where('key', $key)->first();
+            // Four menus on every page, three queries each. Cached under the
+            // site generation, so a menu edit reaches the next request.
+            return SiteCache::remember('menu:'.$key.':'.($authenticated ? 'auth' : 'guest'), function () use ($key, $authenticated): Collection {
+                $menu = static::query()->where('key', $key)->first();
 
-            if ($menu === null) {
-                return new Collection;
-            }
+                if ($menu === null) {
+                    return new Collection;
+                }
 
-            return $menu->tree($authenticated)
-                ->filter(fn (MenuItem $item): bool => $item->isRenderable())
-                ->values();
+                return $menu->tree($authenticated)
+                    ->filter(fn (MenuItem $item): bool => $item->isRenderable())
+                    ->values();
+            });
         } catch (\Throwable) {
             return new Collection;
         }
