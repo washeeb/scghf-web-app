@@ -102,6 +102,19 @@ jobs:
       - name: Check formatting
         run: vendor/bin/pint --test
 
+      # Every layout calls @vite; without public/build/manifest.json every
+      # page is a 500 and the suite fails for the wrong reason.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
       - name: Run tests
         run: php artisan test --stop-on-failure --exclude-testsuite Browser
 

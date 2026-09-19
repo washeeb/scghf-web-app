@@ -78,6 +78,11 @@ unchanged; the values were re-pointed.
   `.env.example` (`phpunit.xml` overrides the database name, not the
   credentials). `DB_USERNAME=root` / empty password are now job-level
   environment variables in all four test jobs
+- The test jobs ran before (or without) `npm run build`; every layout
+  calls `@vite`, so with no `public/build/manifest.json` every page was a
+  500 and the accessibility sweep failed for a reason unrelated to the
+  code. Assets are now built before the tests in the CI quality and
+  coverage jobs and in the Deploy quality gate
 - `activate.sh` now **stops** a production deploy on `PAYMENT_DRIVER=fake`
   instead of warning; the application would have refused to boot at the
   migrate step a moment later with a less helpful stack trace

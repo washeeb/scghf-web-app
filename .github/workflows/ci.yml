@@ -97,11 +97,6 @@ jobs:
       - name: Run migrations against a real MySQL
         run: php artisan migrate --force --no-interaction
 
-      # The browser suite runs in its own job below; it needs Chromium and
-      # the built assets, neither of which this job should wait for.
-      - name: Run tests
-        run: php artisan test --exclude-testsuite Browser
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -112,6 +107,14 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      # Built BEFORE the tests: every layout calls @vite, and without
+      # public/build/manifest.json every page is a 500 — the accessibility
+      # sweep and every page test would fail for a reason that has nothing
+      # to do with the code under test. The browser suite runs in its own
+      # job below; it needs Chromium as well.
+      - name: Run tests
+        run: php artisan test --exclude-testsuite Browser
 
       - name: Audit JavaScript dependencies
         run: npm audit --omit=dev --audit-level=high
@@ -211,6 +214,17 @@ jobs:
           echo "DB_USERNAME=root"         >> .env
           echo "DB_PASSWORD="             >> .env
           php artisan migrate --force --no-interaction
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build frontend assets (every layout calls @vite)
+        run: |
+          npm ci
+          npm run build
 
       - name: Run tests with coverage
         run: |
