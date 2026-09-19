@@ -71,7 +71,10 @@ if [ "$APP_ENV_VAL" = "production" ]; then
     die "Production .env holds a Paystack TEST key. Refusing to deploy."
   fi
   if grep -qE '^PAYMENT_DRIVER=fake' "$SHARED_DIR/.env"; then
-    printf '  \033[0;33m!\033[0m PAYMENT_DRIVER=fake in production — donations will NOT reach Paystack.\n'
+    # Not a warning: PaymentServiceProvider refuses to boot production on the
+    # fake driver, so the migrate step below would die with a stack trace.
+    # Say it plainly here instead.
+    die "PAYMENT_DRIVER=fake in production. The application refuses to boot like this — set PAYMENT_DRIVER=paystack and the live keys in shared/.env."
   fi
   ok "Production guards passed"
 fi

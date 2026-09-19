@@ -61,6 +61,19 @@ unchanged; the values were re-pointed.
   every required extension, `mysqldump`/`rsync`/`flock` present, MariaDB
   10.6 client
 
+#### Fixed — CI had been red since 17 September
+
+- Every `composer install` in both workflows ran before `.env` existed.
+  Composer's `post-autoload-dump` hook runs `php artisan package:discover`,
+  which boots the application; with no `.env`, `APP_ENV` is `production`,
+  and `PaymentServiceProvider` refuses — correctly — to boot production on
+  the fake payment driver. The workflows now copy `.env.example` to `.env`
+  **before** Composer runs (five places). The file never reaches the
+  server: the release tree excludes it
+- `activate.sh` now **stops** a production deploy on `PAYMENT_DRIVER=fake`
+  instead of warning; the application would have refused to boot at the
+  migrate step a moment later with a less helpful stack trace
+
 #### Changed — the database is MariaDB
 
 - The server is **MariaDB 10.6.28**, so `shared/.env` uses

@@ -58,6 +58,15 @@ jobs:
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
           restore-keys: composer-${{ runner.os }}-
 
+      # Composer's post-autoload-dump hook runs `php artisan package:discover`,
+      # which boots the application. With no .env, APP_ENV defaults to
+      # `production`, and PaymentServiceProvider refuses to boot production on
+      # the fake payment driver — correctly. So the template .env (APP_ENV=local)
+      # must exist BEFORE Composer runs. It never reaches the server: the release
+      # tree excludes .env, and the server has its own in shared/.
+      - name: Create the template .env before Composer boots the app
+        run: cp .env.example .env
+
       - name: Install PHP dependencies (with dev — we need the test tooling)
         run: composer install --prefer-dist --no-interaction --no-progress
 
@@ -114,6 +123,15 @@ jobs:
           extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql, sodium, tokenizer, xml, zip
           coverage: none
           tools: composer:v2
+
+      # Composer's post-autoload-dump hook runs `php artisan package:discover`,
+      # which boots the application. With no .env, APP_ENV defaults to
+      # `production`, and PaymentServiceProvider refuses to boot production on
+      # the fake payment driver — correctly. So the template .env (APP_ENV=local)
+      # must exist BEFORE Composer runs. It never reaches the server: the release
+      # tree excludes .env, and the server has its own in shared/.
+      - name: Create the template .env before Composer boots the app
+        run: cp .env.example .env
 
       - name: Install PHP dependencies (production)
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
