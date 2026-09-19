@@ -8,6 +8,38 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Wave 2 — W2.2 Accounting export — 2026-09-19
+
+#### Added
+
+- **`App\Finance\JournalExport`** — a month of the ledger as balanced
+  double-entry journal lines: a gateway gift as gross income into
+  Paystack clearing with the fee out of it; an offline gift into cash,
+  bank or MoMo with no fee; an order as sales plus shipping recovered
+  plus the fee; a processed refund reversing the income it came from; a
+  paid payout to its category's expense account from the account it was
+  paid from. Amounts are Money to the last step; `totals()` proves debits
+  equal credits and the page and the command refuse an unbalanced month.
+  Settlements are deliberately absent — the bank statement is their
+  evidence and the clearing balance is what reconciliation checks
+- **Chart of accounts in Settings → Accounting** (`accounting.*_code`,
+  `*_name` for seventeen accounts, and `accounting.package`), so the
+  codes and names in the file are the accountant's, set once
+- **Finance → Accounting export** (`AccountingExportPage`, behind
+  `donations.export`): the month, the lines, the totals and the proof of
+  balance, the chart in use, **Download CSV** in the column shape of the
+  chosen package (QuickBooks, Xero — signed amounts and tracking —, Zoho
+  Books, or generic); recorded as `report.generated` with the month and
+  the line count
+- **`scghf:journal-export {month?} {--package=} {--store}`** — the same
+  file from the terminal, or filed under `storage/app/journals/`
+- `Payout::cause()`; manual: "The accounts: the monthly journal" under
+  *Donations*, a quick-reference row
+- `tests/Feature/AccountingExportTest.php` — 9 tests: each entry type's
+  lines and balance, anonymity in the contact column, settings-driven
+  codes, per-package columns and date formats, the page download and its
+  audit, the console command and its refusals
+
 ### Wave 2 — W2.1 Beneficiary case management — 2026-09-19
 
 Built from `docs/DESIGN-BENEFICIARY-CASES.md` under its own assumptions

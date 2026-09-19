@@ -20,6 +20,7 @@
 | add an event | Community → **Events** → New | when, where, places, Publish |
 | upload a photograph | Library → **Media** | upload; **alt text**; *shows a person?* → **record consent** |
 | see who gave | Finance → **Donations** | filters; *Export to CSV* |
+| give the accountant the month | Finance → **Accounting export** | pick the month; *Balanced.*; **Download CSV** |
 | record a cash / cheque / transfer gift | Finance → Donations → **Record an offline gift** | amount, appeal, how, name, email, date |
 | resend a receipt | Finance → Donations → the gift → **Resend receipt** | |
 | refund a gift | the gift → **Request a refund**; then a *different* person: Finance → Refunds → **Approve and send** | two people, always |

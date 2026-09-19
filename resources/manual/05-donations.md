@@ -42,6 +42,20 @@ anything that does not match.
 
 ![Reports](images/33-giving-reports.png)
 
+## The accounts: the monthly journal
+
+*Finance → Accounting export.* Instead of re-typing the month into the
+accounts, download it as journal lines: every gift, order, fee, refund and
+payout as a balanced debit and credit, ready to import. Pick the month,
+check the page says **Balanced.**, press **Download CSV**. The file is
+shaped for the package chosen under *Site settings → Accounting*
+(QuickBooks, Xero, Zoho Books, or a plain spreadsheet), and the account
+codes and names there are what the file carries — change them once to
+match the accountant's chart and every month after matches.
+
+Import each month once. The download is recorded with your name and the
+month.
+
 ## Recording a cash, cheque or bank-transfer gift
 
 Somebody hands you an envelope, or the bank statement shows a transfer.
