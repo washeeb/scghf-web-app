@@ -38,7 +38,25 @@ jobs:
   test:
     name: Quality gate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The suite is ~2,000 tests against a real database; 15 minutes was a
+    # guess made before it existed.
+    timeout-minutes: 45
+
+    # phpunit.xml points every test at MySQL `scghf_test` — the same service
+    # ci.yml runs. Without it every database-backed test fails with
+    # "Connection refused" and nothing reaches the server.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: scghf_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - uses: actions/checkout@v4

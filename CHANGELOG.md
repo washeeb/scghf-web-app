@@ -70,6 +70,10 @@ unchanged; the values were re-pointed.
   the fake payment driver. The workflows now copy `.env.example` to `.env`
   **before** Composer runs (five places). The file never reaches the
   server: the release tree excludes it
+- The Deploy workflow's quality gate ran the suite with **no MySQL
+  service** — every database-backed test failed with *Connection refused*
+  once Composer got past the step above. It now runs the same `mysql:8.4`
+  service as `ci.yml`, with a 45-minute budget instead of 15
 - `activate.sh` now **stops** a production deploy on `PAYMENT_DRIVER=fake`
   instead of warning; the application would have refused to boot at the
   migrate step a moment later with a less helpful stack trace
