@@ -118,9 +118,11 @@ class DeliveryEventProcessor
         }
 
         try {
-            $event->channel === InboundWebhookEvent::CHANNEL_EMAIL
-                ? $this->applyToEmail($event)
-                : $this->applyToSms($event);
+            match ($event->channel) {
+                InboundWebhookEvent::CHANNEL_EMAIL => $this->applyToEmail($event),
+                InboundWebhookEvent::CHANNEL_WHATSAPP => $this->applyToWhatsapp($event),
+                default => $this->applyToSms($event),
+            };
 
             $event->markProcessed();
         } catch (Throwable $e) {
@@ -219,6 +221,46 @@ class DeliveryEventProcessor
     }
 
     /**
+     * A WhatsApp status from Meta (Wave 2): sent → delivered → read, or
+     * failed. The row is found by Meta's message id, which the send stored;
+     * "read" counts as delivered. A failure with Meta's code 131047 (the
+     * 24-hour window) or 131026 (not on WhatsApp) marks the row
+     * undelivered with the reason; nothing is suppressed on a failure —
+     * a number that is not on WhatsApp today may be tomorrow.
+     */
+    private function applyToWhatsapp(InboundWebhookEvent $event): void
+    {
+        $parsed = json_decode((string) $event->raw_payload, true);
+        $statuses = is_array($parsed) ? (array) data_get($parsed, 'entry.0.changes.0.value.statuses', []) : [];
+
+        foreach ($statuses as $status) {
+            $id = (string) ($status['id'] ?? '');
+            $state = Str::lower((string) ($status['status'] ?? ''));
+
+            if ($id === '') {
+                continue;
+            }
+
+            $log = SmsLog::query()
+                ->where('channel', SmsLog::CHANNEL_WHATSAPP)
+                ->where('provider_message_id', $id)
+                ->first();
+
+            if ($log === null) {
+                continue;
+            }
+
+            $reason = (string) (data_get($status, 'errors.0.title') ?? data_get($status, 'errors.0.message') ?? '');
+
+            match ($state) {
+                'delivered', 'read' => $log->status === SmsLog::STATUS_DELIVERED ? null : $log->markDelivered($state),
+                'failed' => $log->markUndelivered('failed', $reason !== '' ? $reason : null),
+                default => null,
+            };
+        }
+    }
+
+    /**
      * Suppress an address we have no log row for.
      *
      * A bounce for a message we did not send is still a bounce: it may be a
@@ -242,6 +284,14 @@ class DeliveryEventProcessor
      */
     private function eventId(string $provider, array $parsed, string $rawBody): string
     {
+        if ($provider === 'meta') {
+            $status = data_get($parsed, 'entry.0.changes.0.value.statuses.0');
+
+            if (is_array($status) && isset($status['id'])) {
+                return 'meta:'.$status['id'].':'.($status['status'] ?? '');
+            }
+        }
+
         $id = $parsed['id']
             ?? $parsed['_id']
             ?? $parsed['MessageID']
@@ -265,6 +315,14 @@ class DeliveryEventProcessor
      */
     private function normaliseType(string $provider, array $parsed): ?string
     {
+        if ($provider === 'meta') {
+            return match (Str::lower((string) data_get($parsed, 'entry.0.changes.0.value.statuses.0.status', ''))) {
+                'delivered', 'read' => InboundWebhookEvent::TYPE_DELIVERED,
+                'failed' => InboundWebhookEvent::TYPE_FAILED,
+                default => null, // `sent`, or an inbound message: stored, not acted on
+            };
+        }
+
         $raw = Str::lower((string) (
             $parsed['event']
             ?? $parsed['type']
@@ -332,7 +390,8 @@ class DeliveryEventProcessor
      */
     private function subjectAddress(string $channel, array $parsed): ?string
     {
-        $value = $parsed['recipient']
+        $value = data_get($parsed, 'entry.0.changes.0.value.statuses.0.recipient_id')
+            ?? $parsed['recipient']
             ?? $parsed['email']
             ?? $parsed['Email']
             ?? $parsed['msisdn']
@@ -352,7 +411,7 @@ class DeliveryEventProcessor
 
         return $channel === InboundWebhookEvent::CHANNEL_EMAIL
             ? mb_strtolower(trim((string) $value))
-            : (Suppression::tryNormaliseAddress(Suppression::CHANNEL_SMS, (string) $value)
+            : (Suppression::tryNormaliseAddress(Suppression::CHANNEL_SMS, '+'.ltrim((string) $value, '+'))
                 ?? (string) $value);
     }
 

@@ -1,10 +1,12 @@
 # Roadmap — phase two, proposed
 
 > **Wave 1 was approved and built on 18 September 2026**: 1.1 (PWA), 1.14
-> (live thermometer), 1.4 (donor portal) are live behind the flags and
-> routes described in `CHANGELOG.md`; 1.7 has its design note in
-> `docs/DESIGN-BENEFICIARY-CASES.md` awaiting the safeguarding lead's
-> answers. Everything else below is still proposed.
+> (live thermometer), 1.4 (donor portal). **Wave 2 was built on 19
+> September 2026**: 1.7 (case management, under the design note's own
+> assumptions — its §8 questions are still open), 1.10 (the accounting
+> CSV), 1.8 (display only), 1.6 (grants, plus the payouts screen the
+> ledger had lacked), 1.3 (WhatsApp, built and off until Meta approves
+> the business). Everything else below is still proposed.
 
 What to build after launch, in what order, and why. Each item is scored against what the code already has, and the
 sequence at the end is a recommendation for the trustees to approve,
@@ -313,13 +315,13 @@ real numbers; the Paystack staging run recorded; the thirty-day review.
 3. **Donor portal: impact timeline and receipts archive** (1.4) — built: *Your impact* and *Receipts* tabs; subscription management was already in the account (Phase 9).
 4. **Beneficiary case management** (1.7) — designed: `docs/DESIGN-BENEFICIARY-CASES.md`, with nine questions for the safeguarding lead; build in wave 2.
 
-### Wave 2 — months 4–6 (partners and paperwork started in wave 1)
+### Wave 2 — months 4–6 (partners and paperwork started in wave 1) — **built**
 
-5. **Beneficiary case management** (1.7) — three to four weeks.
-6. **WhatsApp receipts and updates** (1.3) — after Meta approval.
-7. **Grant management** (1.6) — from the treasurer's real list.
-8. **Accounting export** (1.10, the CSV first).
-9. **Multi-currency display** (1.8, display only).
+5. **Beneficiary case management** (1.7) — built under the design note's assumptions; the safeguarding lead's answers can change any of them by editing `FieldMap` and the seeder.
+6. **WhatsApp receipts and updates** (1.3) — built, `FEATURE_WHATSAPP` off until Meta approval; two-way enquiries not built.
+7. **Grant management** (1.6) — built, with the payouts screen.
+8. **Accounting export** (1.10) — the CSV, built; no live API.
+9. **Multi-currency display** (1.8) — display only, built.
 
 ### Wave 3 — months 7–12 (needs data or a partner)
 

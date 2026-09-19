@@ -62,6 +62,8 @@ class Suppression extends Model
 
     public const CHANNEL_SMS = 'sms';
 
+    public const CHANNEL_WHATSAPP = 'whatsapp';
+
     public const SCOPE_ALL = 'all';
 
     public const SCOPE_MARKETING = 'marketing';
@@ -340,7 +342,7 @@ class Suppression extends Model
     {
         return match ($channel) {
             self::CHANNEL_EMAIL => mb_strtolower(trim($address)),
-            self::CHANNEL_SMS => PhoneNumber::normalise($address),
+            self::CHANNEL_SMS, self::CHANNEL_WHATSAPP => PhoneNumber::normalise($address),
             default => throw new InvalidArgumentException("Unknown channel [{$channel}]."),
         };
     }

@@ -8,6 +8,7 @@ use App\Communications\MessageDispatcher;
 use App\Enums\DonationStatus;
 use App\Models\CauseUpdate;
 use App\Models\Donation;
+use App\Support\Features;
 use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
 use Throwable;
@@ -66,6 +67,23 @@ class CauseUpdateNotifier
         $recipients = $this->recipients($update);
         $queued = 0;
 
+        // WhatsApp (Wave 2): the donors who asked for it, when the channel is
+        // on. Marketing category, so it honours quiet hours and any "stop".
+        if (app(Features::class)->enabled('whatsapp')) {
+            foreach ($this->whatsappRecipients($update) as $phone => $name) {
+                try {
+                    $this->dispatcher->queueWhatsapp('cause.update', (string) $phone, [
+                        'name' => $name !== '' ? $name : __('Friend'),
+                        'cause' => $cause->title,
+                        'title' => $update->title,
+                        'cause_url' => route('causes.show', $cause),
+                    ], ['idempotency_key' => 'cause.update.whatsapp:'.$update->getKey().':'.$phone]);
+                    $queued++;
+                } catch (Throwable) {
+                }
+            }
+        }
+
         foreach ($recipients as $email => $name) {
             try {
                 $this->dispatcher->queueEmail('cause.update', (string) $email, [
@@ -105,6 +123,21 @@ class CauseUpdateNotifier
      *
      * @return Collection<string, string> email => name
      */
+    /** @return Collection<string, string> phone => name */
+    private function whatsappRecipients(CauseUpdate $update): Collection
+    {
+        return Donation::query()
+            ->where('cause_id', $update->cause_id)
+            ->where('status', DonationStatus::Completed->value)
+            ->whereNotNull('donor_phone')
+            ->where('consent_whatsapp', true)
+            ->where('is_anonymous', false)
+            ->get(['donor_phone', 'donor_name'])
+            ->mapWithKeys(fn (Donation $donation): array => [
+                (string) $donation->donor_phone => (string) ($donation->donor_name ?? ''),
+            ]);
+    }
+
     private function recipients(CauseUpdate $update): Collection
     {
         return Donation::query()

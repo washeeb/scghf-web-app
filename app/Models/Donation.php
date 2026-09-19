@@ -53,7 +53,7 @@ class Donation extends Model implements Payable
         'channel', 'momo_network', 'momo_provider', 'is_anonymous', 'wants_recurring', 'recurring_interval',
         'tribute_type', 'tribute_name', 'tribute_message', 'tribute_notify_email', 'public_message',
         'donor_name', 'donor_email', 'donor_phone',
-        'consent_email', 'consent_sms', 'consent_text', 'consent_ip', 'consent_at',
+        'consent_email', 'consent_sms', 'consent_whatsapp', 'consent_text', 'consent_ip', 'consent_at',
         'notes', 'recorded_by', 'source', 'utm',
     ];
 
@@ -67,6 +67,7 @@ class Donation extends Model implements Payable
         'is_anonymous' => false,
         'consent_email' => false,
         'consent_sms' => false,
+        'consent_whatsapp' => false,
     ];
 
     protected function casts(): array
@@ -83,6 +84,7 @@ class Donation extends Model implements Payable
             'utm' => 'array',
             'consent_email' => 'boolean',
             'consent_sms' => 'boolean',
+            'consent_whatsapp' => 'boolean',
             'consent_at' => 'datetime',
             'paid_at' => 'datetime',
             'failed_at' => 'datetime',

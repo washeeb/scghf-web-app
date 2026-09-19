@@ -103,6 +103,7 @@ Work down in order. A row with a **Check** column is answered by
 | X5 | Error pages: `/nothing-here` shows the site's 404, a forced error the site's 500 — not a stack trace | Dev | `APP_DEBUG=false` and look |
 | X6 | Final external scan: Mozilla Observatory A, securityheaders.com A, ssllabs A | Dev | the three reports |
 | X7 | Feature flags honest: nothing on that is not built | Dev | LC *Feature flags honest* |
+| X7a | WhatsApp: off, or on with Meta's credentials, `WHATSAPP_DRIVER=cloud` and an approved template | Dev + Comms | LC *WhatsApp ready if on* |
 | X8 | Staging `seo.allow_indexing` off; `robots.txt` on staging says Disallow | Dev | fetch it |
 | X9 | `PREFLIGHT_GATE=1` on the production GitHub environment after the first deploy | Dev | `DEPLOYMENT.md` §5 |
 

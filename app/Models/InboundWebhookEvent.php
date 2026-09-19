@@ -41,6 +41,8 @@ class InboundWebhookEvent extends Model
 
     public const CHANNEL_SMS = 'sms';
 
+    public const CHANNEL_WHATSAPP = 'whatsapp';
+
     /** Normalised event types. A provider's own vocabulary maps onto these. */
     public const TYPE_BOUNCE = 'bounce';
 

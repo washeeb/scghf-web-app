@@ -332,6 +332,9 @@
                      mailing list is a donation form that loses money. --}}
                 <x-site.checkbox name="consent_email" :label="__('Send me occasional updates about this work by email')" />
                 <x-site.checkbox name="consent_sms" :label="__('Send me occasional updates by SMS')" />
+                @if (app(App\Support\Features::class)->enabled('whatsapp'))
+                    <x-site.checkbox name="consent_whatsapp" :label="__('Send my receipt and updates on WhatsApp')" />
+                @endif
             </fieldset>
 
             @if ($allowMomoDirect)

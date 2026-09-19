@@ -42,6 +42,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  *
  * @property Money|null $amount_requested
  * @property Money|null $amount_awarded
+ * @property int|null $created_by
+ * @property int|null $updated_by
  */
 class Grant extends Model
 {

@@ -113,6 +113,12 @@ Route::post(
     DeliveryWebhookController::class,
 )->name('webhooks.delivery');
 
+// Meta verifies a webhook subscription with a GET before it sends anything.
+Route::get(
+    trim((string) config('communications.webhooks.path_prefix', 'webhooks/delivery'), '/').'/{provider}',
+    [DeliveryWebhookController::class, 'subscribe'],
+)->name('webhooks.delivery.verify');
+
 /*
 |--------------------------------------------------------------------------
 | Public accounts

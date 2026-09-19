@@ -132,6 +132,7 @@ final class DonationService
                 'donor_phone' => PhoneNumber::tryNormalise($input['donor_phone'] ?? null) ?? $donor?->phone,
                 'consent_email' => (bool) ($input['consent_email'] ?? false),
                 'consent_sms' => (bool) ($input['consent_sms'] ?? false),
+                'consent_whatsapp' => (bool) ($input['consent_whatsapp'] ?? false),
                 'consent_text' => $input['consent_text'] ?? null,
                 'consent_ip' => $input['consent_ip'] ?? null,
                 'consent_at' => isset($input['consent_text']) ? now() : null,
@@ -311,6 +312,7 @@ final class DonationService
             'city' => $input['donor_city'] ?? null,
             'consent_email' => $input['consent_email'] ?? false,
             'consent_sms' => $input['consent_sms'] ?? false,
+            'consent_whatsapp' => $input['consent_whatsapp'] ?? false,
             'consent_text' => $input['consent_text'] ?? null,
             'consent_ip' => $input['consent_ip'] ?? null,
         ]);

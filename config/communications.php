@@ -275,6 +275,29 @@ return [
     | The segmenter detects this and the template editor refuses to let it
     | through unnoticed.
     */
+    /*
+    |--------------------------------------------------------------------------
+    | WhatsApp (Wave 2)
+    |--------------------------------------------------------------------------
+    |
+    | Meta's Cloud API, directly. Off until the business is verified and the
+    | templates approved: FEATURE_WHATSAPP gates every send, and the `log`
+    | driver records and costs what it does not send until then. The app
+    | secret signs the status webhook; the verify token answers Meta's
+    | one-time subscription handshake.
+    */
+    'whatsapp' => [
+        'driver' => env('WHATSAPP_DRIVER', 'log'),
+        'base_url' => env('WHATSAPP_BASE_URL', 'https://graph.facebook.com'),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+        // Meta charges per 24-hour conversation, by category and country.
+        // Indicative, in integer pesewas, for the log and the monthly total.
+        'cost_per_message_minor' => (int) env('WHATSAPP_COST_PER_MESSAGE_MINOR', 60),
+    ],
+
     'sms' => [
 
         'driver' => env('SMS_DRIVER', 'log'),
@@ -438,6 +461,21 @@ return [
     'webhooks' => [
 
         'providers' => [
+
+            /*
+             * Meta (WhatsApp Cloud API). Signs the raw body with the app
+             * secret and sends it as `X-Hub-Signature-256: sha256=<hex>`;
+             * `prefix` is stripped before the comparison. Status events
+             * (sent, delivered, read, failed) land on the WhatsApp rows of
+             * the SMS log; inbound messages are stored and not acted on.
+             */
+            'meta' => [
+                'channel' => 'whatsapp',
+                'secret' => env('WHATSAPP_APP_SECRET'),
+                'signature_header' => 'x-hub-signature-256',
+                'prefix' => 'sha256=',
+                'algorithm' => 'sha256',
+            ],
 
             'mnotify' => [
                 'channel' => 'sms',

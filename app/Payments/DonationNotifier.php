@@ -7,6 +7,7 @@ namespace App\Payments;
 use App\Communications\MessageDispatcher;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
+use App\Support\Features;
 use App\ValueObjects\Money;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\HtmlString;
@@ -79,6 +80,14 @@ final class DonationNotifier
         if (filled($donation->donor_phone)) {
             try {
                 $this->sms($donation);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        if ($donation->consent_whatsapp && filled($donation->donor_phone) && app(Features::class)->enabled('whatsapp')) {
+            try {
+                $this->whatsapp($donation, $receipt);
             } catch (Throwable $e) {
                 report($e);
             }
@@ -267,6 +276,29 @@ final class DonationNotifier
         ]);
 
         $receipt->markSent((string) $donation->donor_email);
+    }
+
+    /**
+     * The receipt on WhatsApp (Wave 2), for a donor who ticked the box.
+     *
+     * A Meta-approved template with the amount, the reference and the
+     * appeal; the PDF stays on the email and the thank-you page. Queued
+     * only when the flag is on and the template is approved — otherwise
+     * `queueWhatsapp()` refuses and the refusal is reported, not swallowed.
+     */
+    private function whatsapp(Donation $donation, ?DonationReceipt $receipt): void
+    {
+        $this->dispatcher->queueWhatsapp('donation.receipt', (string) $donation->donor_phone, [
+            'name' => (string) ($donation->donor_name ?: __('Friend')),
+            'amount' => 'GHS '.$donation->amount->toMajorString(),
+            'reference' => $donation->reference,
+            'cause' => $donation->cause ? (string) $donation->cause->title : __('the General Fund'),
+            'receipt_number' => $receipt ? (string) $receipt->receipt_number : $donation->reference,
+        ], [
+            'related' => $donation,
+            'user_id' => $donation->user_id,
+            'idempotency_key' => 'donation.receipt.whatsapp:'.$donation->reference,
+        ]);
     }
 
     /**

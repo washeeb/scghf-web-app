@@ -39,6 +39,23 @@ use Throwable;
  */
 class DeliveryWebhookController extends Controller
 {
+    /**
+     * Meta's one-time subscription handshake (Wave 2): a GET with
+     * `hub.mode=subscribe`, our verify token and a challenge to echo. Only
+     * the token in .env answers it; anything else is a 403.
+     */
+    public function subscribe(Request $request, string $provider): Response
+    {
+        $expected = (string) config('communications.whatsapp.verify_token', '');
+
+        if ($provider !== 'meta' || $expected === '' || $request->query('hub_mode') !== 'subscribe'
+            || ! hash_equals($expected, (string) $request->query('hub_verify_token', ''))) {
+            return response('', 403);
+        }
+
+        return response((string) $request->query('hub_challenge', ''), 200, ['Content-Type' => 'text/plain']);
+    }
+
     public function __invoke(Request $request, string $provider, DeliveryEventProcessor $processor): Response
     {
         $known = (array) config('communications.webhooks.providers', []);
@@ -52,6 +69,13 @@ class DeliveryWebhookController extends Controller
 
         $rawBody = $request->getContent();
         $signature = $this->headerValue($request, (string) ($known[$provider]['signature_header'] ?? ''));
+
+        // Meta sends `sha256=<hex>`; the comparison wants the hex.
+        $prefix = (string) ($known[$provider]['prefix'] ?? '');
+
+        if ($prefix !== '' && $signature !== null && str_starts_with($signature, $prefix)) {
+            $signature = substr($signature, strlen($prefix));
+        }
 
         try {
             $event = $processor->record(

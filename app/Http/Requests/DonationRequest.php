@@ -126,6 +126,7 @@ class DonationRequest extends FormRequest
             // Marketing, and optional. See the note at the top.
             'consent_email' => ['nullable', 'boolean'],
             'consent_sms' => ['nullable', 'boolean'],
+            'consent_whatsapp' => ['nullable', 'boolean'],
 
             // Holding their details at all. Not optional.
             'consent' => ['accepted'],

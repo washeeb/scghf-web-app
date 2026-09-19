@@ -32,4 +32,9 @@ return [
     'dark_mode' => env('FEATURE_DARK_MODE', true),
     // Built in Wave 1: the manifest, the icons, the worker and /offline.
     'pwa_offline' => env('FEATURE_PWA_OFFLINE', true),
+    // Built (Wave 2): the channel, the templates, the opt-in, the webhook.
+    // Off until Meta has verified the business and approved the templates —
+    // a genuine deferral on a real dependency, not an empty flag; the launch
+    // check says what is missing when it is on.
+    'whatsapp' => env('FEATURE_WHATSAPP', false),
 ];

@@ -48,6 +48,8 @@ class ScheduledMessage extends Model
 
     public const CHANNEL_SMS = 'sms';
 
+    public const CHANNEL_WHATSAPP = 'whatsapp';
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_CLAIMED = 'claimed';

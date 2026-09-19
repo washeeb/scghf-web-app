@@ -2,7 +2,7 @@
 
 Generated from `.env.example` by `docs/tools/env_reference.py`; regenerate after adding a key. The rule (`CLAUDE.md`): every key in `.env.example` is read by something, and every key the code reads is in `.env.example`. §2 is the check. Real values live only in `shared/.env` on the server; after changing one there, `php artisan config:cache`.
 
-189 keys in 17 sections.
+198 keys in 17 sections.
 
 ## 1. Keys by section
 
@@ -263,6 +263,15 @@ Generated from `.env.example` by `docs/tools/env_reference.py`; regenerate after
 | `FEATURE_SITE_SEARCH` | `true` | built in Phase 6; the /search route is gated on it |
 | `FEATURE_DARK_MODE` | `true` |  |
 | `FEATURE_PWA_OFFLINE` | `true` | Built (Wave 1): the web manifest, home-screen icons rendered from the logo, a service worker that precaches the shell and shows /offline (with the Mobile Money number) when the connection drops. Off: no manifest is linked and an installed worker unregisters itself on the next visit. |
+| `FEATURE_WHATSAPP` | `false` | Built (Wave 2): receipts and appeal updates on WhatsApp for donors who opted in, through Meta's Cloud API. OFF until Meta has verified the business, given a phone number id and approved the templates (Communications → WhatsApp templates); with it off the opt-in box is not shown and nothing is sent. scghf:launch-check says what is missing when it is on. |
+| `WHATSAPP_DRIVER` | `log` | WhatsApp Cloud API (Wave 2). `log` records and costs every message and sends none; `cloud` sends. The token is a permanent System User token from Business Manager; the phone number id is the business number's id, not the number; the app secret signs Meta's status webhook; the verify token is any string you type here and again in the app's webhook settings. |
+| `WHATSAPP_ACCESS_TOKEN` | *(empty)* |  |
+| `WHATSAPP_PHONE_NUMBER_ID` | *(empty)* |  |
+| `WHATSAPP_APP_SECRET` | *(empty)* |  |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | *(empty)* |  |
+| `WHATSAPP_COST_PER_MESSAGE_MINOR` | `60` | indicative, per conversation, in pesewas |
+| `WHATSAPP_BASE_URL` | `https://graph.facebook.com` | only for a test double |
+| `WHATSAPP_API_VERSION` | `v21.0` |  |
 
 ### Delivery webhook secrets
 

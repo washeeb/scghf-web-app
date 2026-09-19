@@ -8,6 +8,80 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Wave 2 — W2.5 WhatsApp as a fifth channel — 2026-09-19
+
+Built, tested, and **off by default** (`FEATURE_WHATSAPP=false`): the one
+dependency this application cannot supply is Meta's verification of the
+foundation's business and approval of its templates, which take weeks.
+With the flag off the opt-in box is not shown and nothing is sent; with
+it on, `scghf:launch-check` names anything still missing.
+
+#### Added
+
+- **`whatsapp_templates`** (`2026_09_19_000004`) — our key, Meta's
+  template name and language, our variable names in the order of Meta's
+  `{{1}}`, `{{2}}`, a readable copy of the wording for the log, and
+  `is_approved`. `WhatsappTemplate::forKey()` refuses an unapproved or
+  unnamed template, so nothing that could not be sent is ever queued.
+  Seeded: `donation.receipt` (utility, five parameters) and
+  `cause.update` (marketing, four); the seeder never overwrites the Meta
+  name, language or approval once set
+- **`sms_logs.channel`** (`sms` | `whatsapp`) — a WhatsApp message is a
+  phone-addressed, provider-charged, delivery-reported message and the
+  SMS log already has every column; the delivery-log screen gets a
+  channel badge and filter. `consent_whatsapp` on donors and donations
+- **`WhatsappGateway`** contract; **`WhatsappCloudGateway`** (Meta's
+  Cloud API directly: one POST with the template name, language and
+  body parameters, the `wamid` kept for the status webhook, Meta's
+  refusal recorded in its own words); **`LogWhatsappGateway`** (records
+  and costs, sends none — the default)
+- **`MessageDispatcher::queueWhatsapp()` / `sendWhatsappNow()`** — the
+  same refusals as SMS in the same order, each a log row: the feature
+  flag, a **WhatsApp-specific suppression** (`Suppression::CHANNEL_WHATSAPP`
+  — "stop texting me" and "stop WhatsApping me" are different requests),
+  quiet hours for marketing
+- **The opt-in**: a checkbox on the donate form beside SMS, shown only
+  while the channel is on and ignored otherwise; carried on the donation
+  and the donor
+- **The receipt on WhatsApp** (`DonationNotifier::whatsapp()`, for a
+  donor who ticked, after the SMS) and **appeal updates on WhatsApp**
+  (`CauseUpdateNotifier`, to consenting, non-anonymous donors, one per
+  number)
+- **Meta's webhook**: `GET /webhooks/delivery/meta` answers the
+  subscription handshake only with `WHATSAPP_WEBHOOK_VERIFY_TOKEN`;
+  `POST` is verified with the app secret over the raw body
+  (`X-Hub-Signature-256: sha256=…`, the prefix stripped by config);
+  statuses `delivered`/`read` mark the row delivered, `failed` marks it
+  undelivered with Meta's reason, `sent` and inbound messages are stored
+  and not acted on. Each status is its own idempotent event
+- **Communications → WhatsApp templates** (`WhatsappTemplateResource`,
+  behind `templates.sms.manage`): the Meta name, the language, the
+  placeholders in order, the approval tick, and whether the channel is on
+- **`scghf:launch-check` row `whatsapp`**: OK when off; when on, names
+  every missing credential, the driver, and the absence of an approved
+  template
+- `.env.example`: `FEATURE_WHATSAPP`, `WHATSAPP_DRIVER`,
+  `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
+  `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN`,
+  `WHATSAPP_COST_PER_MESSAGE_MINOR`, `WHATSAPP_BASE_URL`,
+  `WHATSAPP_API_VERSION` — every one read by `config/communications.php`
+- Manual: "WhatsApp" under *Newsletters and SMS*; a quick-reference row;
+  `docs/LAUNCH.md` row X7a
+- `tests/Feature/WhatsappChannelTest.php` — 11 tests: seeded unapproved
+  and refused until approved, parameters in Meta's order with newlines
+  removed, the log driver and the flag, the separate suppression, the
+  Cloud API request shape and a refusal, the opt-in through a real
+  donation (queued only with the tick and the flag), the box hidden and
+  the tick ignored with the flag off, appeal updates to the right numbers,
+  the handshake, signed and unsigned statuses, the launch-check row, the
+  panel
+
+#### Not built (and said so)
+
+- **Two-way enquiries** (inbound WhatsApp into *Inbox → Messages* with a
+  reply from the panel) — the roadmap's "second step"; inbound messages
+  are stored as webhook events and not acted on
+
 ### Wave 2 — W2.4 Grant management, and the payouts screen — 2026-09-19
 
 #### Added

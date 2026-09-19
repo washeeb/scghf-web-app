@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Communications;
 
 use App\Communications\Contracts\SmsGateway;
+use App\Communications\Contracts\WhatsappGateway;
 use App\Mail\RenderedMessage;
 use App\Models\EmailLog;
 use App\Models\EmailTemplate;
@@ -13,6 +14,8 @@ use App\Models\ScheduledMessage;
 use App\Models\SmsLog;
 use App\Models\SmsTemplate;
 use App\Models\Suppression;
+use App\Models\WhatsappTemplate;
+use App\Support\Features;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -57,6 +60,7 @@ class MessageDispatcher
     public function __construct(
         private readonly SmsGateway $sms,
         private readonly SmsSegmenter $segmenter,
+        private readonly WhatsappGateway $whatsapp,
     ) {}
 
     // ── Queueing ─────────────────────────────────────────────────────────────
@@ -86,6 +90,21 @@ class MessageDispatcher
         $template = SmsTemplate::forKey($templateKey);
 
         return $this->queue(ScheduledMessage::CHANNEL_SMS, $templateKey, $template->category, $to, $variables, $options);
+    }
+
+    /**
+     * Put a WhatsApp message in the outbox (Wave 2). The template must be
+     * Meta-approved — `forKey()` refuses otherwise — so nothing is queued
+     * that could not be sent.
+     *
+     * @param  array<string, mixed>  $variables
+     * @param  array<string, mixed>  $options
+     */
+    public function queueWhatsapp(string $templateKey, string $to, array $variables = [], array $options = []): ScheduledMessage
+    {
+        $template = WhatsappTemplate::forKey($templateKey);
+
+        return $this->queue(ScheduledMessage::CHANNEL_WHATSAPP, $templateKey, $template->category, $to, $variables, $options);
     }
 
     /**
@@ -135,19 +154,26 @@ class MessageDispatcher
     public function deliver(ScheduledMessage $message): EmailLog|SmsLog
     {
         try {
-            $log = $message->channel === ScheduledMessage::CHANNEL_EMAIL
-                ? $this->sendEmailNow(
+            $log = match ($message->channel) {
+                ScheduledMessage::CHANNEL_EMAIL => $this->sendEmailNow(
                     (string) $message->template_key,
                     (string) $message->to_address,
                     $this->thaw($message->payload ?? []),
                     $this->optionsFrom($message),
-                )
-                : $this->sendSmsNow(
+                ),
+                ScheduledMessage::CHANNEL_WHATSAPP => $this->sendWhatsappNow(
                     (string) $message->template_key,
                     (string) $message->to_address,
                     $this->thaw($message->payload ?? []),
                     $this->optionsFrom($message),
-                );
+                ),
+                default => $this->sendSmsNow(
+                    (string) $message->template_key,
+                    (string) $message->to_address,
+                    $this->thaw($message->payload ?? []),
+                    $this->optionsFrom($message),
+                ),
+            };
         } catch (Throwable $e) {
             $message->markAttemptFailed($e->getMessage());
 
@@ -413,6 +439,83 @@ class MessageDispatcher
         return $log;
     }
 
+    // ── WhatsApp (Wave 2) ────────────────────────────────────────────────────
+
+    /**
+     * Send one WhatsApp template now.
+     *
+     * The same refusals as SMS, in the same order, each one a log row that
+     * explains itself: the feature flag, the suppression list (WhatsApp has
+     * its own channel on it, because "stop texting me" and "stop WhatsApping
+     * me" are different requests), quiet hours for marketing. The log row is
+     * an SmsLog with `channel = whatsapp` so the delivery-log screen and the
+     * status webhook work on it unchanged.
+     *
+     * @param  array<string, mixed>  $variables
+     * @param  array<string, mixed>  $options
+     */
+    public function sendWhatsappNow(string $templateKey, string $to, array $variables = [], array $options = []): SmsLog
+    {
+        $template = WhatsappTemplate::forKey($templateKey);
+        $number = PhoneNumber::normalise($to);
+        $body = $template->render($variables);
+
+        $log = SmsLog::create([
+            'channel' => SmsLog::CHANNEL_WHATSAPP,
+            'template_key' => $template->key,
+            'category' => $template->category,
+            'to_number' => $number,
+            'network' => PhoneNumber::network($number),
+            'sender_id' => 'whatsapp',
+            'body' => $body,
+            'encoding' => 'ucs2',
+            'character_count' => mb_strlen($body),
+            'segments' => 1,
+            'estimated_cost_minor' => (int) config('communications.whatsapp.cost_per_message_minor', 60),
+            'currency' => (string) config('payments.currency', 'GHS'),
+            'driver' => 'whatsapp_'.$this->whatsapp->name(),
+            'related_type' => $this->relatedType($options),
+            'related_id' => $this->relatedId($options),
+            'user_id' => $options['user_id'] ?? null,
+            'status' => SmsLog::STATUS_QUEUED,
+            'queued_at' => now(),
+        ]);
+
+        if (! app(Features::class)->enabled('whatsapp')) {
+            $log->markBlocked(SmsLog::STATUS_DISABLED, 'WhatsApp is switched off (FEATURE_WHATSAPP), so nothing was sent.');
+
+            return $log;
+        }
+
+        $suppression = Suppression::blocking(Suppression::CHANNEL_WHATSAPP, $number, $template->category);
+
+        if ($suppression !== null) {
+            $log->markBlocked(SmsLog::STATUS_SUPPRESSED, $suppression->explanation());
+
+            return $log;
+        }
+
+        if ($this->inQuietHours($template->category)) {
+            $log->markBlocked(SmsLog::STATUS_SUPPRESSED, 'Held back: marketing messages are not sent during quiet hours.');
+
+            return $log;
+        }
+
+        try {
+            $result = $this->whatsapp->send($log, $template, $template->parameters($variables));
+
+            if ($result->successful) {
+                $log->markSent($result->providerMessageId, $result->providerStatus);
+            } else {
+                $log->markFailed((string) $result->message);
+            }
+        } catch (Throwable $e) {
+            $log->markFailed($e->getMessage());
+        }
+
+        return $log;
+    }
+
     /**
      * Whether a marketing SMS would arrive in the middle of the night.
      *
@@ -512,7 +615,7 @@ class MessageDispatcher
 
     private function normalise(string $channel, string $address): string
     {
-        return $channel === ScheduledMessage::CHANNEL_SMS
+        return in_array($channel, [ScheduledMessage::CHANNEL_SMS, ScheduledMessage::CHANNEL_WHATSAPP], true)
             ? PhoneNumber::normalise($address)
             : mb_strtolower(trim($address));
     }

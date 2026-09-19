@@ -75,6 +75,24 @@ it is low the site emails the alerts address once a day. Top up with the
 provider before it runs out — a receipt SMS that cannot be sent is a
 donor who wonders whether their gift arrived.
 
+## WhatsApp
+
+Donors who tick **Send my receipt and updates on WhatsApp** on the donate
+form get their receipt there, and each appeal update afterwards. It only
+works once the foundation has a WhatsApp Business account verified by
+Meta and the two message templates approved — until then the box is not
+shown and nothing is sent.
+
+*Communications → WhatsApp templates* lists the two templates the site
+sends: the receipt and the appeal update. For each, copy the wording
+shown into Meta's Business Manager as a new message template (their
+`{{1}}`, `{{2}}` go where the named placeholders are, in the order
+listed), and when Meta shows it as **Approved**, type its Meta name here
+and tick **Approved by Meta**. The developer sets the keys and switches
+the channel on. *Communications → SMS log* shows WhatsApp messages
+alongside texts, with a channel filter; a "stop" from a donor goes on the
+suppression list for WhatsApp only.
+
 ## What is sent without you
 
 Receipts, order confirmations, event reminders, volunteer messages,

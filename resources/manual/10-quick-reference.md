@@ -23,6 +23,7 @@
 | show amounts in dollars / pounds / euros too | Website → Site settings → **Currency** | pick the second currency; *None* for cedis only |
 | pay a school, a supplier, a stipend | Finance → **Payouts** → Raise a payout | who, how much, what for, charged to; *Submit*; somebody else approves; *Mark paid* with the receipt |
 | record a grant application or award | Finance → **Grants** → New grant | funder, title, amount asked, deadline; *Awarded* with the figure; add the funder's reporting dates under Obligations |
+| get WhatsApp receipts going | Communications → **WhatsApp templates** | submit the wording to Meta; type the Meta name; tick *Approved*; ask the developer to switch it on |
 | give the accountant the month | Finance → **Accounting export** | pick the month; *Balanced.*; **Download CSV** |
 | record a cash / cheque / transfer gift | Finance → Donations → **Record an offline gift** | amount, appeal, how, name, email, date |
 | resend a receipt | Finance → Donations → the gift → **Resend receipt** | |

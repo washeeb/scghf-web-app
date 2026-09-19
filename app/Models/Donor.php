@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\MoneyCast;
+use App\Support\Features;
 use App\ValueObjects\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -45,7 +46,7 @@ class Donor extends Model
     protected $fillable = [
         'user_id', 'name', 'email', 'phone', 'phone_raw', 'donor_type',
         'organisation_name', 'address', 'city', 'country',
-        'consent_email', 'consent_sms', 'consent_text', 'consent_ip', 'consent_at',
+        'consent_email', 'consent_sms', 'consent_whatsapp', 'consent_text', 'consent_ip', 'consent_at',
         'is_anonymous_by_default', 'notes',
     ];
 
@@ -54,6 +55,7 @@ class Donor extends Model
         'donor_type' => self::TYPE_INDIVIDUAL,
         'consent_email' => false,
         'consent_sms' => false,
+        'consent_whatsapp' => false,
         'total_donated_minor' => 0,
         'donation_count' => 0,
         'is_anonymous_by_default' => false,
@@ -64,6 +66,7 @@ class Donor extends Model
         return [
             'consent_email' => 'boolean',
             'consent_sms' => 'boolean',
+            'consent_whatsapp' => 'boolean',
             'is_anonymous_by_default' => 'boolean',
             'consent_at' => 'datetime',
             'first_donated_at' => 'datetime',
@@ -209,6 +212,7 @@ class Donor extends Model
             'donor_type' => $details['donor_type'] ?? self::TYPE_INDIVIDUAL,
             'consent_email' => (bool) ($details['consent_email'] ?? false),
             'consent_sms' => (bool) ($details['consent_sms'] ?? false),
+            'consent_whatsapp' => (bool) ($details['consent_whatsapp'] ?? false),
             'consent_text' => $details['consent_text'] ?? null,
             'consent_ip' => $details['consent_ip'] ?? null,
             'consent_at' => isset($details['consent_text']) ? now() : null,
@@ -270,6 +274,12 @@ class Donor extends Model
     public function mayBeTexted(): bool
     {
         return $this->consent_sms && filled($this->phone);
+    }
+
+    /** Opted in to WhatsApp, with a number, and the channel switched on. */
+    public function mayBeWhatsapped(): bool
+    {
+        return $this->consent_whatsapp && filled($this->phone) && app(Features::class)->enabled('whatsapp');
     }
 
     public function displayName(): string

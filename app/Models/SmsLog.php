@@ -39,6 +39,10 @@ class SmsLog extends Model implements Retainable
     use HasFactory;
     use HasUlids;
 
+    public const CHANNEL_SMS = 'sms';
+
+    public const CHANNEL_WHATSAPP = 'whatsapp';
+
     public const STATUS_QUEUED = 'queued';
 
     public const STATUS_SENT = 'sent';
@@ -60,7 +64,7 @@ class SmsLog extends Model implements Retainable
         'to_number', 'network', 'sender_id', 'body',
         'encoding', 'character_count', 'segments',
         'estimated_cost_minor', 'currency',
-        'driver', 'provider_message_id', 'provider_status',
+        'channel', 'driver', 'provider_message_id', 'provider_status',
         'status', 'blocked_reason', 'error', 'attempts',
         'related_type', 'related_id', 'user_id',
         'queued_at', 'sent_at', 'delivered_at', 'failed_at',

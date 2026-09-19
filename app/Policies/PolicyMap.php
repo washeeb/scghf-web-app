@@ -171,6 +171,8 @@ final class PolicyMap
             // ── Communications ───────────────────────────────────────────────
             Models\EmailTemplate::class => EmailTemplatePolicy::class,
             Models\SmsTemplate::class => SmsTemplatePolicy::class,
+            // WhatsApp templates (Wave 2): the same people who edit the texts.
+            Models\WhatsappTemplate::class => SmsTemplatePolicy::class,
             Models\EmailLog::class => EmailLogPolicy::class,
             Models\SmsLog::class => SmsLogPolicy::class,
             Models\NotificationLog::class => EmailLogPolicy::class,

@@ -6,14 +6,17 @@ namespace App\Providers;
 
 use App\Communications\ArkeselGateway;
 use App\Communications\Contracts\SmsGateway;
+use App\Communications\Contracts\WhatsappGateway;
 use App\Communications\HubtelGateway;
 use App\Communications\LogSmsGateway;
+use App\Communications\LogWhatsappGateway;
 use App\Communications\MessageDispatcher;
 use App\Communications\MnotifyGateway;
 use App\Communications\SendThrottle;
 use App\Communications\SmsSegmenter;
 use App\Communications\TemplateRenderer;
 use App\Communications\TwilioGateway;
+use App\Communications\WhatsappCloudGateway;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -63,9 +66,18 @@ class CommunicationServiceProvider extends ServiceProvider
             };
         });
 
+        $this->app->singleton(WhatsappGateway::class, function ($app): WhatsappGateway {
+            return match ($driver = (string) config('communications.whatsapp.driver', 'log')) {
+                'log' => $app->make(LogWhatsappGateway::class),
+                'cloud' => $app->make(WhatsappCloudGateway::class),
+                default => throw new RuntimeException("Unknown WhatsApp driver [{$driver}]. Use 'cloud' or 'log'."),
+            };
+        });
+
         $this->app->singleton(MessageDispatcher::class, fn ($app): MessageDispatcher => new MessageDispatcher(
             $app->make(SmsGateway::class),
             $app->make(SmsSegmenter::class),
+            $app->make(WhatsappGateway::class),
         ));
     }
 

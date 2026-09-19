@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Models\EmailTemplate;
 use App\Models\SmsTemplate;
+use App\Models\WhatsappTemplate;
 use Illuminate\Database\Seeder;
 
 /**
@@ -49,6 +50,65 @@ class MessageTemplateSeeder extends Seeder
         foreach ($this->smsTemplates() as $definition) {
             $this->seedSms($definition);
         }
+
+        foreach ($this->whatsappTemplates() as $definition) {
+            $this->seedWhatsapp($definition);
+        }
+    }
+
+    /**
+     * WhatsApp (Wave 2). The mapping is ours to seed; the words and the
+     * approval are Meta's, so `meta_name`, `language` and `is_approved` are
+     * never overwritten once somebody has set them in the panel.
+     *
+     * @param  array<string, mixed>  $definition
+     */
+    private function seedWhatsapp(array $definition): void
+    {
+        $template = WhatsappTemplate::query()->firstOrNew(['key' => $definition['key']]);
+
+        $template->forceFill([
+            'key' => $definition['key'],
+            'name' => $definition['name'],
+            'description' => $definition['description'],
+            'category' => $definition['category'],
+            'variables' => $definition['variables'],
+        ]);
+
+        if (! $template->exists) {
+            $template->forceFill(['body' => $definition['body'], 'meta_name' => $definition['meta_name'], 'language' => 'en', 'is_approved' => false, 'is_active' => true]);
+        }
+
+        $template->save();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function whatsappTemplates(): array
+    {
+        return [
+            [
+                'key' => 'donation.receipt',
+                'name' => 'Donation receipt (WhatsApp)',
+                'description' => 'The receipt on WhatsApp, for a donor who ticked the box on the donate form. '
+                    .'Submit this text to Meta as a UTILITY template with five body parameters, in this order.',
+                'category' => WhatsappTemplate::CATEGORY_TRANSACTIONAL,
+                'meta_name' => 'scghf_donation_receipt',
+                'variables' => ['name', 'amount', 'reference', 'cause', 'receipt_number'],
+                'body' => 'Thank you, {{name}}. We have received your gift of {{amount}} towards {{cause}}. '
+                    .'Reference {{reference}}; receipt {{receipt_number}}. Your receipt has also been emailed.',
+            ],
+            [
+                'key' => 'cause.update',
+                'name' => 'Appeal update (WhatsApp)',
+                'description' => 'Sent to everybody who gave to an appeal and asked for WhatsApp, when an update is published. '
+                    .'Submit to Meta as a MARKETING template with four body parameters, in this order.',
+                'category' => WhatsappTemplate::CATEGORY_MARKETING,
+                'meta_name' => 'scghf_appeal_update',
+                'variables' => ['name', 'cause', 'title', 'cause_url'],
+                'body' => 'Hello {{name}}, news from {{cause}}: {{title}}. Read it here: {{cause_url}} '
+                    .'Reply STOP to stop these messages.',
+            ],
+        ];
     }
 
     /** @param array<string, mixed> $definition */

@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * the `partners` table; a funder who is also a public partner links to
  * that row, and the two are kept apart so a funder's contact and the
  * notes about them never reach a template.
+ *
+ * @property int|null $created_by
+ * @property int|null $updated_by
  */
 class Funder extends Model
 {

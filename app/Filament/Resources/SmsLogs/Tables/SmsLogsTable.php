@@ -25,6 +25,7 @@ class SmsLogsTable
             ->heading(__('SMS log — about :cost this month', ['cost' => $month->format()]))
             ->defaultSort('queued_at', 'desc')
             ->columns([
+                TextColumn::make('channel')->label(__('Channel'))->badge()->formatStateUsing(fn (?string $state): string => $state === SmsLog::CHANNEL_WHATSAPP ? 'WhatsApp' : 'SMS')->color(fn (?string $state): string => $state === SmsLog::CHANNEL_WHATSAPP ? 'success' : 'gray'),
                 TextColumn::make('to_number')->label(__('To'))->searchable()->copyable()->fontFamily('mono'),
                 TextColumn::make('network')->label(__('Network'))->badge()->color('gray')->placeholder('—')->toggleable(),
                 TextColumn::make('template_key')->label(__('Template'))->fontFamily('mono')->searchable(),
@@ -40,6 +41,7 @@ class SmsLogsTable
                 TextColumn::make('sent_at')->label(__('Sent'))->dateTime('j M Y, H:i')->placeholder('—')->sortable(),
             ])
             ->filters([
+                SelectFilter::make('channel')->label(__('Channel'))->options([SmsLog::CHANNEL_SMS => 'SMS', SmsLog::CHANNEL_WHATSAPP => 'WhatsApp']),
                 SelectFilter::make('status')->label(__('Status'))->options([
                     SmsLog::STATUS_SENT => __('Sent'), SmsLog::STATUS_DELIVERED => __('Delivered'), SmsLog::STATUS_FAILED => __('Failed'),
                     SmsLog::STATUS_SUPPRESSED => __('Refused'), SmsLog::STATUS_QUEUED => __('Queued'),

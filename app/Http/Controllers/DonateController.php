@@ -13,6 +13,7 @@ use App\Payments\DonationService;
 use App\Payments\PaymentManager;
 use App\Payments\PaymentMode;
 use App\Support\Attribution;
+use App\Support\Features;
 use App\Support\PageMeta;
 use App\ValueObjects\Money;
 use Illuminate\Http\JsonResponse;
@@ -121,6 +122,7 @@ class DonateController extends Controller
 
             'consent_email' => $request->boolean('consent_email'),
             'consent_sms' => $request->boolean('consent_sms'),
+            'consent_whatsapp' => $request->boolean('consent_whatsapp') && app(Features::class)->enabled('whatsapp'),
             'consent_text' => $this->consentText(),
             'consent_ip' => $request->ip(),
 

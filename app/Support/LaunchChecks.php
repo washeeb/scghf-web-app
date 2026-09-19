@@ -17,6 +17,7 @@ use App\Models\Project;
 use App\Models\SmsLog;
 use App\Models\TeamMember;
 use App\Models\User;
+use App\Models\WhatsappTemplate;
 use App\Providers\CommunicationServiceProvider;
 use Closure;
 use Illuminate\Support\Carbon;
@@ -89,6 +90,7 @@ final class LaunchChecks
             $this->wrap('canonical_host', 'One canonical host', fn () => $this->canonicalHost()),
             $this->wrap('analytics', 'Analytics chosen', fn () => $this->analytics()),
             $this->wrap('flags', 'Feature flags honest', fn () => $this->flags()),
+            $this->wrap('whatsapp', 'WhatsApp ready if on', fn () => $this->whatsapp()),
             $this->wrap('staff_2fa', 'Two-factor on every staff account', fn () => $this->staffTwoFactor()),
             $this->wrap('demo_accounts', 'No demo accounts', fn () => $this->demoAccounts()),
             $this->wrap('demo_data', 'No demo data', fn () => $this->demoData()),
@@ -356,6 +358,48 @@ final class LaunchChecks
         'p2p_fundraising' => 'peer-to-peer fundraising pages (Phase 18)',
         'multilingual' => 'a second language (Phase 18)',
     ];
+
+    /**
+     * WhatsApp (Wave 2) is built and off by default; ON means the business
+     * is verified with Meta, the credentials are in .env, the driver is
+     * `cloud`, and at least one template is approved. Otherwise the box on
+     * the donate form promises a receipt that cannot be sent.
+     */
+    private function whatsapp(): HealthCheck
+    {
+        if (! app(Features::class)->enabled('whatsapp')) {
+            return HealthCheck::ok('whatsapp', 'WhatsApp ready if on', 'Off — nothing promised');
+        }
+
+        $missing = [];
+
+        if ((string) config('communications.whatsapp.driver', 'log') !== 'cloud') {
+            $missing[] = 'WHATSAPP_DRIVER=cloud';
+        }
+
+        foreach (['access_token' => 'WHATSAPP_ACCESS_TOKEN', 'phone_number_id' => 'WHATSAPP_PHONE_NUMBER_ID', 'verify_token' => 'WHATSAPP_WEBHOOK_VERIFY_TOKEN'] as $key => $env) {
+            if (blank(config('communications.whatsapp.'.$key))) {
+                $missing[] = $env;
+            }
+        }
+
+        if (blank(config('communications.webhooks.providers.meta.secret'))) {
+            $missing[] = 'WHATSAPP_APP_SECRET';
+        }
+
+        $approved = WhatsappTemplate::query()->where('is_approved', true)->where('is_active', true)->whereNotNull('meta_name')->count();
+
+        if ($approved === 0) {
+            $missing[] = 'an approved template (Communications → WhatsApp templates)';
+        }
+
+        if ($missing !== []) {
+            return HealthCheck::critical('whatsapp', 'WhatsApp ready if on', 'On, not ready',
+                'FEATURE_WHATSAPP is on and the donate form offers WhatsApp receipts, but: '.implode('; ', $missing).'. Set them, or switch the flag off until Meta has approved the business and the templates.');
+        }
+
+        return HealthCheck::ok('whatsapp', 'WhatsApp ready if on', $approved.' approved template(s), cloud driver');
+    }
 
     private function flags(): HealthCheck
     {

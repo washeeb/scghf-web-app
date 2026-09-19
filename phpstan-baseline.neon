@@ -1381,12 +1381,6 @@ parameters:
 			path: app/Privacy/AccountDataExporter.php
 
 		-
-			message: '#^Method App\\Programmes\\CauseUpdateNotifier\:\:recipients\(\) should return Illuminate\\Support\\Collection\<string, string\> but returns Illuminate\\Support\\Collection\<lowercase\-string, string\>\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Programmes/CauseUpdateNotifier.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>is_pickup" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
