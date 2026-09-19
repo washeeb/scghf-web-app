@@ -74,6 +74,10 @@ unchanged; the values were re-pointed.
   service** — every database-backed test failed with *Connection refused*
   once Composer got past the step above. It now runs the same `mysql:8.4`
   service as `ci.yml`, with a 45-minute budget instead of 15
+- The test jobs logged in to that service as the cPanel database user from
+  `.env.example` (`phpunit.xml` overrides the database name, not the
+  credentials). `DB_USERNAME=root` / empty password are now job-level
+  environment variables in all four test jobs
 - `activate.sh` now **stops** a production deploy on `PAYMENT_DRIVER=fake`
   instead of warning; the application would have refused to boot at the
   migrate step a moment later with a less helpful stack trace

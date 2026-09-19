@@ -19,6 +19,12 @@ jobs:
   quality:
     name: Lint, analyse, test
     runs-on: ubuntu-latest
+    # The template .env names the cPanel database user; the runner's MySQL
+    # service is root with no password. Real environment variables win over
+    # .env, so this is all it takes.
+    env:
+      DB_USERNAME: root
+      DB_PASSWORD: ''
     timeout-minutes: 30
 
     services:
@@ -144,6 +150,12 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
+    # The template .env names the cPanel database user; the runner's MySQL
+    # service is root with no password. Real environment variables win over
+    # .env, so this is all it takes.
+    env:
+      DB_USERNAME: root
+      DB_PASSWORD: ''
     timeout-minutes: 40
 
     services:
@@ -219,6 +231,12 @@ jobs:
   browser:
     name: Browser tests
     runs-on: ubuntu-latest
+    # The template .env names the cPanel database user; the runner's MySQL
+    # service is root with no password. Real environment variables win over
+    # .env, so this is all it takes.
+    env:
+      DB_USERNAME: root
+      DB_PASSWORD: ''
     timeout-minutes: 30
 
     services:

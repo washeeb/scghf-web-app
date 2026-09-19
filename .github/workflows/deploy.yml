@@ -38,6 +38,12 @@ jobs:
   test:
     name: Quality gate
     runs-on: ubuntu-latest
+    # The template .env names the cPanel database user; the runner's MySQL
+    # service is root with no password. Real environment variables win over
+    # .env, so this is all it takes.
+    env:
+      DB_USERNAME: root
+      DB_PASSWORD: ''
     # The suite is ~2,000 tests against a real database; 15 minutes was a
     # guess made before it existed.
     timeout-minutes: 45
