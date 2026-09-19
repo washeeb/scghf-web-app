@@ -21,6 +21,7 @@ use App\Http\Controllers\BeneficiaryDocumentController;
 use App\Http\Controllers\CauseController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CspReportController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\DeliveryWebhookController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DonateController;
@@ -739,6 +740,10 @@ Route::get('offline', [PwaController::class, 'offline'])->name('pwa.offline');
  * (the link is projected and typed into phones), noindex, excluded from
  * the page cache; the feed caches itself for a few seconds.
  */
+// The visitor's second currency for the approximate figures (Wave 2). A
+// cookie and a redirect back; nothing is charged in it.
+Route::post('currency', [CurrencyController::class, 'set'])->middleware('throttle:30,1')->name('currency.set');
+
 Route::get('screen/{cause:slug}', [ScreenController::class, 'show'])->name('screen.show');
 Route::get('screen/{cause:slug}/feed.json', [ScreenController::class, 'feed'])->name('screen.feed');
 

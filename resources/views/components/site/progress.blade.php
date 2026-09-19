@@ -33,12 +33,12 @@
 <div class="space-y-2">
     <p class="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
         <span class="text-lg font-semibold text-[var(--text-primary)]">
-            {{ $raised->format() }}
+            <x-site.money :amount="$raised" />
         </span>
 
         @if ($goal)
             <span class="text-[var(--text-muted)]">
-                {{ __('of :goal', ['goal' => $goal->format()]) }}
+                {{ __('of') }} <x-site.money :amount="$goal" />
             </span>
         @endif
     </p>

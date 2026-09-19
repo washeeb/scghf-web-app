@@ -57,7 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
          * fail to decrypt and read as absent, which is why the server-side
          * theme silently fell back to "system" for every real visitor.
          */
-        $middleware->encryptCookies(except: ['scghf_theme', 'scghf_consent']);
+        $middleware->encryptCookies(except: ['scghf_theme', 'scghf_consent', 'scghf_currency']);
 
         /*
          * Behind Cloudflare every connection comes from Cloudflare, and the

@@ -106,6 +106,7 @@ class ManageSettings extends Page
         'communications' => 'Email & SMS',
         'analytics' => 'Analytics',
         'accounting' => 'Accounting',
+        'currency' => 'Currency',
         'header' => 'Header',
         'site' => 'Site & footer',
         'seo' => 'Search engines',

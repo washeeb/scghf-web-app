@@ -36,6 +36,12 @@ Artisan::command('inspire', function () {
  * day. Safe to run twice — the unique index on (subscription_id, scheduled_on)
  * makes an overlapping run a no-op rather than a double charge.
  */
+// The day's exchange rates for the "≈ £8" beside a cedi amount (Wave 2).
+// Before the first visitors; a failed fetch keeps yesterday's figure.
+Schedule::command('scghf:refresh-rates')
+    ->dailyAt('05:30')
+    ->onOneServer();
+
 Schedule::command('scghf:charge-recurring --execute')
     ->dailyAt('06:00')
     ->withoutOverlapping()

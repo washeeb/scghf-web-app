@@ -215,6 +215,8 @@
                     page they just left, which is the usual way this control is
                     built and the usual way it is broken.
                 --}}
+                <x-site.currency-picker />
+
                 @if (setting('site.show_back_to_top', true))
                     <a
                         href="#main-content"

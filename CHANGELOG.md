@@ -8,6 +8,42 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Wave 2 — W2.3 Multi-currency display — 2026-09-19
+
+Display only. Every gift is still charged in GHS, receipted in GHS and
+ledgered in GHS; the roadmap's "charging in other currencies" is not
+this and is not built.
+
+#### Added
+
+- **`App\Support\ExchangeRates`** — cedis per US dollar, pound and euro
+  from a keyless daily feed (`open.er-api.com`), fetched by
+  **`scghf:refresh-rates`** at 05:30 and kept in the cache **as scaled
+  integers** (one ten-thousandth of a cedi) forever, so a feed that is
+  down leaves yesterday's figure rather than none; manual rates under
+  Settings → Currency as the fallback, or as the source outright (the
+  Bank of Ghana's rate, typed in). A refresh empties the page cache
+- **`App\Support\CurrencyDisplay`** — the visitor's second currency (the
+  `scghf_currency` cookie, unencrypted like the theme cookie because the
+  page cache keys on every `scghf_*` cookie) or the foundation's default
+  (`currency.display_default`); conversion by integer arithmetic on
+  pesewas; "≈ $ 12.00", whole units above 100
+- **`<x-site.money>`** — the cedi amount first and always, the
+  approximate figure as small print; used on the progress bar (raised and
+  goal), the giving levels, product cards and product prices
+- **The footer picker** (`<x-site.currency-picker>`, `POST /currency`):
+  a plain form; `resources/js/currency.js` submits it on change with no
+  inline handler (the CSP has none); the return URL is checked to be on
+  this host. Shown only when there is a rate to show
+- Settings → Currency: `display_default`, `rate_source`, `rate_usd`,
+  `rate_gbp`, `rate_eur`; manual section under *Donations* and a
+  quick-reference row
+- `tests/Feature/CurrencyDisplayTest.php` — 8 tests: the feed parsed to
+  scaled integers, a failed feed keeping the last rates, conversion and
+  rounding, manual source and fallback, nothing shown without a rate, the
+  default and the cookie on a real page, the picker's cookie and refused
+  off-site redirect, the console output
+
 ### Wave 2 — W2.2 Accounting export — 2026-09-19
 
 #### Added

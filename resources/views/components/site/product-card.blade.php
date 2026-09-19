@@ -47,7 +47,7 @@
     <div class="mt-3 flex flex-1 items-end justify-between gap-3">
         <p class="font-semibold text-[var(--text-primary)]">
             @if ($from)
-                {{ $variants->count() > 1 ? __('From :price', ['price' => $from->format()]) : $from->format() }}
+                @if ($variants->count() > 1){{ __('From') }} @endif<x-site.money :amount="$from" />
             @endif
         </p>
 

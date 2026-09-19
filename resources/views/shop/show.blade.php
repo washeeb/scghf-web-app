@@ -85,7 +85,7 @@
                             <input type="hidden" name="variant" value="{{ $single->ulid }}">
 
                             <p class="text-2xl font-semibold text-[var(--text-primary)]">
-                                {{ $single->priceFor(1, auth()->check())->format() }}
+                                <x-site.money :amount="$single->priceFor(1, auth()->check())" />
                                 @if ($single->compare_at_price && $single->compare_at_price->greaterThan($single->price))
                                     <s class="ml-2 text-base font-normal text-[var(--text-muted)]">{{ $single->compare_at_price->format() }}</s>
                                 @endif
@@ -122,7 +122,7 @@
                                                 </span>
 
                                                 <span class="text-right text-sm">
-                                                    <span class="font-semibold text-[var(--text-primary)]">{{ $variant->priceFor(1, auth()->check())->format() }}</span>
+                                                    <span class="font-semibold text-[var(--text-primary)]"><x-site.money :amount="$variant->priceFor(1, auth()->check())" /></span>
                                                     @if ($variant->compare_at_price && $variant->compare_at_price->greaterThan($variant->price))
                                                         <s class="ml-1 text-xs text-[var(--text-muted)]">{{ $variant->compare_at_price->format() }}</s>
                                                     @endif

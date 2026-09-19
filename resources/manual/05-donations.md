@@ -42,6 +42,20 @@ anything that does not match.
 
 ![Reports](images/33-giving-reports.png)
 
+## Showing amounts in dollars, pounds or euros
+
+*Site settings → Currency.* A donor abroad thinks in their own money. With
+a **second currency** chosen, every public cedi amount — an appeal's
+total and goal, the giving levels, a shop price — carries a small
+"≈ £8" beside it, and visitors can pick another in the footer. The
+figure is approximate and says so; **every gift is still taken in cedis**
+and the receipt says cedis.
+
+The rates come from a free daily feed at 05:30. If you would rather use
+the Bank of Ghana's rate, choose **the rates typed below** and type them;
+they are also used if the feed has never answered. Leave the second
+currency as *None* to show cedis only.
+
 ## The accounts: the monthly journal
 
 *Finance → Accounting export.* Instead of re-typing the month into the

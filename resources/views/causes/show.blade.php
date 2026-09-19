@@ -49,7 +49,7 @@
                         @foreach ($levels as $level)
                             <li class="rounded-lg border border-[var(--border)] p-4">
                                 <p class="font-semibold text-[var(--text-primary)]">
-                                    {{ $level['amount']->format() }} — {{ $level['label'] }}
+                                    <x-site.money :amount="$level['amount']" /> — {{ $level['label'] }}
                                 </p>
 
                                 @if ($level['description'])

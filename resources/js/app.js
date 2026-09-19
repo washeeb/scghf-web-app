@@ -21,6 +21,7 @@
 import { initAnalytics } from './analytics';
 import { initAnnouncement } from './announcement';
 import { initCookieConsent } from './cookie-consent';
+import { initCurrencyPicker } from './currency';
 import { initNavigation } from './navigation';
 import { initNewsletterPopup } from './newsletter-popup';
 import { initPwa } from './pwa';
@@ -32,6 +33,7 @@ initNavigation();
 initAnnouncement();
 initNewsletterPopup();
 initCookieConsent();
+initCurrencyPicker();
 initAnalytics();
 initPwa();
 initScreen();

@@ -155,6 +155,18 @@ class SettingsSeeder extends Seeder
             .'the donor gets a button to Paystack’s page instead.',
             ['redirect' => 'Paystack’s page', 'popup' => 'A window over our page']],
 
+        // ── Currency (Wave 2): the approximate figure beside a cedi amount ────
+        ['currency', 'display_default', '', SettingType::Select, 'Second currency shown by default', true,
+            'An approximate figure beside every public cedi amount, for donors who think in another currency. '
+            .'Visitors can choose another in the footer. Gifts are always taken in cedis.',
+            ['' => 'None — cedis only', 'USD' => 'US dollars', 'GBP' => 'Pounds sterling', 'EUR' => 'Euros']],
+        ['currency', 'rate_source', 'api', SettingType::Select, 'Where the rates come from', false,
+            'The feed is fetched every morning at 05:30 and needs no key. Choose manual to type the Bank of Ghana rate yourself.',
+            ['api' => 'Daily feed (automatic)', 'manual' => 'The rates typed below']],
+        ['currency', 'rate_usd', null, SettingType::String, 'Cedis per 1 US dollar', false, 'Used when the source is manual, or when the feed has never answered.'],
+        ['currency', 'rate_gbp', null, SettingType::String, 'Cedis per 1 pound', false],
+        ['currency', 'rate_eur', null, SettingType::String, 'Cedis per 1 euro', false],
+
         // ── Accounting (Wave 2): the chart of accounts the journal export writes to ──
         ['accounting', 'package', 'generic', SettingType::Select, 'Accounting package', false,
             'Sets the column headings of the monthly journal export so it imports without mapping.',
