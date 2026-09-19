@@ -45,6 +45,7 @@ What `activate.sh` does, in order, and why the order:
 | environment guards | refuses production with `APP_DEBUG=true` or a `sk_test_` key; warns on `PAYMENT_DRIVER=fake` |
 | **pre-deploy database dump** | `mysqldump` to `shared/backups/pre-deploy-<release>.sql.gz` (last five kept) — the nightly backup is up to a day old and a rollback after a bad migration needs the data from *before* it |
 | `migrate --force` | **before** the flip; migrations are expand-only by policy so the live release keeps working against the new schema for the seconds until the symlink moves. A failing migration stops here and the live site is untouched |
+| `db:seed --class=RoleAndPermissionSeeder`, `scghf:encrypt-at-rest --execute` | both idempotent: a permission a release introduced reaches the roles that hold it (otherwise a 403 on a new screen), and any column a release moved to an `encrypted` cast is swept |
 | stamp `APP_RELEASE` into `shared/.env` | *Site Health* shows which build is live |
 | `config:cache`, `route:cache`, `view:cache`, `event:cache`, `filament:optimize`, `icons:cache` | built in the **new** directory, before it is live |
 | `scghf:preflight` | placeholders still in settings, missing keys, flags on with nothing behind them, cron and queue heartbeats. Printed on every deploy; **stops a production deploy** only once the GitHub variable `PREFLIGHT_GATE=1` is set on the production environment (the first deploy cannot pass it — cron points at `current/`, which does not exist until the flip) |

@@ -222,7 +222,7 @@ it('enforces the policy of every resource and page for the :dataset role', funct
     expect(walkAdmin($user, $expectations))->toBe([]);
 })->with([
     'Admin', 'Content Editor', 'Finance Officer', 'Shop Manager',
-    'Volunteer Coordinator', 'Programme Officer', 'Auditor', 'Support',
+    'Volunteer Coordinator', 'Programme Officer', 'Safeguarding Lead', 'Auditor', 'Support',
 ]);
 
 it('takes a permission away and the screen goes with it', function () {

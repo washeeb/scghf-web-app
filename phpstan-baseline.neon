@@ -73,12 +73,6 @@ parameters:
 			path: app/Console/Commands/ContactSlaReminders.php
 
 		-
-			message: '#^PHPDoc tag @var with type Illuminate\\Database\\Eloquent\\Model is not subtype of native type App\\Models\\SafeguardingCheck\|App\\Models\\Volunteer\|App\\Models\\VolunteerApplication\.$#'
-			identifier: varTag.nativeType
-			count: 1
-			path: app/Console/Commands/EncryptAtRest.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>full_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1

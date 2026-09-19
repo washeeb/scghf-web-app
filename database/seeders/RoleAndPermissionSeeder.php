@@ -53,6 +53,20 @@ class RoleAndPermissionSeeder extends Seeder
             // ordinary content permissions so a Content Editor cannot reach
             // them by accident.
             'beneficiaries.view', 'beneficiaries.manage',
+            /*
+             * Wave 2, case management. `view` is Tier A of the design note
+             * (the case exists, where it is, who has it); `manage` creates
+             * and works cases; `view_sensitive` is Tier B and C on EVERY
+             * case, which only the Safeguarding Lead holds — a Programme
+             * Officer sees Tier B and C on the cases they are the worker
+             * for, through the policy, not through a permission.
+             * `view_financial` is what Finance needs to pay an approved
+             * case and nothing else; `audit` is the process without the
+             * person; `export` is the one CSV of children's names, held by
+             * the data-protection lead alone and never by wildcard.
+             */
+            'beneficiaries.view_sensitive', 'beneficiaries.view_financial',
+            'beneficiaries.audit', 'beneficiaries.export',
             'consents.view', 'consents.manage',
             'stories.publish',
 
@@ -194,6 +208,13 @@ class RoleAndPermissionSeeder extends Seeder
             // That stays with Super Admin.
             '!payments.view_keys',
 
+            // `programmes.*` brings the case list (Tier A). It does not bring
+            // a child's medical note on every case, the CSV of names, or the
+            // views cut for Finance and the Auditor — those are held by the
+            // roles that do the work, not by seniority.
+            '!beneficiaries.view_sensitive', '!beneficiaries.export',
+            '!beneficiaries.view_financial', '!beneficiaries.audit',
+
             // Not granted at all (absent rather than negated, since no wildcard
             // pulls them in): roles.manage, backups.restore, users.delete. An
             // Admin who can rewrite the permission matrix is a Super Admin with
@@ -233,6 +254,10 @@ class RoleAndPermissionSeeder extends Seeder
             'activity_log.view',
             'pledges.view', 'pledges.manage',
             'payouts.view', 'payouts.request', 'payouts.mark_paid',
+            // An approved case's name, reference, amount and the account to
+            // pay it into — the fields a payout needs. Not the narrative,
+            // never the medical note (Wave 2 design note §4).
+            'beneficiaries.view', 'beneficiaries.view_financial',
             // NOT granted: donations.refund_over_limit (needs Admin approval),
             // payments.replay_webhook (rewrites financial history),
             // payments.view_keys.
@@ -267,6 +292,24 @@ class RoleAndPermissionSeeder extends Seeder
             'projects.view', 'impact.view',
         ],
 
+        /*
+         * The safeguarding lead. Sees every case in full, decides, records
+         * consent, and is the only person who can export the list — the
+         * design note's data-protection lead and safeguarding lead are one
+         * role until the trustees say otherwise (DESIGN-BENEFICIARY-CASES.md
+         * §8 Q2). Not `programmes.*`: this role is about the people, not the
+         * projects.
+         */
+        'Safeguarding Lead' => [
+            'admin.access',
+            'projects.view', 'causes.view', 'impact.view',
+            'beneficiaries.view', 'beneficiaries.manage', 'beneficiaries.view_sensitive',
+            'beneficiaries.export',
+            'consents.view', 'consents.manage',
+            'media.view', 'media.upload',
+            'audit.view', 'compliance.view',
+        ],
+
         // Recommended in Blueprint §7.3 and seeded now so the scoping exists
         // from the start rather than being retrofitted.
         'Programme Officer' => [
@@ -298,6 +341,10 @@ class RoleAndPermissionSeeder extends Seeder
              * else this role holds.
              */
             'audit.view', 'compliance.view',
+            // The case process without the person: reference, status, dates,
+            // the narrative, the notes, the money — no contact details, no
+            // health, no ID (design note §4).
+            'beneficiaries.view', 'beneficiaries.audit',
             // Read-only by construction. No .create, .update, .delete anywhere.
             // A trustee or external auditor can see the whole financial picture
             // and change none of it.

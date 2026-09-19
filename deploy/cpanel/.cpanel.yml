@@ -50,6 +50,8 @@ deployment:
 
     # --- Post-deploy ---
     - cd $APP && $PHP artisan migrate --force
+    - cd $APP && $PHP artisan db:seed --class=RoleAndPermissionSeeder --force
+    - cd $APP && $PHP artisan scghf:encrypt-at-rest --execute
     - cd $APP && $PHP artisan config:cache
     - cd $APP && $PHP artisan route:cache
     - cd $APP && $PHP artisan view:cache

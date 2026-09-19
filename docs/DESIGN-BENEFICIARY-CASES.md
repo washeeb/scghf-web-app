@@ -1,9 +1,18 @@
 # Design note — beneficiary case management (roadmap item 1.7)
 
-**Status: design only. Nothing in this note is built.** It is the paper the
-safeguarding lead and the trustees are asked to read, correct and sign off
-before Wave 2 starts, because the build is three to four weeks and the
-mistakes it can make are the worst ones this application could make.
+**Status: built in Wave 2 (19 September 2026) under the assumptions below;
+the questions in §8 are still open.** The trustees asked for Wave 2 before
+the safeguarding lead had answered, so the build took this note's own
+defaults and every one of them can be changed by editing
+`app/Beneficiaries/FieldMap.php` (what shows where) and
+`RoleAndPermissionSeeder` (who holds what), with the matrix test
+(`tests/Feature/CaseManagementTest.php`) walking the result. Assumptions
+made: a **Safeguarding Lead** role exists and is also the data-protection
+lead (Q2, Q3); the Super Admin sees Tier C read-only (Q4); the retention
+periods stand (Q5); a signed paper consent form is uploaded at intake
+(Q6); every publication consent defaults to not given (Q8). One correction
+to §2 below: `Admin` holds `programmes.*` and therefore Tier A of every
+case, with the sensitive, financial, audit and export permissions negated.
 
 Written 18 September 2026, at the end of Wave 1 (`docs/ROADMAP.md` §1.7).
 

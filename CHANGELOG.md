@@ -8,6 +8,101 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Wave 2 — W2.1 Beneficiary case management — 2026-09-19
+
+Built from `docs/DESIGN-BENEFICIARY-CASES.md` under its own assumptions
+(the note's status block says which); every visibility decision is data
+in one file and can be changed without touching a screen.
+
+#### Added
+
+- **Encryption at rest for the case record** (migration
+  `2026_09_19_000001`): `phone`, `email`, `ghana_card_number`, `address`,
+  `bank_account`, `momo_number`, `next_of_kin_*`, `household_details`,
+  `school_or_employer`, `religion`, `medical_notes`,
+  `application_narrative`, `case_notes` are `encrypted` casts; the columns
+  widened to TEXT. Name, gender, geography, birth date, amounts and dates
+  stay in clear (the list and the anonymous projection need them; the
+  migration says why). `scghf:encrypt-at-rest` sweeps existing rows and
+  **now runs on every deploy** with `RoleAndPermissionSeeder`
+  (`activate.sh`, `.cpanel.yml`)
+- **A blind index for the Ghana Card number** — `ghana_card_index`, an
+  HMAC-SHA256 of the normalised number under APP_KEY, kept in step by the
+  model's `saving` hook; `Beneficiary::withGhanaCard()` answers "has this
+  person applied before?" without the number ever being in a query.
+  Classified `national_id` so retention destroys it with the number
+- **`beneficiary_notes`** — the case log as rows: author, timestamp, kind
+  (note / status / consent / document / reveal), encrypted body, **no
+  `updated_at`**; `BeneficiaryNote` throws on update and on delete; the
+  foreign key cascades so the retention runner's hard delete takes the log
+  with the case. `Beneficiary::note()` is the one way in; `submit()`,
+  `startReview()`, `approve()`, `decline()`, `withdraw()`, `close()` each
+  write one
+- **`App\Beneficiaries\FieldMap`** — every field on a case with its
+  views (A summary, B working, C sensitive, F financial, U audit), which
+  actor kinds may edit it, its section and its type. **`CaseAccess`** —
+  who a person is to a case (worker on it, Safeguarding Lead, Super Admin,
+  Finance, Auditor, viewer) from the permissions their roles actually
+  carry (never the wildcard), and therefore their views, editable fields,
+  and every yes/no the screens ask. `BeneficiaryPolicy` delegates to it
+- **Roles and permissions**: a **Safeguarding Lead** role (every case in
+  full, decides, reassigns, records consent, the only export);
+  `beneficiaries.view_sensitive`, `.view_financial`, `.audit`, `.export`;
+  Finance gets `view` + `view_financial` (approved cases: name, reference,
+  amount, account); the Auditor gets `view` + `audit` (the process, never
+  the person); Admin keeps Tier A from `programmes.*` with the four new
+  permissions negated; a demo `demo.safeguarding@example.test`
+- **The Filament resource** (`Programmes → Beneficiary cases`), generated
+  from the map: a Tier-A list (Finance sees only payable cases; no bulk
+  actions, no trashed filter); **intake** as a staff form with the signed
+  data-processing consent uploaded first — the case does not save without
+  it, a child cannot consent for themselves, and a matching ID number
+  refuses the save until "I have checked" is ticked; the **case page** in
+  sections by tier with the sensitive section collapsed, the ID number
+  masked with an audited **Reveal**, and the status machine as actions
+  (submit, start review, approve, decline with a reason, withdraw, close
+  with an outcome, reassign) — each the model's own method; an **edit**
+  page holding only the fields the actor may change, in the form and in
+  the Livewire state; relation managers for the **case log**,
+  **documents**, **consent** and **money paid**. **No delete action of
+  any kind**
+- **Documents** — `CaseDocuments::attach()` puts a file through
+  `MediaLibrary::add(private: true)` (sniffed, sanitised, on the
+  `downloads` disk nothing serves) in a locked "Case files" folder;
+  `BeneficiaryDocumentController` serves one only on a **five-minute
+  signed link**, after the policy's per-document check (medical and
+  identity need view C; financial opens to Finance and the Auditor), and
+  records `beneficiary.document_downloaded`
+- **Audit**: `beneficiary.viewed` once per person per case per session
+  at the highest tier shown; every reveal; every download; the export at
+  critical with the row count and filters (Tier A columns only, held by
+  `beneficiaries.export` directly — the Super Admin does not have it)
+- Demo data: six cases in every status, walked through the model so the
+  log reads as a real one would; `scghf:launch-check` counts them as demo
+  data
+- Manual chapter 11, *Beneficiary cases* — who sees what, a new case, the
+  case's life, notes/documents/consent, the export; two quick-reference rows
+- `tests/Feature/CaseManagementTest.php` — 23 tests: raw-column
+  ciphertext, the blind index in three spellings, the log's immutability,
+  **the field matrix walked for seven actors from the map**, Finance
+  before and after approval, the Super Admin's read-only Tier C, edits
+  limited to the actor's fields whatever the request carries, the view
+  audit's once-per-session rule, hidden actions, the status machine and
+  the absence of delete, signed downloads (unsigned, expired, wrong
+  person), sensitive vs financial documents, intake with consent and the
+  duplicate refusal, the export's ownership, and that no public
+  controller or view names the model
+
+#### Changed
+
+- `BeneficiaryPolicy::view/update/download` follow the relationship to
+  the case; `PolicyMap` covers `BeneficiaryNote`
+- `Beneficiary::decline()` writes the reason to the log rather than
+  appending to `case_notes`; `Beneficiary::payouts()`, `caseWorker()`,
+  `notes()` relations
+- `docs/SECURITY-MODEL.md`, `docs/DEPLOYMENT.md`, the design note's status
+  block (built, assumptions listed, §2 corrected: Admin holds Tier A)
+
 ### Wave 1 — PWA, live thermometer, donor portal, case-management design — 2026-09-18
 
 #### Added — W1.1 Progressive web app (`FEATURE_PWA_OFFLINE`, now **on** by default)

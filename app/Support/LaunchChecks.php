@@ -405,6 +405,8 @@ final class LaunchChecks
             'donations' => Donation::query()->where('donor_email', 'like', '%@example.test')->count(),
             'orders' => DB::table('orders')->where('customer_email', 'like', 'demo.buyer%')->count(),
             'subscribers' => DB::table('subscribers')->where('email', 'like', 'demo.reader%')->count(),
+            // The demo cases are keyed to the demo worker; a real database has no such account.
+            'beneficiary cases' => DB::table('beneficiaries')->whereIn('case_worker_id', DB::table('users')->where('email', 'like', 'demo.%@example.test')->select('id'))->count(),
         ];
 
         $found = array_filter($signals);

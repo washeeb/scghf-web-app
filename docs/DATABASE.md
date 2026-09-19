@@ -992,21 +992,22 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `status` | varchar(32) |  | I | `draft` |
 | `full_name` | varchar(191) |  |  |  |
 | `other_names` | varchar(191) | yes |  |  |
-| `phone` | varchar(32) | yes |  |  |
-| `email` | varchar(191) | yes |  |  |
-| `ghana_card_number` | varchar(64) | yes |  |  |
+| `phone` | text | yes |  |  |
+| `email` | text | yes |  |  |
+| `ghana_card_number` | text | yes |  |  |
+| `ghana_card_index` | char(64) | yes | I |  |
 | `date_of_birth` | date | yes |  |  |
-| `address` | varchar(255) | yes |  |  |
+| `address` | text | yes |  |  |
 | `community` | varchar(191) | yes |  |  |
 | `latitude` | decimal(10,7) | yes |  |  |
 | `longitude` | decimal(10,7) | yes |  |  |
-| `bank_account` | varchar(64) | yes |  |  |
-| `momo_number` | varchar(32) | yes |  |  |
-| `next_of_kin_name` | varchar(191) | yes |  |  |
-| `next_of_kin_phone` | varchar(32) | yes |  |  |
+| `bank_account` | text | yes |  |  |
+| `momo_number` | text | yes |  |  |
+| `next_of_kin_name` | text | yes |  |  |
+| `next_of_kin_phone` | text | yes |  |  |
 | `household_details` | text | yes |  |  |
-| `school_or_employer` | varchar(191) | yes |  |  |
-| `religion` | varchar(64) | yes |  |  |
+| `school_or_employer` | text | yes |  |  |
+| `religion` | text | yes |  |  |
 | `medical_notes` | text | yes |  |  |
 | `application_narrative` | longtext | yes |  |  |
 | `case_notes` | longtext | yes |  |  |
@@ -1047,6 +1048,17 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `uploaded_by` | bigint unsigned | yes | I FK → `users.id` |  |
 | `created_at` | timestamp | yes |  |  |
 | `updated_at` | timestamp | yes |  |  |
+
+#### `beneficiary_notes`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `beneficiary_id` | bigint unsigned |  | I FK → `beneficiaries.id` |  |
+| `author_id` | bigint unsigned | yes | I FK → `users.id` |  |
+| `kind` | varchar(16) |  |  | `note` |
+| `body` | text |  |  |  |
+| `created_at` | timestamp | yes |  |  |
 
 #### `beneficiary_impact_records`
 
@@ -1558,7 +1570,10 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `event_id` | varchar(191) | yes | U |  |
 | `event_type` | varchar(64) | yes | I |  |
 | `gateway_reference` | varchar(191) | yes | I |  |
-| `raw_payload` | longtext |  |  |  |
+| `raw_payload` | longtext | yes |  |  |
+| `payload_hash` | char(64) | yes |  |  |
+| `payload_archive` | varchar(191) | yes |  |  |
+| `payload_archived_at` | timestamp | yes | I |  |
 | `signature` | varchar(191) | yes |  |  |
 | `signature_valid` | tinyint(1) |  | I | `0` |
 | `source_ip` | varchar(45) | yes |  |  |
@@ -2463,7 +2478,7 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `open_count` | smallint unsigned |  |  | `0` |
 | `clicked_at` | timestamp | yes |  |  |
 | `click_count` | smallint unsigned |  |  | `0` |
-| `created_at` | timestamp | yes |  |  |
+| `created_at` | timestamp | yes | I |  |
 | `updated_at` | timestamp | yes |  |  |
 
 #### `sms_logs`
@@ -2498,7 +2513,7 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `sent_at` | timestamp | yes | I |  |
 | `delivered_at` | timestamp | yes |  |  |
 | `failed_at` | timestamp | yes |  |  |
-| `created_at` | timestamp | yes |  |  |
+| `created_at` | timestamp | yes | I |  |
 | `updated_at` | timestamp | yes |  |  |
 
 #### `scheduled_messages`
@@ -2692,7 +2707,10 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `event_id` | varchar(191) |  | U |  |
 | `event_type` | varchar(64) | yes |  |  |
 | `subject_address` | varchar(191) | yes | I |  |
-| `raw_payload` | longtext |  |  |  |
+| `raw_payload` | longtext | yes |  |  |
+| `payload_hash` | char(64) | yes |  |  |
+| `payload_archive` | varchar(191) | yes |  |  |
+| `payload_archived_at` | timestamp | yes | I |  |
 | `signature` | varchar(500) | yes |  |  |
 | `signature_valid` | tinyint(1) |  |  | `0` |
 | `source_ip` | varchar(45) | yes |  |  |
@@ -2790,7 +2808,7 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `causer_id` | bigint unsigned | yes |  |  |
 | `properties` | json | yes |  |  |
 | `batch_uuid` | char(36) | yes |  |  |
-| `created_at` | timestamp | yes |  |  |
+| `created_at` | timestamp | yes | I |  |
 | `updated_at` | timestamp | yes |  |  |
 
 #### `backups_log`

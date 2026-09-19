@@ -151,6 +151,12 @@ class Payout extends Model
         return $this->belongsTo(Project::class);
     }
 
+    /** @return BelongsTo<Cause, $this> */
+    public function cause(): BelongsTo
+    {
+        return $this->belongsTo(Cause::class);
+    }
+
     /** @return BelongsTo<Beneficiary, $this> */
     public function beneficiary(): BelongsTo
     {

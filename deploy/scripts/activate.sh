@@ -112,6 +112,16 @@ else
   say "Running migrations"
   "$PHP_BIN" artisan migrate --force --no-interaction || die "Migration failed. Nothing was flipped — the live site is untouched."
   ok "Schema up to date"
+
+  # Permissions and roles are code (RoleAndPermissionSeeder) and the seeder
+  # is idempotent: it adds what a release introduced and removes nothing.
+  # Without this a new permission exists in a policy and in no role, which
+  # is a 403 on a screen the release shipped. Then the encryption sweep,
+  # also idempotent, for any column a release moved to an encrypted cast.
+  say "Seeding permissions and roles"
+  "$PHP_BIN" artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction || die "Permission seeding failed. Nothing was flipped."
+  "$PHP_BIN" artisan scghf:encrypt-at-rest --execute --no-interaction || die "Encryption sweep failed. Nothing was flipped."
+  ok "Permissions current, encrypted columns swept"
 fi
 
 # ── Stamp the build ──────────────────────────────────────────────────────────

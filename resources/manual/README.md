@@ -21,6 +21,7 @@ shown inside the panel itself.
 | [8. Colours, the theme and dark mode](08-theme-and-appearance.md) | the brand colours; light and dark |
 | [9. What not to touch, and who to call](09-what-not-to-touch.md) | read this one first |
 | [10. Quick reference card](10-quick-reference.md) | one page to print |
+| [11. Beneficiary cases](11-beneficiary-cases.md) | a person the foundation is helping: who sees what, the case's life, documents, consent |
 
 **Two rules that cover most of the manual:**
 

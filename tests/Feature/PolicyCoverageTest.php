@@ -282,9 +282,14 @@ it('treats downloading a beneficiary document as its own decision', function () 
     $support = User::factory()->staff()->create();
     $support->assignRole('Support');
 
-    $beneficiary = Beneficiary::factory()->create();
+    // Wave 2: the relationship decides. The officer is the worker on this
+    // case; an officer who is not sees Tier A and downloads nothing.
+    $beneficiary = Beneficiary::factory()->create(['case_worker_id' => $officer->id]);
+    $otherOfficer = User::factory()->staff()->create();
+    $otherOfficer->assignRole('Programme Officer');
 
     expect($officer->fresh()->can('download', $beneficiary))->toBeTrue()
+        ->and($otherOfficer->fresh()->can('download', $beneficiary))->toBeFalse()
         ->and($support->fresh()->can('download', $beneficiary))->toBeFalse();
 });
 

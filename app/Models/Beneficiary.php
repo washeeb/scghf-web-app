@@ -82,6 +82,7 @@ class Beneficiary extends Model implements Retainable
         'household_details', 'school_or_employer', 'religion', 'medical_notes',
         'application_narrative', 'case_notes', 'photo_id', 'signature_id',
         'id_document_id', 'intake_ip', 'gender', 'region', 'district',
+        'ghana_card_index',
         'assistance', 'currency', 'assisted_on', 'outcome',
         'case_worker_id', 'created_by',
     ];
@@ -95,6 +96,23 @@ class Beneficiary extends Model implements Retainable
     protected function casts(): array
     {
         return [
+            // Encrypted at rest (Wave 2). See the migration of 2026-09-19 for
+            // what stays in clear and why.
+            'phone' => 'encrypted',
+            'email' => 'encrypted',
+            'ghana_card_number' => 'encrypted',
+            'address' => 'encrypted',
+            'bank_account' => 'encrypted',
+            'momo_number' => 'encrypted',
+            'next_of_kin_name' => 'encrypted',
+            'next_of_kin_phone' => 'encrypted',
+            'household_details' => 'encrypted',
+            'school_or_employer' => 'encrypted',
+            'religion' => 'encrypted',
+            'medical_notes' => 'encrypted',
+            'application_narrative' => 'encrypted',
+            'case_notes' => 'encrypted',
+
             'date_of_birth' => 'date',
             'assisted_on' => 'date',
             'latitude' => 'decimal:7',
@@ -112,6 +130,14 @@ class Beneficiary extends Model implements Retainable
         static::creating(function (self $beneficiary): void {
             $beneficiary->case_reference ??= self::generateReference();
             $beneficiary->last_activity_at ??= now();
+        });
+
+        // The blind index follows the number. Set here rather than in a
+        // mutator so a forceFill() cannot leave the two out of step.
+        static::saving(function (self $beneficiary): void {
+            if ($beneficiary->isDirty('ghana_card_number') || ($beneficiary->ghana_card_number !== null && $beneficiary->ghana_card_index === null)) {
+                $beneficiary->ghana_card_index = self::blindIndex($beneficiary->ghana_card_number);
+            }
         });
 
         static::updating(function (self $beneficiary): void {
@@ -148,6 +174,38 @@ class Beneficiary extends Model implements Retainable
         throw new RuntimeException('Could not generate a unique case reference after five attempts.');
     }
 
+    /**
+     * The searchable shadow of an ID number: HMAC-SHA256 of the normalised
+     * number under APP_KEY. Equal numbers give equal hashes; nothing gives
+     * the number back. `GHA-123456789-0`, `gha 123456789 0` and
+     * `1234567890` are the same card.
+     */
+    public static function blindIndex(?string $number): ?string
+    {
+        $normalised = strtoupper((string) preg_replace('/[^0-9A-Za-z]/', '', (string) $number));
+
+        if ($normalised === '') {
+            return null;
+        }
+
+        $normalised = (string) preg_replace('/^GHA/', '', $normalised);
+
+        return hash_hmac('sha256', $normalised, self::indexKey());
+    }
+
+    /** Every open or closed case that carries this ID number. */
+    public static function withGhanaCard(string $number): Builder
+    {
+        return static::withTrashed()->where('ghana_card_index', self::blindIndex($number));
+    }
+
+    private static function indexKey(): string
+    {
+        $key = (string) config('app.key');
+
+        return str_starts_with($key, 'base64:') ? (string) base64_decode(substr($key, 7), true) : $key;
+    }
+
     /** @return array<int, string> */
     public function uniqueIds(): array
     {
@@ -179,6 +237,42 @@ class Beneficiary extends Model implements Retainable
         return $this->hasMany(BeneficiaryDocument::class);
     }
 
+    /** @return HasMany<Payout, $this> */
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class);
+    }
+
+    /** @return HasMany<BeneficiaryNote, $this> */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(BeneficiaryNote::class)->orderByDesc('created_at')->orderByDesc('id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function caseWorker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'case_worker_id');
+    }
+
+    /**
+     * Append to the case log. The only way a note is written.
+     */
+    public function note(string $body, string $kind = BeneficiaryNote::KIND_NOTE, ?User $author = null): BeneficiaryNote
+    {
+        $author ??= auth()->user();
+
+        $note = $this->notes()->create([
+            'author_id' => $author?->getKey(),
+            'kind' => $kind,
+            'body' => $body,
+        ]);
+
+        static::whereKey($this->getKey())->update(['last_activity_at' => now()]);
+
+        return $note;
+    }
+
     /** @return HasMany<Story, $this> */
     public function stories(): HasMany
     {
@@ -199,6 +293,27 @@ class Beneficiary extends Model implements Retainable
 
     // ── Case lifecycle ───────────────────────────────────────────────────────
 
+    public function submit(): void
+    {
+        $this->forceFill([
+            'status' => self::STATUS_SUBMITTED,
+            'submitted_at' => $this->submitted_at ?? now(),
+            'last_activity_at' => now(),
+        ])->save();
+
+        $this->note(__('Submitted for review.'), BeneficiaryNote::KIND_STATUS);
+    }
+
+    public function startReview(): void
+    {
+        $this->forceFill([
+            'status' => self::STATUS_UNDER_REVIEW,
+            'last_activity_at' => now(),
+        ])->save();
+
+        $this->note(__('Review started.'), BeneficiaryNote::KIND_STATUS);
+    }
+
     public function decline(string $reason = ''): void
     {
         $this->forceFill([
@@ -206,8 +321,9 @@ class Beneficiary extends Model implements Retainable
             'decided_at' => now(),
             'last_activity_at' => now(),
             'outcome' => 'declined',
-            'case_notes' => trim($this->case_notes."\n".$reason),
         ])->save();
+
+        $this->note(trim(__('Declined.').' '.$reason), BeneficiaryNote::KIND_STATUS);
     }
 
     public function approve(): void
@@ -217,6 +333,8 @@ class Beneficiary extends Model implements Retainable
             'decided_at' => now(),
             'last_activity_at' => now(),
         ])->save();
+
+        $this->note(__('Approved.'), BeneficiaryNote::KIND_STATUS);
     }
 
     public function withdraw(): void
@@ -225,6 +343,8 @@ class Beneficiary extends Model implements Retainable
             'status' => self::STATUS_WITHDRAWN,
             'last_activity_at' => now(),
         ])->save();
+
+        $this->note(__('Withdrawn.'), BeneficiaryNote::KIND_STATUS);
     }
 
     /**
@@ -246,6 +366,8 @@ class Beneficiary extends Model implements Retainable
         ])->save();
 
         $this->documents()->whereNull('closed_at')->update(['closed_at' => $this->closed_at]);
+
+        $this->note(__('Closed. Outcome: :outcome', ['outcome' => $this->outcome ?? '—']), BeneficiaryNote::KIND_STATUS);
 
         return $this->projectImpactRecord();
     }
@@ -362,6 +484,7 @@ class Beneficiary extends Model implements Retainable
             'phone' => 'phone',
             'email' => 'email',
             'ghana_card_number' => 'national_id',
+            'ghana_card_index' => 'national_id', // the blind index reverses to nothing, but it links equal cards: destroyed with the number
             'date_of_birth' => 'date_of_birth',
             'address' => 'address',
             'community' => 'community',

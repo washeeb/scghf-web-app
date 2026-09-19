@@ -89,6 +89,9 @@ final class PolicyMap
             // The sensitive ones. Their own policy, with hard deletion refused.
             Models\Beneficiary::class => BeneficiaryPolicy::class,
             Models\BeneficiaryDocument::class => BeneficiaryPolicy::class,
+            // A note is read through its case and written by the case's own
+            // actions; the policy's view() resolves the case behind it.
+            Models\BeneficiaryNote::class => BeneficiaryPolicy::class,
 
             Models\Consent::class => ConsentPolicy::class,
             Models\Story::class => StoryPolicy::class,

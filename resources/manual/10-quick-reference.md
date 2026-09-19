@@ -13,6 +13,8 @@
 | add a project | Programmes → **Projects** → New | title, summary, area, dates, image, Publish |
 | add an appeal people can give to | Programmes → **Appeals** → New | title, goal, project, Publish |
 | tell donors how an appeal is going | Programmes → **Appeal Updates** → New | *it is emailed to everyone who gave, and fills their "Your impact" page* |
+| open a beneficiary's case | Programmes → **Beneficiary cases** | you see what your role and the case allow; every open is recorded (chapter 11) |
+| take a new application | Programmes → Beneficiary cases → **New case** | the signed consent form first; the name; Save; then *Submit for review* |
 | put an appeal's total on a projector at an event | Programmes → Appeals → open it → **Live screen** | full screen; add `?theme=light` for a bright room |
 | add a product | Shop → **Products** → New | name, kind, variants with price and stock, photos |
 | add an event | Community → **Events** → New | when, where, places, Publish |

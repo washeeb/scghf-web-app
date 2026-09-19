@@ -17,6 +17,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\BeneficiaryDocumentController;
 use App\Http\Controllers\CauseController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CspReportController;
@@ -704,6 +705,14 @@ Route::get('pages/{page:ulid}/preview', [PageController::class, 'preview'])
  * The admin manual's screenshots (resources/manual/images), for the Help
  * page in the panel. Signed-in staff only: the pictures show the admin.
  */
+/*
+ * A case document (Wave 2). Signed for five minutes by the case page, and
+ * the policy decides per document; the audit trail records every open.
+ */
+Route::get('beneficiaries/documents/{document:ulid}/download', [BeneficiaryDocumentController::class, 'download'])
+    ->middleware('auth')
+    ->name('beneficiaries.documents.download');
+
 Route::get('manual/images/{file}', function (string $file) {
     abort_unless(auth()->user()?->canAccessPanel() ?? false, 403);
 

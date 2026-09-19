@@ -21,7 +21,7 @@ it('seeds every role from the blueprint matrix', function () {
         ->toContain(
             'Super Admin', 'Admin', 'Content Editor', 'Finance Officer',
             'Shop Manager', 'Volunteer Coordinator', 'Programme Officer',
-            'Auditor', 'Support', 'Donor',
+            'Safeguarding Lead', 'Auditor', 'Support', 'Donor',
         );
 });
 

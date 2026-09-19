@@ -59,8 +59,14 @@ only; the scrubber on every stored payload).
 
 **Data.** Act 843 lawful bases and retention classes with holds and a
 log; consent records for photographs, gating publication and withdrawal
-everywhere at once; `encrypted` casts on the safeguarding columns
-(`scghf:encrypt-at-rest` for existing rows); export-my-data and
+everywhere at once; `encrypted` casts on the safeguarding columns and,
+since Wave 2, on the beneficiary case record — ID number, health, bank
+and MoMo details, next of kin, household, narrative, notes — with a blind
+HMAC index so an ID number can be matched without being searchable
+(`scghf:encrypt-at-rest` for existing rows); case screens generated from
+one field map with visibility by relationship to the case, every open
+audited, documents on a private disk behind five-minute signed links, one
+export held by one permission never granted by wildcard; export-my-data and
 delete-my-account with the statutory carve-out for financial records;
 suppression lists that are never swept; the cookie notice gating
 non-essential scripts.

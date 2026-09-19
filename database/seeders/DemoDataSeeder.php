@@ -7,9 +7,12 @@ namespace Database\Seeders;
 use App\Enums\PageStatus;
 use App\Enums\ProjectStatus;
 use App\Enums\UserType;
+use App\Models\Beneficiary;
+use App\Models\BeneficiaryNote;
 use App\Models\BlogCategory;
 use App\Models\Cause;
 use App\Models\CauseUpdate;
+use App\Models\Consent;
 use App\Models\Division;
 use App\Models\Donation;
 use App\Models\Event;
@@ -75,6 +78,7 @@ class DemoDataSeeder extends Seeder
         'Shop Manager' => 'demo.shop@example.test',
         'Volunteer Coordinator' => 'demo.volunteers@example.test',
         'Programme Officer' => 'demo.programmes@example.test',
+        'Safeguarding Lead' => 'demo.safeguarding@example.test',
         'Auditor' => 'demo.auditor@example.test',
         'Support' => 'demo.support@example.test',
     ];
@@ -101,6 +105,7 @@ class DemoDataSeeder extends Seeder
             $this->events();
             $this->volunteers();
             $this->people($division);
+            $this->cases($division, $projects, $staff['Programme Officer'], $staff['Safeguarding Lead']);
             $this->giving($causes, $staff['Finance Officer']);
             $this->orders($products);
             $this->subscribers();
@@ -328,6 +333,98 @@ class DemoDataSeeder extends Seeder
                 'is_published' => true,
                 'published_at' => now()->subDays(60),
             ]);
+        }
+    }
+
+    /**
+     * Beneficiary cases (Wave 2), in every status, so each role's view of
+     * the case screens can be looked at. Every name is invented; every
+     * case carries the data-processing consent the intake form requires.
+     *
+     * @param  array<string, Project>  $projects
+     */
+    private function cases(Division $division, array $projects, User $worker, User $lead): void
+    {
+        $rows = [
+            ['Abena Kusi', 'female', '2013-04-12', 'Bongo', 'Bongo District', 'Upper East', Beneficiary::STATUS_APPROVED, 0, 45_000, 'School fees and a uniform for the September term; father deceased, mother trades at the market.'],
+            ['Yaw Mensah', 'male', '2011-09-30', 'Zuarungu', 'Bolgatanga East', 'Upper East', Beneficiary::STATUS_UNDER_REVIEW, 0, null, 'Exercise books and sandals; the school reports regular attendance.'],
+            ['Adwoa Nyarko', 'female', '1969-02-02', 'Tamale', 'Tamale Metropolitan', 'Northern', Beneficiary::STATUS_CLOSED, 1, 120_000, 'Widow; shea-butter starter kit and six months of mentoring in the Tamale cooperative.'],
+            ['Kofi Boateng', 'male', '2016-07-19', 'Navrongo', 'Kassena-Nankana', 'Upper East', Beneficiary::STATUS_SUBMITTED, 2, null, 'Referred by the children\'s home for a medical review at Bolgatanga Regional Hospital.'],
+            ['Esi Appiah', 'female', '1988-11-05', 'Bolgatanga', 'Bolgatanga Municipal', 'Upper East', Beneficiary::STATUS_DECLINED, 3, null, 'Requested support for a trading business; outside the programme\'s current criteria.'],
+            ['Kwabena Osei', 'male', '2014-01-23', 'Bongo', 'Bongo District', 'Upper East', Beneficiary::STATUS_DRAFT, 0, null, 'New application taken at the school; awaiting the guardian\'s signed consent form.'],
+        ];
+
+        foreach ($rows as $i => [$name, $gender, $dob, $community, $district, $region, $status, $projectIndex, $assistance, $narrative]) {
+            if (Beneficiary::query()->where('full_name', $name)->where('community', $community)->exists()) {
+                continue;
+            }
+
+            $minor = (int) substr($dob, 0, 4) > 2008;
+            $project = array_values($projects)[$projectIndex] ?? null;
+
+            $case = Beneficiary::query()->create([
+                'division_id' => $division->id,
+                'project_id' => $project?->id,
+                'status' => Beneficiary::STATUS_DRAFT,
+                'full_name' => $name,
+                'gender' => $gender,
+                'date_of_birth' => $dob,
+                'phone' => '+23324'.str_pad((string) (1000000 + $i * 7919), 7, '0', STR_PAD_LEFT),
+                'address' => 'House '.($i + 4).', '.$community,
+                'community' => $community,
+                'district' => $district,
+                'region' => $region,
+                'ghana_card_number' => 'GHA-'.str_pad((string) (700000000 + $i * 12345), 9, '0', STR_PAD_LEFT).'-'.$i,
+                'next_of_kin_name' => $minor ? 'Guardian of '.$name : 'Family of '.$name,
+                'next_of_kin_phone' => '+23320'.str_pad((string) (2000000 + $i * 101), 7, '0', STR_PAD_LEFT),
+                'household_details' => 'Household of '.(3 + $i).'; one earner.',
+                'school_or_employer' => $minor ? $community.' Primary School' : 'Self-employed',
+                'application_narrative' => $narrative,
+                'medical_notes' => $projectIndex === 2 ? 'Referral letter from the children\'s home attached.' : null,
+                'assistance' => $assistance,
+                'assisted_on' => $assistance ? now()->subWeeks(6)->toDateString() : null,
+                'case_worker_id' => $worker->id,
+                'created_by' => $worker->id,
+                'intake_ip' => '127.0.0.1',
+                'submitted_at' => $status === Beneficiary::STATUS_DRAFT ? null : now()->subMonths(2),
+                'last_activity_at' => now()->subDays($i * 3),
+            ]);
+
+            $case->consents()->create([
+                'consent_type' => Consent::TYPE_DATA_PROCESSING,
+                'scope' => Consent::SCOPE_ALL,
+                'granted_by_name' => $minor ? 'Guardian of '.$name : $name,
+                'granted_by_relationship' => $minor ? Consent::BY_GUARDIAN : Consent::BY_SELF,
+                'is_minor' => $minor,
+                'guardian_name' => $minor ? 'Guardian of '.$name : null,
+                'granted_at' => now()->subMonths(2),
+                'recorded_by' => $worker->id,
+            ]);
+
+            $case->note('Data-processing consent recorded at intake.', BeneficiaryNote::KIND_CONSENT, $worker);
+
+            // Walk the case to its status through the model, so the log
+            // reads as it would for a real one.
+            if ($status !== Beneficiary::STATUS_DRAFT) {
+                $case->submit();
+            }
+            if (in_array($status, [Beneficiary::STATUS_UNDER_REVIEW, Beneficiary::STATUS_APPROVED, Beneficiary::STATUS_CLOSED, Beneficiary::STATUS_DECLINED], true)) {
+                $case->startReview();
+                $case->note('Home visit completed; the household is as described.', BeneficiaryNote::KIND_NOTE, $worker);
+            }
+            if (in_array($status, [Beneficiary::STATUS_APPROVED, Beneficiary::STATUS_CLOSED], true)) {
+                auth()->setUser($lead);
+                $case->approve();
+                auth()->forgetUser();
+            }
+            if ($status === Beneficiary::STATUS_CLOSED) {
+                $case->close('assisted');
+            }
+            if ($status === Beneficiary::STATUS_DECLINED) {
+                auth()->setUser($lead);
+                $case->decline('Outside the current criteria; referred to the district social welfare office.');
+                auth()->forgetUser();
+            }
         }
     }
 

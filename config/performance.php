@@ -65,7 +65,7 @@ return [
             'events/registrations/*',
             'volunteer/applications/*',
             'pages/*/preview',
-            'manual/*',
+            'manual/*', 'beneficiaries/*',
             'search',
             'sitemap.xml', 'sitemaps/*', 'robots.txt',
             'up', 'webhooks/*', 'csp-report', 't/*',

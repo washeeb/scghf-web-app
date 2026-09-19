@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\Beneficiary;
 use App\Models\SafeguardingCheck;
 use App\Models\Volunteer;
 use App\Models\VolunteerApplication;
@@ -32,6 +33,12 @@ class EncryptAtRest extends Command
         VolunteerApplication::class => ['next_of_kin_name', 'next_of_kin_phone', 'referees', 'disclosed_convictions'],
         SafeguardingCheck::class => ['reference'],
         Volunteer::class => ['concern_note'],
+        // Wave 2: the case record, before it had a screen.
+        Beneficiary::class => [
+            'phone', 'email', 'ghana_card_number', 'address', 'bank_account', 'momo_number',
+            'next_of_kin_name', 'next_of_kin_phone', 'household_details', 'school_or_employer',
+            'religion', 'medical_notes', 'application_narrative', 'case_notes',
+        ],
     ];
 
     public function handle(): int
@@ -39,7 +46,6 @@ class EncryptAtRest extends Command
         $total = 0;
 
         foreach (self::COLUMNS as $class => $columns) {
-            /** @var Model $model */
             $model = new $class;
             $table = $model->getTable();
             $key = $model->getKeyName();
@@ -77,6 +83,13 @@ class EncryptAtRest extends Command
                              * about to replace, and refuse.
                              */
                             $encrypted = (new $class)->forceFill($updates)->getAttributes();
+
+                            // The ID number's blind index is set by the
+                            // model's saving hook, which a raw update skips.
+                            if ($class === Beneficiary::class && isset($updates['ghana_card_number'])) {
+                                $encrypted['ghana_card_index'] = Beneficiary::blindIndex((string) $updates['ghana_card_number']);
+                                $updates['ghana_card_index'] = true;
+                            }
                             $keyName = (new $class)->getKeyName();
 
                             DB::table((new $class)->getTable())
