@@ -152,6 +152,23 @@ unchanged; the values were re-pointed.
   `staging`; staging answers `/up` with 200 over verified TLS on PHP
   8.4.24 with all 140 tables on InnoDB
 
+#### Fixed — nobody could sign in to the admin panel on the real host
+
+- `public/.htaccess` carried a `Header always setifempty
+  Content-Security-Policy` fallback "for files Apache serves without
+  PHP". Under cPanel's suPHP the headers PHP sets are not in the table
+  `Header always` inspects, so the fallback went out on **every** page
+  beside the application's own policy; browsers enforce the
+  intersection, which has no nonce and no `unsafe-eval` — inline scripts
+  failed on the public site and Livewire could not start in the admin
+  panel. Local dev has no Apache, so it could never show. Removed: what
+  it covered (static assets, Apache error pages) runs no script. Verified
+  by signing in to staging through password and TOTP
+- Open: InMotion's ModSecurity answers **406 to `POST /csp-report`**, so
+  violation reports from browsers are dropped on this host. Harmless to
+  users; ask InMotion to exempt the path, or accept blind report-only
+  mode. Recorded in the runbook
+
 #### Changed — `fakerphp/faker` is a runtime dependency
 
 - `docs/DEPLOYMENT.md` §7 has always said to load staging with
