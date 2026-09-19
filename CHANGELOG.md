@@ -83,6 +83,11 @@ unchanged; the values were re-pointed.
   500 and the accessibility sweep failed for a reason unrelated to the
   code. Assets are now built before the tests in the CI quality and
   coverage jobs and in the Deploy quality gate
+- With all of that in place the suite passed on the runner (2030 tests,
+  22 minutes) and the gate's secret scan then tripped on the launch-check
+  test's fake live key, `sk_live_abcdefghijklmnopqrstuvwxyz` — long enough
+  to match the scanner's pattern. The fixture is now `sk_live_fixture`;
+  the code only reads the prefix
 - `activate.sh` now **stops** a production deploy on `PAYMENT_DRIVER=fake`
   instead of warning; the application would have refused to boot at the
   migrate step a moment later with a less helpful stack trace

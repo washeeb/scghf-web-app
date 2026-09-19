@@ -48,7 +48,9 @@ beforeEach(function () {
         'app.url' => 'https://www.example.org',
         'mail.from.address' => 'noreply@mail.example.org',
         'payments.driver' => 'paystack',
-        'payments.paystack.secret_key' => 'sk_live_abcdefghijklmnopqrstuvwxyz',
+        // The prefix is all the check reads. Kept short so the repository's own
+        // secret scan (sk_live_ + 20 characters) never mistakes it for a key.
+        'payments.paystack.secret_key' => 'sk_live_fixture',
         'communications.sms.driver' => 'mnotify',
         'communications.sms.mnotify.api_key' => 'k',
     ]);
