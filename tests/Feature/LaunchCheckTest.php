@@ -186,3 +186,23 @@ it('refuses a table that is not InnoDB', function () {
     $row = app(LaunchChecks::class)->checks()->firstWhere('key', 'storage_engine');
     expect($row->status)->toBe(HealthCheck::OK);
 });
+
+it('refuses a timestamp column that updates itself', function () {
+    $driver = DB::connection()->getDriverName();
+    if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+        $this->markTestSkipped('MySQL-family only');
+    }
+
+    DB::statement('drop table if exists launch_check_probe');
+    DB::statement('create table launch_check_probe (id int, seen_at timestamp not null default current_timestamp on update current_timestamp) engine=InnoDB');
+
+    try {
+        $row = app(LaunchChecks::class)->checks()->firstWhere('key', 'timestamp_defaults');
+        expect($row->status)->toBe(HealthCheck::CRITICAL)
+            ->and($row->advice)->toContain('launch_check_probe.seen_at');
+    } finally {
+        DB::statement('drop table if exists launch_check_probe');
+    }
+
+    expect(app(LaunchChecks::class)->checks()->firstWhere('key', 'timestamp_defaults')->status)->toBe(HealthCheck::OK);
+});

@@ -90,6 +90,7 @@ final class LaunchChecks
             $this->wrap('canonical_host', 'One canonical host', fn () => $this->canonicalHost()),
             $this->wrap('analytics', 'Analytics chosen', fn () => $this->analytics()),
             $this->wrap('storage_engine', 'Every table on InnoDB', fn () => $this->storageEngine()),
+            $this->wrap('timestamp_defaults', 'No silent ON UPDATE timestamps', fn () => $this->timestampDefaults()),
             $this->wrap('flags', 'Feature flags honest', fn () => $this->flags()),
             $this->wrap('whatsapp', 'WhatsApp ready if on', fn () => $this->whatsapp()),
             $this->wrap('staff_2fa', 'Two-factor on every staff account', fn () => $this->staffTwoFactor()),
@@ -439,6 +440,32 @@ final class LaunchChecks
         }
 
         return HealthCheck::ok('storage_engine', 'Every table on InnoDB', 'All InnoDB');
+    }
+
+    /**
+     * No column may carry ON UPDATE CURRENT_TIMESTAMP — the migrations never
+     * ask for it. MariaDB and MySQL 5.7 add it silently to the first NOT NULL
+     * timestamp of every table unless explicit_defaults_for_timestamp is on,
+     * which the connection now sets per session; a table created before that
+     * (or by hand) would have a first_seen_at that changes on every update.
+     */
+    private function timestampDefaults(): HealthCheck
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            return HealthCheck::ok('timestamp_defaults', 'No silent ON UPDATE timestamps', "Not applicable ({$driver})");
+        }
+
+        $rows = DB::select('select table_name as name, column_name as col from information_schema.columns where table_schema = database() and lower(extra) like ?', ['%on update%']);
+        $wrong = array_map(fn (object $r): string => "{$r->name}.{$r->col}", $rows);
+
+        if ($wrong !== []) {
+            return HealthCheck::critical('timestamp_defaults', 'No silent ON UPDATE timestamps', count($wrong).' column(s)',
+                'These columns change themselves on every update, which no migration asked for: '.implode(', ', $wrong).'. The table was created under the legacy TIMESTAMP rules (explicit_defaults_for_timestamp off). Recreate it from the migrations, or ALTER TABLE … MODIFY the column without ON UPDATE.');
+        }
+
+        return HealthCheck::ok('timestamp_defaults', 'No silent ON UPDATE timestamps', 'None');
     }
 
     // ── Accounts ─────────────────────────────────────────────────────────────

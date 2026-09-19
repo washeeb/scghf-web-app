@@ -108,6 +108,22 @@ unchanged; the values were re-pointed.
   (`X6a` in `docs/LAUNCH.md`), fails on any table that is not — for the
   case the pin cannot cover, a table made by hand in phpMyAdmin
 
+#### Fixed — MariaDB's legacy TIMESTAMP rules
+
+- With InnoDB pinned, 41 migrations ran and the 42nd failed:
+  `error_reports.last_seen_at timestamp not null` — *Invalid default
+  value*. MariaDB 10.6 has `explicit_defaults_for_timestamp=OFF`: the
+  first NOT NULL timestamp of every table silently gains `DEFAULT
+  CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` (a `first_seen_at` that
+  changes on every update) and the second gets a zero date that strict
+  mode rejects. Seventeen columns across the migrations are written this
+  way, for MySQL 8 where the setting is on. Both MySQL-family connections
+  now send `SET SESSION explicit_defaults_for_timestamp = 1` as the PDO
+  init command, and a launch-check row, **No silent ON UPDATE timestamps**
+  (`X6b`), fails on any column that carries it. Staging's database was
+  recreated from empty, since its first 41 tables had been made under the
+  old rule
+
 #### Changed — the database is MariaDB
 
 - The server is **MariaDB 10.6.28**, so `shared/.env` uses
