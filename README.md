@@ -144,8 +144,8 @@ These are in `CLAUDE.md` in full. The short version, because getting them wrong 
 
 | Branch | Deploys to | How |
 |---|---|---|
-| `main` | `greaterhopefoundations.com` | PR only, CI green, manual approval |
-| `develop` | `staging.greaterhopefoundations.com` | PR from `feature/*` |
+| `main` | `greaterhopefoundations.org` | PR only, CI green, manual approval |
+| `develop` | `staging.greaterhopefoundations.org` | PR from `feature/*` |
 | `feature/*` | — | branched from `develop` |
 
 Push → GitHub Actions runs the quality gate, builds `vendor/` and the Vite assets **on the runner**, rsyncs to cPanel over SSH port 2222 into a timestamped release directory, runs migrations, warms caches, then flips the `current` symlink. The server never needs Composer or Node.

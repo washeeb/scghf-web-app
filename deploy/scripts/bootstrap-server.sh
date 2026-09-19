@@ -19,14 +19,20 @@ if [ "$ENVIRONMENT" != "production" ] && [ "$ENVIRONMENT" != "staging" ]; then
   exit 1
 fi
 
-HOME_DIR="${HOME:-/home/presti98}"
+HOME_DIR="${HOME:-/home/n789825}"
 
+# greaterhopefoundations.org is the PRIMARY domain of account n789825, so its
+# document root is cPanel's public_html — not a directory named after the
+# domain, as it would be for an addon domain. Staging is a subdomain and does
+# get its own directory.
 if [ "$ENVIRONMENT" = "production" ]; then
   DEPLOY_PATH="$HOME_DIR/scghf"
-  DOCROOT="$HOME_DIR/greaterhopefoundations.com"
+  SITE_HOST="greaterhopefoundations.org"
+  DOCROOT="$HOME_DIR/public_html"
 else
   DEPLOY_PATH="$HOME_DIR/scghf-staging"
-  DOCROOT="$HOME_DIR/staging.greaterhopefoundations.com"
+  SITE_HOST="staging.greaterhopefoundations.org"
+  DOCROOT="$HOME_DIR/$SITE_HOST"
 fi
 
 say() { printf '\n\033[1;36m▸ %s\033[0m\n' "$*"; }
@@ -143,13 +149,13 @@ say "GitHub secrets for the '$ENVIRONMENT' environment"
 cat <<REPORT
 
   SSH_USER      $(whoami)
-  SSH_HOST      (shared IP, or the hostname from cPanel → Server Information)
+  SSH_HOST      secure381.inmotionhosting.com  (same host key as the dedicated IP 192.145.232.80)
   SSH_PORT      2222
   DEPLOY_PATH   $DEPLOY_PATH
   PHP_BIN       $PHP_BIN
 
   Repository variable:
-  APP_URL       https://$(basename "$DOCROOT")
+  APP_URL       https://$SITE_HOST
 
   Generate SSH_KNOWN_HOSTS on your own machine with:
       ssh-keyscan -p 2222 <SSH_HOST>

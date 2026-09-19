@@ -62,6 +62,7 @@ cd "$RELEASE_DIR"
 
 APP_ENV_VAL=$(grep -E '^APP_ENV=' "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' ' || true)
 APP_DEBUG_VAL=$(grep -E '^APP_DEBUG=' "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' ' || true)
+APP_URL_VAL=$(grep -E '^APP_URL=' "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' ' | sed 's:/*$::' || true)
 ok "APP_ENV=$APP_ENV_VAL"
 
 if [ "$APP_ENV_VAL" = "production" ]; then
@@ -171,7 +172,7 @@ fi
 # PHP boots, so this survives a 500 — which a route-based robots.txt would not.
 say "Writing robots.txt for APP_ENV=$APP_ENV_VAL"
 if [ "$APP_ENV_VAL" = "production" ]; then
-  cat > "$RELEASE_DIR/public/robots.txt" <<'ROBOTS'
+  cat > "$RELEASE_DIR/public/robots.txt" <<ROBOTS
 User-agent: *
 Allow: /
 
@@ -193,7 +194,7 @@ Disallow: /register
 Disallow: /password
 Disallow: /*?*utm_
 
-Sitemap: https://greaterhopefoundations.com/sitemap.xml
+Sitemap: ${APP_URL_VAL}/sitemap.xml
 ROBOTS
   ok "production robots.txt (indexable)"
 else

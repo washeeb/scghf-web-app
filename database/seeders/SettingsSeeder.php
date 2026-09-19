@@ -318,7 +318,7 @@ class SettingsSeeder extends Seeder
             'Plausible and Umami are privacy-first and need no cookie; GA4 runs in consent mode. All three load only after consent. See docs/PHASE-13-SEO-AND-CONTENT.md for which to pick.',
             ['none' => 'None (the built-in dashboard only)', 'plausible' => 'Plausible', 'umami' => 'Umami', 'ga4' => 'Google Analytics 4']],
         ['analytics', 'site_id', '', SettingType::String, 'Site / measurement ID', false,
-            'Plausible: the domain (greaterhopefoundations.com). Umami: the website ID from the dashboard. GA4: the measurement ID (G-XXXXXXX).'],
+            'Plausible: the domain (greaterhopefoundations.org). Umami: the website ID from the dashboard. GA4: the measurement ID (G-XXXXXXX).'],
         ['analytics', 'script_url', '', SettingType::Url, 'Script URL', false,
             'Plausible: https://plausible.io/js/script.js (or your self-hosted one). Umami cloud: https://cloud.umami.is/script.js. GA4: leave empty.'],
 

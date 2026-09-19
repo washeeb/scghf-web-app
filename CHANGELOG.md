@@ -8,6 +8,56 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Hosting — the foundation's own cPanel account and domain — 2026-09-19
+
+The project left the shared `presti98` account on 2026-09-02 and parked
+the server-side runbook steps until a host in the foundation's own name
+existed. It now does: InMotion cPanel account **`n789825`**
+(`secure381.inmotionhosting.com`, dedicated IP `192.145.232.80`) with
+**`greaterhopefoundations.org`** as its primary domain. The pipeline is
+unchanged; the values were re-pointed.
+
+#### Changed
+
+- Every deploy-side value — `.env.example` (cPanel legend, `APP_URL`,
+  database names `n789825_scghf_*`, mail addresses), `deploy/scripts/*`,
+  `deploy/cpanel/*`, the deploy workflow's comments, the runbook, the
+  deliverability and infrastructure docs, the README's branch table and
+  the analytics setting's help text — now names the `.org` domain and the
+  `n789825` account. `docs/ENVIRONMENT.md` regenerated
+- **`bootstrap-server.sh`** wires the production docroot to
+  `~/public_html`: the `.org` is the account's *primary* domain, so cPanel
+  serves it from `public_html`, not from a directory named after the domain
+  as it did for the addon `.com`. The URL it reports for `APP_URL` comes
+  from a host variable rather than the docroot's basename
+- **`activate.sh`** writes the `Sitemap:` line of the production
+  `robots.txt` from `APP_URL` in `shared/.env` instead of a literal domain,
+  so the file cannot drift from the environment it is generated for
+- The `.cpanel.yml` fallback's paths follow the same change
+- `PHASE-2-RUNBOOK.md`: the 2026-09-02 "hosting deferred" note is closed;
+  the header table, step 5 (import the key), step 6 (the concrete secret
+  values) and a new **step 7.0 — DNS** (the domain is registered at
+  Namecheap and still resolves to its parking page; hand the zone to
+  InMotion's nameservers or add A records for `@`, `www`, `staging`) are
+  written against the new account
+
+#### GitHub
+
+- Both environments (`production`, `staging`) now hold `SSH_HOST`,
+  `SSH_PORT`, `SSH_USER`, `SSH_KNOWN_HOSTS`, `SSH_PRIVATE_KEY`,
+  `DEPLOY_PATH`, `PHP_BIN` and the variable `APP_URL` for the new host.
+  Nothing else changed: the deploy key is the pair generated on
+  2026-09-02; Paystack, database and mail credentials still live only in
+  `shared/.env` on the server
+
+#### Still to do on the server (runbook steps 5, 7–9)
+
+Import and **Authorize** the deploy key · DNS at Namecheap · MultiPHP 8.4 +
+FPM + INI values · two databases · staging subdomain with Directory
+Privacy · AutoSSL · mailboxes and SPF/DKIM/DMARC · cPanel 2FA ·
+`bootstrap-server.sh` for each environment · fill `shared/.env` · cron.
+The first push after that deploys staging.
+
 ### Wave 2 — W2.5 WhatsApp as a fifth channel — 2026-09-19
 
 Built, tested, and **off by default** (`FEATURE_WHATSAPP=false`): the one

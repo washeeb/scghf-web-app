@@ -5,8 +5,8 @@
 #  Runs automatically when the post-deploy smoke test fails, and can be run by
 #  hand over SSH at any time:
 #
-#      ssh -p 2222 presti98@HOST \
-#        "DEPLOY_PATH=/home/presti98/scghf PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php bash -s" \
+#      ssh -p 2222 n789825@HOST \
+#        "DEPLOY_PATH=/home/n789825/scghf PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php bash -s" \
 #        < deploy/scripts/rollback.sh
 #
 #  ⚠️  Code rolls back. DATABASE MIGRATIONS DO NOT. This is why migrations must be

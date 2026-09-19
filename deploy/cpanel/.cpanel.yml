@@ -23,9 +23,9 @@
 deployment:
   tasks:
     # --- Where the cPanel-side clone lives, and where it deploys to ---
-    - export REPO=/home/presti98/repositories/scghf
-    - export APP=/home/presti98/scghf-cpanel
-    - export DOCROOT=/home/presti98/greaterhopefoundations.com
+    - export REPO=/home/n789825/repositories/scghf
+    - export APP=/home/n789825/scghf-cpanel
+    - export DOCROOT=/home/n789825/public_html   # primary domain → public_html
     - export PHP=/opt/cpanel/ea-php84/root/usr/bin/php
 
     # --- Application code, excluding anything that must survive ---

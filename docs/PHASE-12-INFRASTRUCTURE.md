@@ -29,7 +29,7 @@ the password manager: the archives hold donor data.
 ### The restore test — quarterly, and it is a command
 
 ```bash
-php artisan scghf:restore-test --verified-by=you@greaterhopefoundations.com
+php artisan scghf:restore-test --verified-by=you@greaterhopefoundations.org
 ```
 
 It takes the newest completed backup, opens it with the archive

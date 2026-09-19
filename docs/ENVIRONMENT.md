@@ -15,7 +15,7 @@ Generated from `.env.example` by `docs/tools/env_reference.py`; regenerate after
 | `APP_KEY` | *(empty)* | [Generated] php artisan key:generate |
 | `APP_PREVIOUS_KEYS` | *(empty)* | When rotating APP_KEY (a leak), put the OLD key here, comma-separated, so encrypted settings, cookies and signed URLs made under it still decrypt while the new key takes over. Empty otherwise. Read by config/app.php. |
 | `APP_DEBUG` | `true` | MUST be false in staging + production |
-| `APP_URL` | `http://localhost` | prod: https://greaterhopefoundations.com |
+| `APP_URL` | `http://localhost` | prod: https://greaterhopefoundations.org |
 | `APP_TIMEZONE` | `Africa/Accra` | Ghana — GMT, no DST |
 | `APP_LOCALE` | `en` |  |
 | `APP_FALLBACK_LOCALE` | `en` |  |
@@ -37,12 +37,12 @@ Generated from `.env.example` by `docs/tools/env_reference.py`; regenerate after
 
 | Key | Default in `.env.example` | What it does |
 |---|---|---|
-| `DB_CONNECTION` | `mysql` | [cPanel] Databases → Database Wizard. cPanel prefixes everything with the account username, so the names below are already correct for account presti98. |
+| `DB_CONNECTION` | `mysql` | [cPanel] Databases → Database Wizard. cPanel prefixes everything with the account username, so the names below are already correct for account n789825. |
 | `DB_HOST` | `127.0.0.1` | server: localhost |
 | `DB_PORT` | `3306` |  |
-| `DB_DATABASE` | `presti98_scghf_prod` | staging: presti98_scghf_stage |
-| `RESTORE_TEST_DATABASE` | `presti98_scghf_restore` | An empty scratch database for the quarterly restore test (scghf:restore-test), created in cPanel → MySQL Databases and granted to the same user. Never the live one. |
-| `DB_USERNAME` | `presti98_scghf` | staging: presti98_scghfstg |
+| `DB_DATABASE` | `n789825_scghf_prod` | staging: n789825_scghf_stage |
+| `RESTORE_TEST_DATABASE` | `n789825_scghf_restore` | An empty scratch database for the quarterly restore test (scghf:restore-test), created in cPanel → MySQL Databases and granted to the same user. Never the live one. |
+| `DB_USERNAME` | `n789825_scghf` | staging: n789825_scghfstg |
 | `DB_PASSWORD` | *(empty)* | [cPanel] generated in Database Wizard |
 | `DB_CHARSET` | `utf8mb4` |  |
 | `DB_COLLATION` | `utf8mb4_unicode_ci` |  |
@@ -94,15 +94,15 @@ Generated from `.env.example` by `docs/tools/env_reference.py`; regenerate after
 
 | Key | Default in `.env.example` | What it does |
 |---|---|---|
-| `MAIL_MAILER` | `log` | Receipts must NOT leave from the shared cPanel IP — its reputation belongs to every tenant on it (PHASE-1-BLUEPRINT.md risk DEL-3). Decision, Phase 10: Resend over its API, on a sending subdomain (mail.greaterhopefoundations.com) with SPF, DKIM and DMARC published. Rationale, alternatives and the DNS records: docs/PHASE-10-EMAIL-DELIVERABILITY.md. log    — local and tests. Every message is rendered and logged, none sent. resend — production. Needs RESEND_API_KEY; bounces come back through RESEND_WEBHOOK_SECRET below. smtp   — any provider's SMTP relay (Brevo, Mailgun, Postmark, …) with its credentials in MAIL_HOST/USERNAME/PASSWORD. Also cPanel's own mailbox, which the health page flags as the shared-IP risk. |
+| `MAIL_MAILER` | `log` | Receipts must NOT leave from the shared cPanel IP — its reputation belongs to every tenant on it (PHASE-1-BLUEPRINT.md risk DEL-3). Decision, Phase 10: Resend over its API, on a sending subdomain (mail.greaterhopefoundations.org) with SPF, DKIM and DMARC published. Rationale, alternatives and the DNS records: docs/PHASE-10-EMAIL-DELIVERABILITY.md. log    — local and tests. Every message is rendered and logged, none sent. resend — production. Needs RESEND_API_KEY; bounces come back through RESEND_WEBHOOK_SECRET below. smtp   — any provider's SMTP relay (Brevo, Mailgun, Postmark, …) with its credentials in MAIL_HOST/USERNAME/PASSWORD. Also cPanel's own mailbox, which the health page flags as the shared-IP risk. |
 | `MAIL_HOST` | `smtp-relay.brevo.com` | only for MAIL_MAILER=smtp |
 | `MAIL_PORT` | `587` |  |
 | `MAIL_USERNAME` | *(empty)* | relay login (Brevo: the account email; Mailgun: postmaster@domain) |
 | `MAIL_PASSWORD` | *(empty)* | relay key — never the cPanel mailbox password in a repo |
 | `MAIL_SCHEME` | *(empty)* | blank = STARTTLS on 587; smtps for 465 |
-| `MAIL_FROM_ADDRESS` | `"noreply@mail.greaterhopefoundations.com" # on the SENDING subdomain, see the deliverability doc` |  |
+| `MAIL_FROM_ADDRESS` | `"noreply@mail.greaterhopefoundations.org" # on the SENDING subdomain, see the deliverability doc` |  |
 | `MAIL_FROM_NAME` | `"${APP_NAME}"` |  |
-| `MAIL_REPLY_TO_ADDRESS` | `"info@greaterhopefoundations.com" # {{EMAIL_GENERAL}} — a mailbox a person reads` |  |
+| `MAIL_REPLY_TO_ADDRESS` | `"info@greaterhopefoundations.org" # {{EMAIL_GENERAL}} — a mailbox a person reads` |  |
 | `MAIL_BULK_PER_MINUTE` | `20` | Bulk/newsletter sending is throttled so no provider's hourly limit is breached in one burst (risk DEL-2). Resend's free tier is 100/day, 3,000/month; the paid tier has no hourly cap. Tune to the tier in use. |
 | `MAIL_BULK_PER_HOUR` | `200` |  |
 | `MAIL_ENABLED` | `true` | false still RENDERS and LOGS every message, sends none |

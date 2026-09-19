@@ -1,8 +1,8 @@
 # Build on the runner, ship the finished tree to cPanel over SSH (port 2222),
 # swap an atomic release symlink. The server never needs Composer or Node.
 #
-#   push to main    → production  (greaterhopefoundations.com)
-#   push to develop → staging     (staging.greaterhopefoundations.com)
+#   push to main    → production  (greaterhopefoundations.org)
+#   push to develop → staging     (staging.greaterhopefoundations.org)
 #
 # Secrets live in GitHub → Settings → Environments → production / staging.
 # See docs/DEPLOYMENT.md for the full secret list and the first-run bootstrap.

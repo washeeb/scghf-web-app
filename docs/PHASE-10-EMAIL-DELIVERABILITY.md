@@ -13,13 +13,13 @@ the Site Health page.
 
 **Decision (Phase 10): transactional and marketing mail goes out through
 Resend over its API, from a dedicated sending subdomain
-(`mail.greaterhopefoundations.com`) with SPF, DKIM and DMARC published.**
+(`mail.greaterhopefoundations.org`) with SPF, DKIM and DMARC published.**
 cPanel's own SMTP is not used for anything a donor receives. The reasons
 follow; the steps to set it up are at the end.
 
 ## Why mail from shared hosting lands in spam
 
-The InMotion server is shared. Its outgoing IP (`23.235.219.254`, per the
+The InMotion server is shared. Its outgoing IP (`secure381.inmotionhosting.com`, per the
 Phase 1 blueprint) is the same IP every other tenant on that box sends from.
 Mailbox providers — Gmail, Outlook, Yahoo, and every Ghanaian corporate
 mailbox behind Microsoft 365 — score the **IP's** reputation, not the
@@ -89,15 +89,15 @@ feedback into the suppression list.
 
 ## Use a sending subdomain
 
-Send from `noreply@mail.greaterhopefoundations.com`, not from
-`@greaterhopefoundations.com`.
+Send from `noreply@mail.greaterhopefoundations.org`, not from
+`@greaterhopefoundations.org`.
 
 - The root domain's reputation stays with the people who write from it —
   `info@`, the director's mailbox. If the newsletter ever gets a burst of
   complaints, the director's ordinary correspondence is unaffected.
 - The subdomain's DNS records (below) are separate from whatever cPanel has
   already published for the root domain, so nothing existing breaks.
-- The Reply-To stays `info@greaterhopefoundations.com` (the
+- The Reply-To stays `info@greaterhopefoundations.org` (the
   `contact.email_general` setting), so a donor who replies reaches a person.
 
 The subdomain needs no mailbox and no hosting. It is a set of DNS records.
@@ -109,7 +109,7 @@ the exact values under *Domains → Add domain*; the shapes are:
 
 **SPF** — which servers may send for the subdomain.
 ```
-mail.greaterhopefoundations.com.   TXT   "v=spf1 include:amazonses.com ~all"
+mail.greaterhopefoundations.org.   TXT   "v=spf1 include:amazonses.com ~all"
 ```
 (Resend sends via SES; the include is what Resend's dashboard shows, use
 that value, not this one.) One SPF record per name — if one already exists,
@@ -118,7 +118,7 @@ invalid.
 
 **DKIM** — a signature on each message proving it was not altered.
 ```
-resend._domainkey.mail.greaterhopefoundations.com.   TXT   "p=MIGfMA0GCSq..."
+resend._domainkey.mail.greaterhopefoundations.org.   TXT   "p=MIGfMA0GCSq..."
 ```
 Resend gives the selector and the key. Some registrars need the long value
 split into 255-character quoted chunks; cPanel's Zone Editor does this
@@ -127,12 +127,12 @@ itself.
 **DMARC** — what a receiving mailbox should do when SPF/DKIM fail, and
 where to send reports.
 ```
-_dmarc.mail.greaterhopefoundations.com.   TXT   "v=DMARC1; p=quarantine; rua=mailto:dmarc@greaterhopefoundations.com; pct=100; adkim=s; aspf=s"
+_dmarc.mail.greaterhopefoundations.org.   TXT   "v=DMARC1; p=quarantine; rua=mailto:dmarc@greaterhopefoundations.org; pct=100; adkim=s; aspf=s"
 ```
 Start at `p=none` for the first two weeks, read the aggregate reports (any
 free DMARC report viewer will parse them), then move to `p=quarantine` and,
 once nothing legitimate is failing, `p=reject`. The root domain should have
-a DMARC record too, at `_dmarc.greaterhopefoundations.com`, even if only
+a DMARC record too, at `_dmarc.greaterhopefoundations.org`, even if only
 `p=none` — Gmail and Yahoo have required it since February 2024 for anybody
 sending them more than a trickle.
 
@@ -188,7 +188,7 @@ the queue cron.
 
 1. **Resend account** — sign up, add a card if the paid tier is wanted,
    *API Keys → Create* with *Sending access* only, restricted to the domain.
-2. **Domain** — *Domains → Add* `mail.greaterhopefoundations.com`, region
+2. **Domain** — *Domains → Add* `mail.greaterhopefoundations.org`, region
    closest to the readers (eu-west for Ghana, ~100 ms better than us-east).
    Publish the three records it prints. Wait for *Verified* (minutes to an
    hour).
@@ -198,8 +198,8 @@ the queue cron.
    MAIL_MAILER=resend
    RESEND_API_KEY=re_…
    RESEND_WEBHOOK_SECRET=whsec_…
-   MAIL_FROM_ADDRESS="noreply@mail.greaterhopefoundations.com"
-   MAIL_REPLY_TO_ADDRESS="info@greaterhopefoundations.com"
+   MAIL_FROM_ADDRESS="noreply@mail.greaterhopefoundations.org"
+   MAIL_REPLY_TO_ADDRESS="info@greaterhopefoundations.org"
    ```
    then `php artisan config:cache`.
 5. **Site Health** — the *Email sending* row should read **Resend**. It
@@ -209,8 +209,8 @@ the queue cron.
    Send a test* to a Gmail address and an Outlook address. Both should
    arrive in the inbox, and in Gmail *Show original* should read
    `SPF: PASS`, `DKIM: PASS`, `DMARC: PASS`. Then the bounce test above.
-7. **Root-domain DMARC** — publish `_dmarc.greaterhopefoundations.com`
-   `v=DMARC1; p=none; rua=mailto:dmarc@greaterhopefoundations.com` so the
+7. **Root-domain DMARC** — publish `_dmarc.greaterhopefoundations.org`
+   `v=DMARC1; p=none; rua=mailto:dmarc@greaterhopefoundations.org` so the
    root domain meets the 2024 requirement too; tighten later.
 
 ## What to watch, monthly
