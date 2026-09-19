@@ -42,6 +42,39 @@ anything that does not match.
 
 ![Reports](images/33-giving-reports.png)
 
+## Payouts — money going out
+
+*Finance → Payouts.* Every payment the foundation makes — school fees to
+a school, a supplier, a stipend — is a payout. **Raise a payout** with
+who it is to, how much, what for, and what it is charged to (a division,
+a project or an appeal is required; a grant and a beneficiary case are
+optional). It is a draft until you **Submit for approval**.
+
+**Two people, always.** Whoever submitted it cannot approve it — the
+button is there but the system refuses, and says so. Once approved,
+whoever pays it presses **Mark paid** and attaches the evidence: the
+receipt, the signed collection slip or the bank advice. There is no
+marking paid without evidence, and there is no deleting a payout; cancel
+it with a reason instead.
+
+## Grants — where the larger money comes from
+
+*Finance → Grants* and *Finance → Funders.* A grant is one application
+or award from a funder: its status (idea → drafting → submitted → awarded
+or declined → closed), the deadline, what was asked and what was awarded,
+the project it funds, and whether the money is restricted to it. Move it
+along with the buttons on its page; **Awarded** asks for the figure.
+
+Under **Obligations**, list what the funder is owed and when — the
+six-month report, the audited accounts, the receipt for a tranche. The
+grant's owner is emailed a fortnight before each one and every week after
+until it is marked **done**. Under **Documents**, keep the proposal, the
+agreement and the reports; they open on a link that lasts a day.
+
+**Spend against the grant** is not typed: it is the payouts charged to
+the grant, paid and approved-but-unpaid, and what remains of the award.
+When you raise a payout for grant money, choose the grant.
+
 ## Showing amounts in dollars, pounds or euros
 
 *Site settings → Currency.* A donor abroad thinks in their own money. With

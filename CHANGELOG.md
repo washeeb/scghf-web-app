@@ -8,6 +8,56 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Wave 2 — W2.4 Grant management, and the payouts screen — 2026-09-19
+
+#### Added
+
+- **Four tables and one column** (`2026_09_19_000003`): `funders`,
+  `grants` (pipeline status, amounts asked and awarded in pesewas,
+  deadline, project, restricted flag, owner), `grant_obligations` (what
+  the funder is owed, by when, done when, reminded when),
+  `grant_documents`, and `payouts.grant_id` — a payout charged to a grant
+- **`Grant`** with `submit()`, `award(Money, …)` (refuses a zero award),
+  `decline()`, `close()`; **spend is read from the ledger**: `spent()`
+  (paid payouts charged to it), `committed()` (approved, unpaid),
+  `remaining()`. `Funder`, `GrantObligation` (`complete()`,
+  `isOverdue()`, `needingReminder` scope), `GrantDocument`;
+  `Payout::grant()`, `Payout::cause()`
+- **Finance → Grants** (`GrantResource`): list with the nearest deadline
+  first and the count of obligations due, the pipeline as actions on the
+  grant's page (start drafting, mark submitted, awarded with the figure,
+  declined, close), the money section with spent/committed/remaining,
+  relation managers for **obligations** (add, mark done),
+  **documents** (private disk, day-long signed link through
+  `GrantDocumentController`) and **spend against the grant**; export.
+  **Finance → Funders**: kind, contact, notes, an optional link to the
+  public partner row; never published
+- **`scghf:grant-reminders --execute`**, daily at 07:30: emails the
+  grant's owner (`grants.obligation_due` template) for every obligation
+  not done and due within a fortnight, and again weekly until it is
+- **Finance → Payouts** (`PayoutResource`) — **the expenditure screen the
+  ledger never had.** `Payout`, `payouts.request/approve/mark_paid` and
+  the two-person rule have existed since Phase 7 with no way to use them
+  but a terminal. Now: raise a draft (attributed to a division, project
+  or appeal as the model insists; optionally a grant and an approved
+  beneficiary case), submit, approve (the model refuses the requester and
+  says why), reject with a reason, **mark paid with the evidence file**
+  (through the media library onto the private disk), cancel with a
+  reason; no edit after the draft, no delete. `PayoutPolicy` maps
+  `create` to `payouts.request` and `update` to the step the status is at
+- Permissions `grants.view` / `grants.manage` in the fundraising group;
+  Finance Officer holds both, Programme Officer and Auditor read
+- Demo data: two funders, three grants across the pipeline, an award with
+  three obligations and a paid payout charged to it
+- Manual: "Payouts — money going out" and "Grants — where the larger
+  money comes from" under *Donations*; two quick-reference rows
+- `tests/Feature/GrantsTest.php` — 8 tests: the pipeline and the zero-award
+  refusal, spend read from the ledger and shown on the page, the actions
+  by permission, the reminder cadence (a fortnight out, weekly, never
+  for a done obligation), marking done from the page, the signed
+  document link, raising and approving a payout with the requester
+  refused, and the model's own refusal of an unattributed payout
+
 ### Wave 2 — W2.3 Multi-currency display — 2026-09-19
 
 Display only. Every gift is still charged in GHS, receipted in GHS and

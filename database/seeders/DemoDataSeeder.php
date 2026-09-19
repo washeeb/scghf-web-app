@@ -16,9 +16,12 @@ use App\Models\Consent;
 use App\Models\Division;
 use App\Models\Donation;
 use App\Models\Event;
+use App\Models\Funder;
+use App\Models\Grant;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Partner;
+use App\Models\Payout;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -106,6 +109,7 @@ class DemoDataSeeder extends Seeder
             $this->volunteers();
             $this->people($division);
             $this->cases($division, $projects, $staff['Programme Officer'], $staff['Safeguarding Lead']);
+            $this->grants($division, $projects, $staff['Finance Officer'], $staff['Admin']);
             $this->giving($causes, $staff['Finance Officer']);
             $this->orders($products);
             $this->subscribers();
@@ -534,6 +538,62 @@ class DemoDataSeeder extends Seeder
      *
      * @param  array<string, Cause>  $causes
      */
+    /**
+     * Grants (Wave 2): two funders, three grants across the pipeline, the
+     * obligations an award carries, and a paid payout charged to it so the
+     * grant page has spend to show.
+     *
+     * @param  array<string, Project>  $projects
+     */
+    private function grants(Division $division, array $projects, User $finance, User $approver): void
+    {
+        if (Funder::query()->where('slug', 'bright-futures-trust')->exists()) {
+            return;
+        }
+
+        $trust = Funder::query()->create(['name' => 'Bright Futures Trust', 'funder_type' => 'foundation', 'contact_name' => 'Programme Manager', 'contact_email' => 'grants@brightfutures.example', 'website_url' => 'https://brightfutures.example', 'created_by' => $finance->id]);
+        $ministry = Funder::query()->create(['name' => 'Ministry of Gender, Children and Social Protection', 'funder_type' => 'government', 'created_by' => $finance->id]);
+        $list = array_values($projects);
+
+        $awarded = Grant::query()->create([
+            'funder_id' => $trust->id, 'project_id' => $list[0]->id ?? null, 'division_id' => $division->id,
+            'title' => 'Bright Futures — school kits for Bongo 2026', 'funder_reference' => 'BFT/2026/0142',
+            'amount_requested' => Money::ofMinor(6_000_000), 'deadline_on' => now()->subMonths(4)->toDateString(),
+            'purpose' => 'Exercise books, uniforms and sandals for 240 children before the September term.',
+            'owner_id' => $finance->id, 'created_by' => $finance->id,
+        ]);
+        $awarded->forceFill(['submitted_on' => now()->subMonths(4)])->save();
+        $awarded->award(Money::ofMinor(5_000_000), now()->subMonths(3)->toDateString(), now()->addMonths(9)->toDateString());
+        $awarded->obligations()->createMany([
+            ['title' => 'Receipt for tranche 1', 'kind' => 'receipt', 'due_on' => now()->subMonths(2)->toDateString(), 'completed_on' => now()->subMonths(2)->toDateString(), 'completed_by' => $finance->id],
+            ['title' => 'Six-month narrative report', 'kind' => 'report', 'due_on' => now()->addDays(9)->toDateString()],
+            ['title' => 'Final financial report', 'kind' => 'audit', 'due_on' => now()->addMonths(10)->toDateString()],
+        ]);
+
+        $payout = Payout::query()->create([
+            'division_id' => $division->id, 'project_id' => $list[0]->id ?? null, 'grant_id' => $awarded->id,
+            'payee_name' => 'Bongo D/A Primary School', 'amount' => Money::ofMinor(1_800_000), 'category' => Payout::CATEGORY_SCHOOL_FEES,
+            'method' => 'bank_transfer', 'purpose' => 'Uniforms and exercise books, 120 children, first delivery.',
+        ]);
+        $payout->submit($finance);
+        $payout->approve($approver);
+        $payout->forceFill(['status' => Payout::STATUS_PAID, 'paid_at' => now()->subWeeks(6), 'paid_by' => $finance->id])->save();
+
+        Grant::query()->create([
+            'funder_id' => $ministry->id, 'project_id' => $list[1]->id ?? null, 'division_id' => $division->id,
+            'title' => 'LEAP complementary livelihoods grant — Tamale widows',
+            'amount_requested' => Money::ofMinor(12_000_000), 'deadline_on' => now()->addDays(12)->toDateString(),
+            'status' => Grant::STATUS_DRAFTING, 'purpose' => 'Starter kits and mentoring for 45 widows in the Tamale cooperatives.',
+            'owner_id' => $finance->id, 'created_by' => $finance->id,
+        ]);
+
+        Grant::query()->create([
+            'funder_id' => $trust->id, 'project_id' => $list[3]->id ?? null, 'division_id' => $division->id,
+            'title' => 'Bright Futures — medical outreach vehicle', 'amount_requested' => Money::ofMinor(25_000_000),
+            'deadline_on' => now()->addMonths(2)->toDateString(), 'owner_id' => $finance->id, 'created_by' => $finance->id,
+        ]);
+    }
+
     private function giving(array $causes, User $finance): void
     {
         $donors = [

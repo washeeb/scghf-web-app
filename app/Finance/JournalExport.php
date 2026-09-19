@@ -216,7 +216,7 @@ final class JournalExport
         $date = ($gift->paid_at ?? $gift->created_at)->toDateString();
         $gross = $gift->amount;
         $fee = $gift->fee ?? Money::zero();
-        $fund = $gift->cause?->title ?? '';
+        $fund = $gift->cause ? $gift->cause->title : '';
         $who = $gift->is_anonymous ? 'Anonymous donor' : (string) ($gift->donor_name ?: 'Donor');
         $description = 'Donation '.$gift->reference.($fund !== '' ? ' — '.$fund : '');
 
@@ -276,7 +276,7 @@ final class JournalExport
         $payable = $refund->transaction?->payable;
 
         [$income, $reference, $who, $fund] = match (true) {
-            $payable instanceof Donation => ['donations', $payable->reference, $payable->is_anonymous ? 'Anonymous donor' : (string) $payable->donor_name, (string) ($payable->cause?->title ?? '')],
+            $payable instanceof Donation => ['donations', $payable->reference, $payable->is_anonymous ? 'Anonymous donor' : (string) $payable->donor_name, $payable->cause ? $payable->cause->title : ''],
             $payable instanceof Order => ['shop_sales', $payable->reference, (string) $payable->customer_name, ''],
             default => ['donations', (string) $refund->gateway_reference, '', ''],
         };
@@ -300,7 +300,7 @@ final class JournalExport
             'mobile_money', 'momo' => 'momo',
             default => 'bank',
         };
-        $fund = $payout->cause?->title ?? $payout->project?->title ?? '';
+        $fund = $payout->cause ? $payout->cause->title : ($payout->project ? $payout->project->title : '');
         $description = 'Payout '.$payout->reference.' — '.$payout->purpose;
 
         return [

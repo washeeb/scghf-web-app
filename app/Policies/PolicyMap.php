@@ -94,6 +94,12 @@ final class PolicyMap
             Models\BeneficiaryNote::class => BeneficiaryPolicy::class,
 
             Models\Consent::class => ConsentPolicy::class,
+
+            // Grants (Wave 2): internal, staff-only.
+            Models\Funder::class => GrantPolicy::class,
+            Models\Grant::class => GrantPolicy::class,
+            Models\GrantObligation::class => GrantPolicy::class,
+            Models\GrantDocument::class => GrantPolicy::class,
             Models\Story::class => StoryPolicy::class,
 
             // ── Fundraising — the ledger ─────────────────────────────────────

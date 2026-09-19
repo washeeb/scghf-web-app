@@ -1022,6 +1022,30 @@ class MessageTemplateSeeder extends Seeder
                     Open it: {{admin_url}}
                     TEXT,
             ],
+            /*
+             * Wave 2 — a funder's obligation falling due. To the grant's owner
+             * a fortnight out, and weekly after that until it is marked done.
+             */
+            [
+                'key' => 'grants.obligation_due',
+                'name' => 'Grant obligation due',
+                'description' => 'Sent to the grant’s owner when a report, audit, receipt or visit the funder is owed '
+                    .'falls due within a fortnight, and weekly after that until it is marked complete.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['grant', 'funder', 'obligation', 'kind', 'due_on', 'when', 'admin_url'],
+                'required' => ['grant', 'obligation', 'due_on', 'admin_url'],
+                'subject' => '{{obligation}} — {{grant}} ({{when}})',
+                'html' => <<<'HTML'
+                    <p><strong>{{obligation}}</strong> ({{kind}}) for the grant <strong>{{grant}}</strong>
+                    from {{funder}} is <strong>{{when}}</strong>: due {{due_on}}.</p>
+                    <p><a href="{{admin_url}}">Open the grant</a> and mark it done once it has gone.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    {{obligation}} ({{kind}}) for the grant {{grant}} from {{funder}} is {{when}}: due {{due_on}}.
+
+                    Open the grant: {{admin_url}}
+                    TEXT,
+            ],
             [
                 'key' => 'contact.reply',
                 'name' => 'Reply to a contact enquiry',

@@ -36,6 +36,12 @@ Artisan::command('inspire', function () {
  * day. Safe to run twice — the unique index on (subscription_id, scheduled_on)
  * makes an overlapping run a no-op rather than a double charge.
  */
+// Funder obligations falling due (Wave 2): the grant's owner is told a
+// fortnight out and weekly after that until it is marked done.
+Schedule::command('scghf:grant-reminders --execute')
+    ->dailyAt('07:30')
+    ->onOneServer();
+
 // The day's exchange rates for the "≈ £8" beside a cedi amount (Wave 2).
 // Before the first visitors; a failed fetch keeps yesterday's figure.
 Schedule::command('scghf:refresh-rates')

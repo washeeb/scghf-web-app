@@ -49,7 +49,7 @@ and the Safeguarding Lead can see in full.
 with an outcome) once the help has been given.
 
 - **Approved** makes the case visible to Finance, who raise the payment
-  under *Finance → Payouts* and link it to the case. What was paid shows
+  under *Finance → Payouts* and choose the case under *Charged to*. What was paid shows
   under *Money paid* on the case.
 - **Decline** asks why, for the file. What the applicant is told is a
   letter, written separately.

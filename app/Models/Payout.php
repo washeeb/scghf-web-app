@@ -82,7 +82,7 @@ class Payout extends Model
     public const CATEGORY_EQUIPMENT = 'equipment';
 
     protected $fillable = [
-        'division_id', 'project_id', 'cause_id', 'beneficiary_id',
+        'division_id', 'project_id', 'cause_id', 'grant_id', 'beneficiary_id',
         'payee_name', 'payee_reference', 'amount', 'currency',
         'category', 'method', 'momo_network', 'purpose', 'notes',
         'evidence_media_id',
@@ -149,6 +149,12 @@ class Payout extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /** @return BelongsTo<Grant, $this> */
+    public function grant(): BelongsTo
+    {
+        return $this->belongsTo(Grant::class);
     }
 
     /** @return BelongsTo<Cause, $this> */

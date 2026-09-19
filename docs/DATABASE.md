@@ -1615,6 +1615,7 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `division_id` | bigint unsigned | yes | I FK → `divisions.id` |  |
 | `project_id` | bigint unsigned | yes | I FK → `projects.id` |  |
 | `cause_id` | bigint unsigned | yes | I FK → `causes.id` |  |
+| `grant_id` | bigint unsigned | yes | I FK → `grants.id` |  |
 | `beneficiary_id` | bigint unsigned | yes | I FK → `beneficiaries.id` |  |
 | `payee_name` | varchar(191) |  |  |  |
 | `payee_reference` | varchar(191) | yes |  |  |
@@ -1655,6 +1656,83 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `revoked_at` | timestamp | yes |  |  |
 | `revoked_reason` | varchar(500) | yes |  |  |
 | `created_by` | bigint unsigned | yes | I FK → `users.id` |  |
+| `created_at` | timestamp | yes |  |  |
+| `updated_at` | timestamp | yes |  |  |
+
+#### `funders`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `ulid` | char(26) |  | U |  |
+| `name` | varchar(191) |  |  |  |
+| `slug` | varchar(191) |  | U |  |
+| `funder_type` | varchar(32) |  |  | `foundation` |
+| `website_url` | varchar(255) | yes |  |  |
+| `contact_name` | varchar(191) | yes |  |  |
+| `contact_email` | varchar(191) | yes |  |  |
+| `contact_phone` | varchar(32) | yes |  |  |
+| `notes` | text | yes |  |  |
+| `partner_id` | bigint unsigned | yes | I FK → `partners.id` |  |
+| `created_by` | bigint unsigned | yes | I FK → `users.id` |  |
+| `created_at` | timestamp | yes |  |  |
+| `updated_at` | timestamp | yes |  |  |
+
+#### `grants`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `ulid` | char(26) |  | U |  |
+| `funder_id` | bigint unsigned |  | I FK → `funders.id` |  |
+| `project_id` | bigint unsigned | yes | I FK → `projects.id` |  |
+| `division_id` | bigint unsigned | yes | I FK → `divisions.id` |  |
+| `title` | varchar(191) |  |  |  |
+| `funder_reference` | varchar(191) | yes |  |  |
+| `status` | varchar(32) |  | I | `idea` |
+| `amount_requested_minor` | bigint unsigned | yes |  |  |
+| `amount_awarded_minor` | bigint unsigned | yes |  |  |
+| `currency` | char(3) |  |  | `GHS` |
+| `is_restricted` | tinyint(1) |  |  | `1` |
+| `deadline_on` | date | yes |  |  |
+| `submitted_on` | date | yes |  |  |
+| `decided_on` | date | yes |  |  |
+| `starts_on` | date | yes |  |  |
+| `ends_on` | date | yes |  |  |
+| `purpose` | text | yes |  |  |
+| `notes` | text | yes |  |  |
+| `owner_id` | bigint unsigned | yes | I FK → `users.id` |  |
+| `created_by` | bigint unsigned | yes | I FK → `users.id` |  |
+| `created_at` | timestamp | yes |  |  |
+| `updated_at` | timestamp | yes |  |  |
+
+#### `grant_obligations`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `grant_id` | bigint unsigned |  | I FK → `grants.id` |  |
+| `title` | varchar(191) |  |  |  |
+| `kind` | varchar(16) |  |  | `report` |
+| `due_on` | date |  | I |  |
+| `completed_on` | date | yes |  |  |
+| `completed_by` | bigint unsigned | yes | I FK → `users.id` |  |
+| `notes` | text | yes |  |  |
+| `reminded_at` | timestamp | yes |  |  |
+| `created_at` | timestamp | yes |  |  |
+| `updated_at` | timestamp | yes |  |  |
+
+#### `grant_documents`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `ulid` | char(26) |  | U |  |
+| `grant_id` | bigint unsigned |  | I FK → `grants.id` |  |
+| `media_id` | bigint unsigned |  | I FK → `media.id` |  |
+| `title` | varchar(191) |  |  |  |
+| `kind` | varchar(16) |  |  | `other` |
+| `uploaded_by` | bigint unsigned | yes | I FK → `users.id` |  |
 | `created_at` | timestamp | yes |  |  |
 | `updated_at` | timestamp | yes |  |  |
 

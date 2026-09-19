@@ -32,6 +32,7 @@ use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FocusAreaController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\GivingController;
+use App\Http\Controllers\GrantDocumentController;
 use App\Http\Controllers\ImpactController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NewsletterController;
@@ -713,6 +714,11 @@ Route::get('pages/{page:ulid}/preview', [PageController::class, 'preview'])
 Route::get('beneficiaries/documents/{document:ulid}/download', [BeneficiaryDocumentController::class, 'download'])
     ->middleware('auth')
     ->name('beneficiaries.documents.download');
+
+// A grant's file (Wave 2): signed for a day, staff who may see grants.
+Route::get('grants/documents/{document:ulid}/download', [GrantDocumentController::class, 'download'])
+    ->middleware('auth')
+    ->name('grants.documents.download');
 
 Route::get('manual/images/{file}', function (string $file) {
     abort_unless(auth()->user()?->canAccessPanel() ?? false, 403);

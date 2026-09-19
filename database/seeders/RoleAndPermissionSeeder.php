@@ -91,6 +91,9 @@ class RoleAndPermissionSeeder extends Seeder
             'payments.reconcile', 'payments.view_keys',
             'fundraisers.moderate',
             'pledges.view', 'pledges.manage',
+            // Grants and institutional funders (Wave 2): internal records of
+            // where the larger money comes from and the deadlines that lose it.
+            'grants.view', 'grants.manage',
 
             /*
              * Payouts are split three ways on purpose.
@@ -253,6 +256,8 @@ class RoleAndPermissionSeeder extends Seeder
             'logs.email.view', 'logs.sms.view',
             'activity_log.view',
             'pledges.view', 'pledges.manage',
+            // Grants and institutional funders (Wave 2).
+            'grants.view', 'grants.manage',
             'payouts.view', 'payouts.request', 'payouts.mark_paid',
             // An approved case's name, reference, amount and the account to
             // pay it into — the fields a payout needs. Not the narrative,
@@ -322,6 +327,7 @@ class RoleAndPermissionSeeder extends Seeder
             'stories.publish',
             'media.view', 'media.upload',
             'documents.manage', 'galleries.manage',
+            'grants.view',
         ],
 
         'Auditor' => [
@@ -345,6 +351,7 @@ class RoleAndPermissionSeeder extends Seeder
             // the narrative, the notes, the money — no contact details, no
             // health, no ID (design note §4).
             'beneficiaries.view', 'beneficiaries.audit',
+            'grants.view',
             // Read-only by construction. No .create, .update, .delete anywhere.
             // A trustee or external auditor can see the whole financial picture
             // and change none of it.
