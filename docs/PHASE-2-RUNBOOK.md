@@ -45,15 +45,16 @@
 > | 5 — deploy key | ✅ authorised in cPanel, passphrase stripped, verified |
 > | 6 — GitHub secrets & `APP_URL` | ✅ both environments |
 > | 7.0 — DNS | ⏳ nameservers changed at Namecheap; InMotion's servers answer `192.145.232.80`, public resolvers still see the parking page while the delegation propagates |
-> | 7.1 — PHP 8.4 pinned | ✅ both vhosts (`uapi LangPHP php_set_vhost_versions`). **PHP-FPM (7.2) still off** |
-> | 7.3 — INI values | ⬜ |
+> | 7.1 — PHP 8.4 pinned | ✅ both vhosts (`uapi LangPHP php_set_vhost_versions`). cPanel applies it as an `AddHandler` block in the docroot's `.htaccess`, which our symlinked docroot loses on every release — so **`activate.sh` writes the block into each release** from `PHP_BIN` |
+> | 7.2 — PHP-FPM | ✖ not offered on this plan: the API accepts `php_fpm=1` and leaves it 0. Nothing to do |
+> | 7.3 — INI values | ✅ nothing to set: InMotion's `99-inmotion.ini` already gives `memory_limit=768M`, uploads `512M`, `max_input_vars=6200`, OPcache on — above the runbook's values. Per-directory `php.ini`/`.user.ini` are ignored under suPHP here |
 > | 7.4 — databases | ✅ `n789825_scghf_prod`, `_stage`, `_restore` created (`uapi Mysql create_database`). **Users, passwords and grants: yours** — a password must not pass through the assistant |
 > | 7.5 — staging subdomain | ✅ created (`uapi SubDomain addsubdomain`). **Directory Privacy: yours** |
-> | 7.6 — SSL | ⬜ AutoSSL will succeed once DNS lands and `current/` exists |
+> | 7.6 — SSL | ✅ Let's Encrypt issued for the domain, `www` and `staging` (`uapi SSL start_autossl_check`), once the docroot resolved — a dangling docroot fails HTTP validation, hence the holding release in `bootstrap-server.sh` |
 > | 7.7 — mail, 7.8 — cPanel 2FA | ⬜ |
 > | 8 — bootstrap | ✅ both. `shared/.env` **pre-filled** from `.env.example` with `APP_ENV`, `APP_URL`, `DB_CONNECTION=mariadb` (the server is **MariaDB 10.6.28**), database names, `FORCE_HTTPS`, `SESSION_SECURE_COOKIE`, `LOG_LEVEL=warning`; `APP_KEY` and `BACKUP_ARCHIVE_PASSWORD` generated on the server into the file. Production's Paystack keys blanked (the activate guard refuses `sk_test_` there). **Empty and yours: `DB_PASSWORD`** now, mail and Paystack later |
 > | 9 — cron | ✅ four project lines installed with `crontab`, per-minute test run |
-> | 10 — first deploy | ⬜ needs `DB_PASSWORD` in both `.env` files, then a push to `develop` |
+> | 10 — first deploy | ✅ staging live on 2026-09-19 after seven pipeline/host fixes (see `CHANGELOG.md`): 140 tables migrated on InnoDB, caches built, Let's Encrypt, `/up` 200 |
 
 ---
 

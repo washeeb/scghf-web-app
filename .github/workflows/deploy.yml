@@ -295,16 +295,19 @@ jobs:
           APP_URL: ${{ vars.APP_URL }}
         run: |
           set -euo pipefail
+          # InMotion's edge answers 406 to curl's default User-Agent; a
+          # browser-shaped one goes through. Found on the first deploy.
+          UA="Mozilla/5.0 (compatible; SCGHF-deploy-check)"
           echo "Checking $APP_URL …"
-          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -L "$APP_URL/")
+          code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 30 -L "$APP_URL/")
           [ "$code" = "200" ] || { echo "::error::Homepage returned $code, expected 200"; exit 1; }
 
-          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$APP_URL/up")
+          code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 30 "$APP_URL/up")
           [ "$code" = "200" ] || { echo "::error::Health check returned $code, expected 200"; exit 1; }
 
           # These must NOT be reachable. A 200 here is a security incident.
           for path in "/.env" "/storage/logs/laravel.log" "/vendor/autoload.php" "/.git/config" "/composer.json"; do
-            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$APP_URL$path")
+            code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 20 "$APP_URL$path")
             case "$code" in
               403|404) echo "  OK   $path → $code" ;;
               *)       echo "::error::SECURITY: $path returned $code — it must be 403 or 404"; exit 1 ;;

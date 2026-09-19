@@ -220,6 +220,32 @@ HT
   ok "staging robots.txt (disallow all) + X-Robots-Tag header"
 fi
 
+# ── PHP handler ──────────────────────────────────────────────────────────────
+# cPanel pins a domain's PHP version by writing an AddHandler block into the
+# docroot's .htaccess — and our docroot is a symlink to THIS release's public/,
+# whose .htaccess arrives from the repository without it. Without this block
+# Apache serves the release with the server default (ea-php83 on InMotion),
+# which cannot run the application. PHP-FPM would make the version part of
+# the vhost instead, but it is not offered on this plan. Derived from
+# PHP_BIN, so a host that is not cPanel gets nothing written.
+case "$PHP_BIN" in
+  /opt/cpanel/ea-php*/root/usr/bin/php)
+    EA_PKG=$(printf '%s' "$PHP_BIN" | cut -d/ -f4)   # /opt/cpanel/ea-php84/... → ea-php84
+    if ! grep -q "x-httpd-$EA_PKG" "$RELEASE_DIR/public/.htaccess" 2>/dev/null; then
+      cat >> "$RELEASE_DIR/public/.htaccess" <<HT
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the "$EA_PKG" package as the default "PHP" programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-$EA_PKG .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
+HT
+    fi
+    ok "PHP handler: $EA_PKG"
+    ;;
+esac
+
 # ── Permissions ──────────────────────────────────────────────────────────────
 # cPanel runs PHP as the account user, so 755/644 is sufficient. Never 777 —
 # on shared hosting that is world-writable to other tenants' processes.

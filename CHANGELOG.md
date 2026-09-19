@@ -124,6 +124,31 @@ unchanged; the values were re-pointed.
   recreated from empty, since its first 41 tables had been made under the
   old rule
 
+#### Fixed — the first release that activated, and what it taught
+
+- **Web requests ran PHP 8.3.** cPanel pins a domain's PHP by writing an
+  `AddHandler application/x-httpd-ea-php84` block into the docroot's
+  `.htaccess`; our docroot is a symlink to each release's `public/`, whose
+  `.htaccess` comes from the repository without it. `activate.sh` now
+  appends the block to every release, derived from `PHP_BIN` (a non-cPanel
+  host gets nothing). PHP-FPM, which would have made the version part of
+  the vhost, is not offered on this plan
+- **A dangling docroot broke two other things**: cPanel refused the PHP
+  change for *every* domain in the call because production's
+  `public_html/.htaccess` did not exist, and AutoSSL's HTTP validation
+  could not create `.well-known/`. `bootstrap-server.sh` now creates a
+  holding release ("Coming soon", noindex) and points `current/` at it, so
+  the docroot always resolves
+- **The smoke test got 406** — InMotion's edge rejects curl's default
+  User-Agent; the check now sends a browser-shaped one
+- **`rollback.sh` rolled back onto a release that had never been live.**
+  With no `previous_release` recorded it guessed "the newest other
+  directory", which was the release whose migrations had failed. It now
+  refuses when nothing is recorded, as `docs/DEPLOYMENT.md` always said
+- Let's Encrypt certificates are issued for the domain, `www` and
+  `staging`; staging answers `/up` with 200 over verified TLS on PHP
+  8.4.24 with all 140 tables on InnoDB
+
 #### Changed — the database is MariaDB
 
 - The server is **MariaDB 10.6.28**, so `shared/.env` uses

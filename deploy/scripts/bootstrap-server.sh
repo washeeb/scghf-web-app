@@ -142,7 +142,26 @@ else
   ok "$DOCROOT → $DEPLOY_PATH/current/public"
 fi
 
-warn "The symlink dangles until the first deploy creates 'current'. That is expected."
+# A docroot that resolves to nothing is worse than a placeholder: cPanel's
+# MultiPHP cannot write its handler block (and refuses the whole change,
+# for every domain in the call), AutoSSL's HTTP validation cannot create
+# .well-known/ and fails, and the bare domain is an Apache error. So the
+# first "release" is a holding page, and 'current' points at it until the
+# real first deploy replaces it.
+HOLDING="$DEPLOY_PATH/releases/00000000-000000-holding"
+if [ ! -L "$DEPLOY_PATH/current" ]; then
+  mkdir -p "$HOLDING/public"
+  cat > "$HOLDING/public/index.html" <<'HTML'
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Coming soon</title></head><body style="font-family:system-ui;margin:4rem auto;max-width:40rem;padding:0 1rem"><h1>Coming soon</h1><p>This site is being prepared.</p></body></html>
+HTML
+  printf '# Holding page. Replaced by the first real release.
+DirectoryIndex index.html
+' > "$HOLDING/public/.htaccess"
+  ln -sfn "$HOLDING" "$DEPLOY_PATH/current"
+  ok "current → holding page (until the first deploy)"
+else
+  ok "current already → $(readlink "$DEPLOY_PATH/current")"
+fi
 
 # ── 6. Report what CI needs ──────────────────────────────────────────────────
 say "GitHub secrets for the '$ENVIRONMENT' environment"
