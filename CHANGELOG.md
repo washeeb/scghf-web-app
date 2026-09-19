@@ -152,6 +152,15 @@ unchanged; the values were re-pointed.
   `staging`; staging answers `/up` with 200 over verified TLS on PHP
   8.4.24 with all 140 tables on InnoDB
 
+#### Changed — `fakerphp/faker` is a runtime dependency
+
+- `docs/DEPLOYMENT.md` §7 has always said to load staging with
+  `DemoDataSeeder`; the first attempt on the real host stopped at
+  `OrderFactory`: *Call to undefined function fake()*. Faker was a dev
+  dependency and the release is built `--no-dev`. Moved to `require`
+  (v1.24.1, no other lock changes) — it is small, has no runtime side
+  effects, and `DemoDataSeeder` still refuses to run in production
+
 #### Changed — the database is MariaDB
 
 - The server is **MariaDB 10.6.28**, so `shared/.env` uses
