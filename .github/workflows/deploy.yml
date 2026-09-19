@@ -308,9 +308,11 @@ jobs:
           # These must NOT be reachable. A 200 here is a security incident.
           for path in "/.env" "/storage/logs/laravel.log" "/vendor/autoload.php" "/.git/config" "/composer.json"; do
             code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 20 "$APP_URL$path")
+            # 403/404 from Apache or the app; 406 is InMotion's ModSecurity
+            # refusing the request before Apache sees it — also "not served".
             case "$code" in
-              403|404) echo "  OK   $path → $code" ;;
-              *)       echo "::error::SECURITY: $path returned $code — it must be 403 or 404"; exit 1 ;;
+              401|403|404|406|410) echo "  OK   $path → $code" ;;
+              *)                   echo "::error::SECURITY: $path returned $code — it must be a denial (401/403/404/406/410)"; exit 1 ;;
             esac
           done
           echo "Smoke test passed."

@@ -145,6 +145,9 @@ unchanged; the values were re-pointed.
   With no `previous_release` recorded it guessed "the newest other
   directory", which was the release whose migrations had failed. It now
   refuses when nothing is recorded, as `docs/DEPLOYMENT.md` always said
+- The smoke test's security sweep accepts 406 (ModSecurity refusing `/.env`
+  before Apache) alongside 401/403/404/410 as "not served"; a 200 is
+  still the failure
 - Let's Encrypt certificates are issued for the domain, `www` and
   `staging`; staging answers `/up` with 200 over verified TLS on PHP
   8.4.24 with all 140 tables on InnoDB
