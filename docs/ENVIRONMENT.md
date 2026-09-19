@@ -37,7 +37,7 @@ Generated from `.env.example` by `docs/tools/env_reference.py`; regenerate after
 
 | Key | Default in `.env.example` | What it does |
 |---|---|---|
-| `DB_CONNECTION` | `mysql` | [cPanel] Databases → Database Wizard. cPanel prefixes everything with the account username, so the names below are already correct for account n789825. |
+| `DB_CONNECTION` | `mysql` | [cPanel] Databases → Database Wizard. cPanel prefixes everything with the account username, so the names below are already correct for account n789825. server: mariadb — InMotion runs MariaDB 10.6, and Laravel's mariadb driver knows its grammar |
 | `DB_HOST` | `127.0.0.1` | server: localhost |
 | `DB_PORT` | `3306` |  |
 | `DB_DATABASE` | `n789825_scghf_prod` | staging: n789825_scghf_stage |

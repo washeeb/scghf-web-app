@@ -57,7 +57,7 @@ class RestoreTest extends Command
     public function handle(AuditLogger $audit): int
     {
         $scratch = (string) config('database.restore_test_database', '');
-        $live = (string) config('database.connections.mysql.database', '');
+        $live = (string) config('database.connections.'.config('database.default').'.database', '');
 
         if ($scratch === '' || $scratch === $live) {
             $this->error('RESTORE_TEST_DATABASE must name a separate, empty database. It is '.($scratch === '' ? 'not set' : 'the live database').'.');
@@ -261,7 +261,9 @@ class RestoreTest extends Command
 
     private function scratchPdo(string $scratch): PDO
     {
-        $c = (array) config('database.connections.mysql');
+        // The live connection, whichever flavour it is: `mysql` locally and in CI,
+        // `mariadb` on the InMotion server (MariaDB 10.6). Same PDO driver either way.
+        $c = (array) config('database.connections.'.config('database.default'));
 
         return new PDO(
             sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $c['host'] ?? '127.0.0.1', $c['port'] ?? 3306, $scratch),

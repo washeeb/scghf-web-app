@@ -95,8 +95,11 @@ return [
                 'relative_path' => base_path(),
             ],
 
+            // Whichever connection is live — `mysql` locally, `mariadb` on the
+            // server. Both dump with mysqldump; naming one of them here would
+            // silently back up the connection that is NOT in use.
             'databases' => [
-                'mysql',
+                env('DB_CONNECTION', 'mysql'),
             ],
         ],
 

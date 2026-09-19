@@ -61,6 +61,24 @@ unchanged; the values were re-pointed.
   every required extension, `mysqldump`/`rsync`/`flock` present, MariaDB
   10.6 client
 
+#### Changed — the database is MariaDB
+
+- The server is **MariaDB 10.6.28**, so `shared/.env` uses
+  `DB_CONNECTION=mariadb` and `.env.example` says so. `config/backup.php`
+  dumped the connection literally named `mysql` and `scghf:restore-test`
+  read `database.connections.mysql`; both now follow the active
+  connection, otherwise the backup and the restore test would have looked
+  at a connection the application was not using
+
+#### Server state after 2026-09-19 (details in the runbook's status table)
+
+Bootstrapped both environments; `shared/.env` pre-filled with the
+non-secret values and a server-generated `APP_KEY`; PHP 8.4 pinned on both
+vhosts; staging subdomain and the three databases created through `uapi`;
+cron installed. **Yours:** database users and passwords, `DB_PASSWORD` in
+both `.env` files, PHP-FPM and INI values, Directory Privacy on staging,
+AutoSSL once DNS lands, mailboxes and SPF/DKIM/DMARC, cPanel 2FA.
+
 #### Still to do on the server (runbook steps 7–9)
 
 DNS at Namecheap · MultiPHP 8.4 +

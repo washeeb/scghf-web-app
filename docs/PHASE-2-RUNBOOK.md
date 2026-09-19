@@ -35,6 +35,26 @@
 >    the smoke test in the deploy workflow cannot reach the site, and mail
 >    records cannot be verified.
 
+> ### Where the server stands — 2026-09-19
+>
+> Done over SSH with the deploy key (most cPanel screens have a `uapi`
+> equivalent, which is what was used; the commands are noted in each step):
+>
+> | Step | State |
+> |---|---|
+> | 5 — deploy key | ✅ authorised in cPanel, passphrase stripped, verified |
+> | 6 — GitHub secrets & `APP_URL` | ✅ both environments |
+> | 7.0 — DNS | ⏳ nameservers changed at Namecheap; InMotion's servers answer `192.145.232.80`, public resolvers still see the parking page while the delegation propagates |
+> | 7.1 — PHP 8.4 pinned | ✅ both vhosts (`uapi LangPHP php_set_vhost_versions`). **PHP-FPM (7.2) still off** |
+> | 7.3 — INI values | ⬜ |
+> | 7.4 — databases | ✅ `n789825_scghf_prod`, `_stage`, `_restore` created (`uapi Mysql create_database`). **Users, passwords and grants: yours** — a password must not pass through the assistant |
+> | 7.5 — staging subdomain | ✅ created (`uapi SubDomain addsubdomain`). **Directory Privacy: yours** |
+> | 7.6 — SSL | ⬜ AutoSSL will succeed once DNS lands and `current/` exists |
+> | 7.7 — mail, 7.8 — cPanel 2FA | ⬜ |
+> | 8 — bootstrap | ✅ both. `shared/.env` **pre-filled** from `.env.example` with `APP_ENV`, `APP_URL`, `DB_CONNECTION=mariadb` (the server is **MariaDB 10.6.28**), database names, `FORCE_HTTPS`, `SESSION_SECURE_COOKIE`, `LOG_LEVEL=warning`; `APP_KEY` and `BACKUP_ARCHIVE_PASSWORD` generated on the server into the file. Production's Paystack keys blanked (the activate guard refuses `sk_test_` there). **Empty and yours: `DB_PASSWORD`** now, mail and Paystack later |
+> | 9 — cron | ✅ four project lines installed with `crontab`, per-minute test run |
+> | 10 — first deploy | ⬜ needs `DB_PASSWORD` in both `.env` files, then a push to `develop` |
+
 ---
 
 > **Work top to bottom.** Steps 0–3 are on your machine, 4–6 on GitHub. Steps 7–11 wait for the new host.
@@ -581,6 +601,19 @@ Same page, PHP-FPM column, toggle it on for `greaterhopefoundations.org`. This k
 | Privileges | ALL PRIVILEGES | ALL PRIVILEGES |
 
 **Save both passwords into your password manager now.** They are shown once.
+
+> **2026-09-19:** the three databases already exist. In **Databases → MySQL
+> Databases** create the users `n789825_scghf` and `n789825_scghfstg`, then
+> under *Add User To Database* grant `n789825_scghf` **ALL PRIVILEGES** on
+> `n789825_scghf_prod` **and** `n789825_scghf_restore`, and `n789825_scghfstg`
+> on `n789825_scghf_stage`. Then put each password on its `DB_PASSWORD=` line:
+>
+> ```bash
+> nano /home/n789825/scghf/shared/.env          # production
+> nano /home/n789825/scghf-staging/shared/.env  # staging
+> ```
+>
+> (cPanel → Advanced → Terminal, or `ssh -p 2222 n789825@secure381.inmotionhosting.com`.)
 
 While in phpMyAdmin, note the **Server version** from the home page — it is the last unknown from Phase 1 §4.3.
 
