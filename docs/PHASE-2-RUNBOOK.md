@@ -390,11 +390,32 @@ gh api -X PUT repos/washeeb/scghf-web-app/branches/main/protection --input .gith
 
 **Do this on your machine, not the server.** A dedicated key, never your personal one — so it can be revoked without locking you out.
 
-```powershell
-ssh-keygen -t ed25519 -C "github-actions-deploy-scghf" -f "$env:USERPROFILE\.ssh\scghf_deploy" -N '""'
+Run it in **Git Bash**, not PowerShell:
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy-scghf" -f ~/.ssh/scghf_deploy -N ''
 ```
 
 **Expected:** two files — `scghf_deploy` (private) and `scghf_deploy.pub` (public).
+
+Then **prove the key has no passphrase** — CI cannot type one:
+
+```bash
+ssh-keygen -y -P '' -f ~/.ssh/scghf_deploy
+```
+
+**Expected:** the public key printed. **If "incorrect passphrase":** the key is
+protected. Strip it with `ssh-keygen -p -P '<passphrase>' -N '' -f ~/.ssh/scghf_deploy`;
+the public half does not change, so nothing needs re-importing.
+
+> ⚠️ **What went wrong the first time (found 2026-09-19).** The original
+> PowerShell form, `-N '""'`, does not pass an empty passphrase — PowerShell
+> hands `ssh-keygen` the two characters `""` and the key was silently
+> protected with that as its passphrase. The symptom is the confusing one:
+> `ssh -v` shows **"Server accepts key"** (cPanel authorisation was fine) and
+> then **"Permission denied (publickey)"**, because the client could not sign
+> without the passphrase and `BatchMode` never asks. Fixed with the strip
+> command above; the GitHub secret was re-uploaded.
 
 > ✅ **Done 2026-09-02.** Ed25519 keypair generated at `~\.ssh\scghf_deploy`. The keypair is host-independent, so it carries over to whatever hosting is chosen. ~~The rest of this step — importing and authorising the public key — waits for the new host.~~ **The host exists (2026-09-19): import and authorise it now.**
 >
@@ -422,6 +443,7 @@ ssh -i "$env:USERPROFILE\.ssh\scghf_deploy" -p 2222 n789825@secure381.inmotionho
 **If it asks for a password:** the key is not authorized. Go back and press Authorize.
 **If "Connection refused":** wrong port — it is 2222, not 22.
 **If "Permission denied (publickey)":** the public key was pasted with a line break, or you pasted the private key by mistake. Re-copy it as one line.
+**If `ssh -v` says "Server accepts key" and then denies:** the private key has a passphrase (see the warning above). cPanel is fine; fix the key.
 
 ---
 

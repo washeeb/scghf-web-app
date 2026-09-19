@@ -50,9 +50,20 @@ unchanged; the values were re-pointed.
   2026-09-02; Paystack, database and mail credentials still live only in
   `shared/.env` on the server
 
-#### Still to do on the server (runbook steps 5, 7–9)
+#### Fixed
 
-Import and **Authorize** the deploy key · DNS at Namecheap · MultiPHP 8.4 +
+- The deploy key generated on 2026-09-02 was passphrase-protected by
+  accident — PowerShell passed `-N '""'` as a literal two-character
+  passphrase — so the server accepted the key and the client could not
+  sign. Passphrase stripped (public half unchanged), the GitHub secret
+  re-uploaded, runbook step 5 rewritten for Git Bash with a verification
+  command. The key was tested against `n789825` on 2026-09-19: PHP 8.4.24,
+  every required extension, `mysqldump`/`rsync`/`flock` present, MariaDB
+  10.6 client
+
+#### Still to do on the server (runbook steps 7–9)
+
+DNS at Namecheap · MultiPHP 8.4 +
 FPM + INI values · two databases · staging subdomain with Directory
 Privacy · AutoSSL · mailboxes and SPF/DKIM/DMARC · cPanel 2FA ·
 `bootstrap-server.sh` for each environment · fill `shared/.env` · cron.
