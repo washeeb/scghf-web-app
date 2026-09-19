@@ -89,6 +89,7 @@ final class LaunchChecks
             $this->wrap('tls', 'Certificate and its renewal', fn () => $this->tls()),
             $this->wrap('canonical_host', 'One canonical host', fn () => $this->canonicalHost()),
             $this->wrap('analytics', 'Analytics chosen', fn () => $this->analytics()),
+            $this->wrap('storage_engine', 'Every table on InnoDB', fn () => $this->storageEngine()),
             $this->wrap('flags', 'Feature flags honest', fn () => $this->flags()),
             $this->wrap('whatsapp', 'WhatsApp ready if on', fn () => $this->whatsapp()),
             $this->wrap('staff_2fa', 'Two-factor on every staff account', fn () => $this->staffTwoFactor()),
@@ -411,6 +412,33 @@ final class LaunchChecks
         }
 
         return HealthCheck::ok('flags', 'Feature flags honest', 'Nothing on that is not built');
+    }
+
+    /**
+     * Every table must be InnoDB. The connection config pins it, but a table
+     * created by hand in phpMyAdmin, or on a server whose default is MyISAM
+     * before the pin existed, would have no transactions and no foreign
+     * keys — and a payments ledger on MyISAM is a ledger that can lose a row
+     * mid-write without an error. Found on the first staging deploy, where
+     * InMotion's MariaDB defaulted to MyISAM.
+     */
+    private function storageEngine(): HealthCheck
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            return HealthCheck::ok('storage_engine', 'Every table on InnoDB', "Not applicable ({$driver})");
+        }
+
+        $rows = DB::select('select table_name as name, engine as engine from information_schema.tables where table_schema = database() and table_type = ? and engine <> ?', ['BASE TABLE', 'InnoDB']);
+        $wrong = array_map(fn (object $r): string => "{$r->name} ({$r->engine})", $rows);
+
+        if ($wrong !== []) {
+            return HealthCheck::critical('storage_engine', 'Every table on InnoDB', count($wrong).' not InnoDB',
+                'Tables without transactions or foreign keys: '.implode(', ', $wrong).'. Convert each with ALTER TABLE … ENGINE=InnoDB, then check default_storage_engine on the server — config/database.php pins InnoDB for tables the application creates, but not for tables made by hand.');
+        }
+
+        return HealthCheck::ok('storage_engine', 'Every table on InnoDB', 'All InnoDB');
     }
 
     // ── Accounts ─────────────────────────────────────────────────────────────

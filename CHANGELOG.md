@@ -88,9 +88,25 @@ unchanged; the values were re-pointed.
   test's fake live key, `sk_live_abcdefghijklmnopqrstuvwxyz` — long enough
   to match the scanner's pattern. The fixture is now `sk_live_fixture`;
   the code only reads the prefix
+- `DEPLOY_PATH` and `PHP_BIN` had been stored mangled — Git Bash's MSYS
+  layer rewrote the POSIX paths to `C:/Program Files/Git/…` before
+  `gh.exe` saw them — so the deploy's first server-side check reported
+  `shared/.env` missing. Re-set by piping the values; the runbook warns
 - `activate.sh` now **stops** a production deploy on `PAYMENT_DRIVER=fake`
   instead of warning; the application would have refused to boot at the
   migrate step a moment later with a less helpful stack trace
+
+#### Fixed — the server's default storage engine is MyISAM
+
+- The first staging migration failed on `sessions` with *max key length is
+  1000 bytes* — the MyISAM limit. InMotion's MariaDB has
+  `default_storage_engine=MyISAM`, and both MySQL-family connections had
+  `'engine' => null` ("whatever the server defaults to"), so `users` and
+  `password_reset_tokens` had already been created **without transactions
+  or foreign keys**. `config/database.php` now pins `InnoDB` on both
+  connections, and a new launch-check row, **Every table on InnoDB**
+  (`X6a` in `docs/LAUNCH.md`), fails on any table that is not — for the
+  case the pin cannot cover, a table made by hand in phpMyAdmin
 
 #### Changed — the database is MariaDB
 

@@ -65,7 +65,11 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            // Never "whatever the server defaults to". InMotion's MariaDB defaults
+            // to MyISAM, which has no transactions and no foreign keys — a
+            // payments ledger cannot live on it, and Laravel would create every
+            // table that way without a word. Found on the first staging deploy.
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
@@ -85,7 +89,11 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            // Never "whatever the server defaults to". InMotion's MariaDB defaults
+            // to MyISAM, which has no transactions and no foreign keys — a
+            // payments ledger cannot live on it, and Laravel would create every
+            // table that way without a word. Found on the first staging deploy.
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

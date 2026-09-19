@@ -494,6 +494,14 @@ ssh-keyscan -p 2222 secure381.inmotionhosting.com
 | `DEPLOY_PATH` | `/home/n789825/scghf` | `/home/n789825/scghf-staging` |
 | `PHP_BIN` | `/opt/cpanel/ea-php84/root/usr/bin/php` | same |
 
+> ⚠️ **Setting a path secret from Git Bash mangles it.** MSYS rewrites any
+> argument that looks like a POSIX path before a Windows executable sees it,
+> so `gh secret set DEPLOY_PATH --body /home/n789825/scghf` stores
+> `C:/Program Files/Git/home/n789825/scghf` — and the deploy then reports
+> *shared/.env is missing* against a path that looks right in the log
+> (secrets are masked). Found 2026-09-19. Either run `gh` from PowerShell, or
+> pipe the value: `printf '%s' "/home/n789825/scghf" | gh secret set DEPLOY_PATH --env production`.
+
 > Create both **Environments** now even though most secrets are still empty. The workflow references them by name, and the environment is where the production approval gate lives.
 
 **Variables** (Environments → Variables, not Secrets):

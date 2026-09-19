@@ -23,6 +23,7 @@ use App\Support\Settings;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -160,4 +161,28 @@ it('runs from the command line and exits non-zero while there are blockers', fun
     $this->artisan('scghf:launch-check')
         ->expectsOutputToContain('Is it ready to be public?')
         ->assertExitCode(1);
+});
+
+it('refuses a table that is not InnoDB', function () {
+    // MyISAM has no transactions and no foreign keys; a ledger on it can
+    // lose a row mid-write with no error. The connection pins InnoDB for
+    // what the application creates — this catches what it did not create.
+    $driver = DB::connection()->getDriverName();
+    if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+        $this->markTestSkipped('MySQL-family only');
+    }
+
+    DB::statement('drop table if exists launch_check_probe');
+    DB::statement('create table launch_check_probe (id int) engine=MyISAM');
+
+    try {
+        $row = app(LaunchChecks::class)->checks()->firstWhere('key', 'storage_engine');
+        expect($row->status)->toBe(HealthCheck::CRITICAL)
+            ->and($row->advice)->toContain('launch_check_probe (MyISAM)');
+    } finally {
+        DB::statement('drop table if exists launch_check_probe');
+    }
+
+    $row = app(LaunchChecks::class)->checks()->firstWhere('key', 'storage_engine');
+    expect($row->status)->toBe(HealthCheck::OK);
 });
