@@ -1,11 +1,34 @@
-# Runs on every pull request. Nothing merges into develop or main unless this
-# is green. Deploys re-run the same gate — see deploy.yml.
+# Runs on pull requests. Nothing merges into develop or main unless this is
+# green. Deploys run the same lint/analyse/test gate — see deploy.yml.
+#
+# ── Minutes ─────────────────────────────────────────────────────────────────
+#
+# This is a private repository on a free plan: 2,000 Actions minutes a
+# month. Each job here is 15–20 minutes, and deploy.yml runs the test gate
+# again on every push to develop. With the develop → main release PR open
+# all the time, one push to develop used to cost five jobs (three here via
+# that PR, two in deploy.yml) — about 85 minutes — and the allowance ran out
+# in four days (2026-09-20). So:
+#
+#   • A DRAFT pull request runs nothing. The develop → main release PR
+#     stays a draft between releases (`gh pr ready --undo <n>`); mark it
+#     ready when a release is due, the checks run once, merge.
+#   • Browser tests and coverage run only for pull requests INTO main
+#     (a release), on demand, and on Monday mornings against develop.
+#   • Lint/analyse/test runs for every non-draft pull request — feature
+#     branches and Dependabot — and, for pushes to develop, in deploy.yml.
+#
+# A push to develop now costs one gate, in deploy.yml.
 
 name: CI
 
 on:
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    # Monday 05:00 UTC — the week's browser and coverage run against develop.
+    - cron: '0 5 * * 1'
   workflow_dispatch:
 
 concurrency:
@@ -19,6 +42,9 @@ jobs:
   quality:
     name: Lint, analyse, test
     runs-on: ubuntu-latest
+    # Not on a draft (see the note at the top), and not on the weekly
+    # schedule — deploy.yml runs this gate on every push to develop already.
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     # The template .env names the cPanel database user; the runner's MySQL
     # service is root with no password. Real environment variables win over
     # .env, so this is all it takes.
@@ -153,6 +179,9 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
+    # Releases (a non-draft pull request into main), the weekly schedule,
+    # and on demand. Not on every push to develop — see the note at the top.
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && github.event.pull_request.draft == false)
     # The template .env names the cPanel database user; the runner's MySQL
     # service is root with no password. Real environment variables win over
     # .env, so this is all it takes.
@@ -245,6 +274,9 @@ jobs:
   browser:
     name: Browser tests
     runs-on: ubuntu-latest
+    # Releases (a non-draft pull request into main), the weekly schedule,
+    # and on demand. Not on every push to develop — see the note at the top.
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && github.event.pull_request.draft == false)
     # The template .env names the cPanel database user; the runner's MySQL
     # service is root with no password. Real environment variables win over
     # .env, so this is all it takes.

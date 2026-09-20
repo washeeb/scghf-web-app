@@ -53,6 +53,27 @@ What `activate.sh` does, in order, and why the order:
 | `queue:restart`, `scghf:cache-clear`, `scghf:opcache-reset`, `up` | the next cron worker picks up the new code; pages stored by the old release are gone; the web workers' OPcache is emptied through a one-time token (PHP-FPM keeps bytecode across deploys — without this the site can serve the previous release's code after the flip). If the workers still run a release without that route, a one-off file under `public/deploy/` does the reset instead. The release's `public/.user.ini` sets `opcache.revalidate_path=1`, so the docroot symlink is resolved per request and a new release is new files to OPcache — with the host's default (`0`) the workers kept the first resolution and never saw a flip at all |
 | prune to five releases | disk and inodes |
 
+### 2a. Actions minutes
+
+A private repository on GitHub Free has 2,000 Actions minutes a month, and
+each job here runs 15–20 minutes. The allowance ran out on 2026-09-20
+after four days of pushing (the refusal reads *"recent account payments
+have failed or your spending limit needs to be increased"* — it means the
+minutes, not a card). Since then:
+
+- The develop → main release PR is kept as a **draft**; a draft runs no CI
+  jobs. Mark it ready (`gh pr ready <n>`) when a release is due, the three
+  checks run once, merge, then `gh pr ready --undo <n>` on the next one.
+- **Browser tests** and **coverage** run only for pull requests into
+  `main`, on Monday mornings against `develop`, and on demand (Actions →
+  CI → Run workflow).
+- A push to `develop` costs one job: the quality gate in `deploy.yml`.
+
+That is roughly 20 minutes per push and 40 a week for the schedule —
+about 90 pushes a month inside the allowance instead of 25. If it still
+runs out, Settings → Billing → *Spending limit* (Linux minutes are
+$0.008 each) or wait for the cycle to reset; §3a covers deploying by hand.
+
 ## 3. A hotfix
 
 Same path, faster: branch from `main`, fix with its test, PR to `main`,

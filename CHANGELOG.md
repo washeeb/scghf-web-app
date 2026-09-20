@@ -106,11 +106,20 @@ Both are now used.
 
 #### Open
 
-- **GitHub Actions is not running**: every run since `12603b9` was refused
-  with *"recent account payments have failed or your spending limit needs
-  to be increased"* (GitHub → Settings → Billing). This release reached
-  staging by hand — the workflow's steps replayed from this machine over
-  SSH — and is recorded in `docs/DEPLOYMENT.md`'s manual-deploy note
+- **GitHub Actions minutes.** Every run from `12603b9` was refused with
+  *"recent account payments have failed or your spending limit needs to be
+  increased"* — which on a free plan means the private repository's
+  2,000 minutes a month were spent: ~100 runs in four days, five jobs of
+  15–20 minutes per push (three in CI through the always-open release PR,
+  two in the deploy). Two releases reached staging by hand
+  (`docs/DEPLOYMENT.md` §3a). The repository was made **public for 24
+  hours** from 2026-09-20 13:53 UTC at the owner's request (public repos
+  are unmetered); the profile document, template preview and cPanel
+  screenshots were moved out of the tree first (`../SCGHF-source-documents/`).
+  To stay inside the allowance afterwards, CI now skips draft pull
+  requests, runs browser tests and coverage only for pull requests into
+  `main`, weekly and on demand, and the release PR is kept a draft between
+  releases — one 20-minute gate per push to `develop` (`docs/DEPLOYMENT.md` §2a)
 
 ### Hosting — the foundation's own cPanel account and domain — 2026-09-19
 

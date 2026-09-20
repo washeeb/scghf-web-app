@@ -13,6 +13,8 @@
 
 | Source file | What it gave us | Completeness |
 |---|---|---|
+> **Where these files are now (2026-09-20):** the profile document, the template preview and the cPanel screenshots were moved out of the repository into the sibling folder `../SCGHF-source-documents/` before the repository was made public. The logo files stayed; the ones the site uses are under `resources/brand/`.
+
 | `St-Cecilias-Greater-Hope-Foundations-Profile.docx` | Identity, story, vision, mission, motto, values, 4 divisions, beneficiaries, objectives, approach | ~55% — no contact, registration, board, bank, or social data |
 | `SCGHF Logo.png` (2000×2000, RGBA) | Icon-only mark, orange/blue colourway | Usable; no vector |
 | `SCGHF Logo 2.png` (1608×411, RGBA) | Horizontal lockup, green "Greater" + orange "HOPE" | Usable; no vector |
