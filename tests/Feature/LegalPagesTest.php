@@ -105,8 +105,9 @@ it('does not add a second header to a page that opens with a hero', function () 
 
     $html = $this->get($page->path)->assertOk()->getContent();
 
+    // The hero wraps its first word for the underline, so match on text.
     expect(substr_count($html, '<h1'))->toBe(1)
-        ->and($html)->toContain('in a hero</h1>');
+        ->and(strip_tags((string) preg_replace('/\s+/', ' ', $html)))->toContain('About the Foundation, in a hero');
 });
 
 it('links the anti-fraud statement from the legal footer once published', function () {
