@@ -236,6 +236,11 @@ fi
 # Both env names are needed: the rewrite to index.php is an internal
 # redirect, and Apache renames variables across it with a REDIRECT_ prefix.
 if [ "$APP_ENV_VAL" != "production" ] && [ -f "$SHARED_DIR/htpasswd" ]; then
+  # Apache — not PHP — reads this file, as its own user, and only when a
+  # browser presents credentials: unreadable means a 500 on every
+  # authenticated request while anonymous probes still get a tidy 401. It
+  # holds a password hash and nothing else; 644 is what cPanel uses.
+  chmod 644 "$SHARED_DIR/htpasswd"
   if ! grep -q 'AuthUserFile' "$RELEASE_DIR/public/.htaccess" 2>/dev/null; then
     cat >> "$RELEASE_DIR/public/.htaccess" <<HT
 

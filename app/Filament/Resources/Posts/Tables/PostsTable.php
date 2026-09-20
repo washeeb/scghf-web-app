@@ -18,6 +18,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * The news list.
@@ -36,6 +37,8 @@ class PostsTable
     {
         return $table
             ->defaultSort('published_at', 'desc')
+            // The title's description reads the category (same strict-Eloquent rule).
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('category'))
             ->columns([
                 TextColumn::make('title')
                     ->label(__('Headline'))

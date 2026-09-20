@@ -63,8 +63,10 @@ class UserFactory extends Factory
     {
         return $this->state(fn (): array => [
             'two_factor_secret' => Str::random(32),
+            // Hashed, as Filament stores them — it Hash::check()s a submitted
+            // code, and a plain string there is a 500, not a failed login.
             'two_factor_recovery_codes' => array_map(
-                fn (): string => Str::random(10).'-'.Str::random(10),
+                fn (): string => Hash::make(Str::random(10).'-'.Str::random(10)),
                 range(1, 8),
             ),
             'two_factor_confirmed_at' => now(),

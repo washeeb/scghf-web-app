@@ -152,6 +152,35 @@ unchanged; the values were re-pointed.
   `staging`; staging answers `/up` with 200 over verified TLS on PHP
   8.4.24 with all 140 tables on InnoDB
 
+#### Fixed — what the first hour of clicking around staging found
+
+Four errors in staging's log from one person's first session, none of
+which the 2,030-test suite could have caught, because they only appear
+with **more than one row** (strict Eloquent's lazy-load guard ignores a
+model that came from a collection of one) or with a code path no test
+exercised.
+
+- **Projects, Appeals and News list pages returned 500** — each title
+  column's `description()` reads a relation (`primaryLocation()`,
+  `project`, `category`) that the query did not eager-load. Each table
+  now `modifyQueryUsing` with the relation
+- **Assigning a contact message** queried `users.user_type`; the column
+  is `type`. Both the form and the table action now use the `staff()`
+  scope every other picker uses
+- **Redeeming a two-factor recovery code returned 500** — *This password
+  does not use the Bcrypt algorithm*. Filament stores recovery codes
+  hashed and `Hash::check`s them; `docs/tools/demo-totp.php` stored the
+  demo code in plain text, and `UserFactory::withTwoFactor()` did the
+  same. Both hash now
+- **The deploy's smoke test got 500 through the staging gate** while
+  anonymous probes got 401: Apache (not PHP) reads `shared/htpasswd`, as
+  its own user, only when credentials are presented, and the file was
+  640. `activate.sh` sets it 644 — it holds a hash and nothing else
+- New **`AdminWithDataTest`**: seeds the base and demo datasets, then
+  opens every admin list page, every custom page, and the first record of
+  every view/edit page as a Super Admin. Three of the four bugs above fail
+  it; it is the guard the suite was missing
+
 #### Added — the staging password gate is part of the deploy
 
 - cPanel's Directory Privacy writes its directives into the docroot's

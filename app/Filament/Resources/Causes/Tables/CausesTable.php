@@ -40,6 +40,9 @@ class CausesTable
     {
         return $table
             ->defaultSort('sort_order')
+            // The title's description reads the project; strict Eloquent
+            // refuses that lazy load once the list has more than one row.
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('project'))
             ->columns([
                 TextColumn::make('title')
                     ->label(__('Appeal'))

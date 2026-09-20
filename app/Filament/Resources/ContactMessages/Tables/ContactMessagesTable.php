@@ -226,7 +226,7 @@ class ContactMessagesTable
                 Select::make('assigned_to')
                     ->label(__('Owner'))
                     ->options(fn (): array => User::query()
-                        ->where('user_type', 'staff')
+                        ->staff()
                         ->orderBy('name')
                         ->pluck('name', 'id')
                         ->all())

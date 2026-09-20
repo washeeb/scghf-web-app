@@ -16,6 +16,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProjectsTable
 {
@@ -23,6 +24,9 @@ class ProjectsTable
     {
         return $table
             ->defaultSort('starts_on', 'desc')
+            // The title's description reads primaryLocation(); with strict
+            // Eloquent a list of more than one project would otherwise 500.
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('locations'))
             ->columns([
                 TextColumn::make('title')
                     ->label(__('Project'))

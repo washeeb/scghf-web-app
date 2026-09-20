@@ -84,7 +84,7 @@ class ContactMessageForm
                     Select::make('assigned_to')
                         ->label(__('Owned by'))
                         ->options(fn (): array => User::query()
-                            ->where('user_type', 'staff')
+                            ->staff()
                             ->orderBy('name')
                             ->pluck('name', 'id')
                             ->all())
