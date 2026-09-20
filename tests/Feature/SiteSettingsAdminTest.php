@@ -235,7 +235,9 @@ it('keeps the header in view when the foundation asks it to', function () {
 });
 
 it('shows the top bar only when it is turned on', function () {
+    // On by default since the template restyle; the switch works both ways.
     app(Settings::class)->set('contact.office_hours', 'Mon–Fri, 8am–5pm');
+    app(Settings::class)->set('header.show_top_bar', false);
 
     $this->get('/')->assertDontSee('Mon–Fri, 8am–5pm', escape: false);
 
