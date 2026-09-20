@@ -188,6 +188,10 @@ jobs:
         run: |
           test -d public/build || { echo "::error::public/build is missing — the Vite build failed silently."; exit 1; }
           test -f public/build/manifest.json || { echo "::error::Vite manifest.json is missing."; exit 1; }
+          # The admin panel's theme (Tailwind utilities used by the custom
+          # pages) is compiled by Vite too; without it every custom admin page
+          # renders as unstyled text.
+          grep -q 'resources/css/filament/admin/theme.css' public/build/manifest.json || { echo "::error::The Filament theme is missing from the Vite manifest."; exit 1; }
           echo "Build size: $(du -sh public/build | cut -f1)"
 
       # Filament's CSS and JS are published by `filament:assets`, not by Vite,

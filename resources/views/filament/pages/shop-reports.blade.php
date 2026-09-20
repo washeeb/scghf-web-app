@@ -25,7 +25,7 @@
         </div>
         <div>
             <label class="block text-xs font-medium text-gray-500" for="granularity">{{ __('Group by') }}</label>
-            <select id="granularity" wire:model.live="granularity" class="fi-input rounded-lg border-gray-300 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white">
+            <select id="granularity" wire:model.live="granularity" class="fi-input rounded-lg border-gray-300 py-2 pl-3 pr-8 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white">
                 <option value="day">{{ __('Day') }}</option>
                 <option value="week">{{ __('Week') }}</option>
                 <option value="month">{{ __('Month') }}</option>

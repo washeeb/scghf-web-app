@@ -55,10 +55,6 @@
         @endif
     </label>
 
-    @if ($hint)
-        <p id="{{ $id }}-hint" class="text-xs text-[var(--text-muted)]">{{ $hint }}</p>
-    @endif
-
     @php
         $control = $attributes->class([
             'w-full rounded-md border bg-[var(--bg)] px-3 py-2 text-[var(--text-primary)]',
@@ -101,6 +97,17 @@
             value="{{ old($key, $value) }}"
             {{ $control }}
         >
+    @endif
+
+    {{--
+        The hint sits BELOW the control, not between label and control: two
+        fields side by side (name and email on the donate form) must keep
+        their boxes on one line, and a hint above one of them pushed that box
+        down by a line. Where it appears makes no difference to a screen
+        reader — aria-describedby ties it to the field either way.
+    --}}
+    @if ($hint)
+        <p id="{{ $id }}-hint" class="text-xs text-[var(--text-muted)]">{{ $hint }}</p>
     @endif
 
     @error($key)

@@ -181,6 +181,26 @@ exercised.
   every view/edit page as a Super Admin. Three of the four bugs above fail
   it; it is the guard the suite was missing
 
+#### Fixed — the custom admin pages rendered as unstyled text
+
+- Shop reports, Giving reports, Accounting export, Site health,
+  Analytics, The door, Help and Settings are written with Tailwind
+  utilities, and Filament's compiled stylesheet carries only Filament's
+  own classes — so every one of them rendered as a column of raw text
+  (the Phase 16 notes knew this and worked around it with inline styles
+  in places). The panel now has a proper **Vite-compiled theme**
+  (`resources/css/filament/admin/theme.css`, `->viteTheme()`), which
+  is Filament's CSS plus whatever `app/Filament` and
+  `resources/views/filament` use. Built by the same `npm run build` the
+  deploy already runs; the deploy verifies it is in the Vite manifest.
+  The *Group by* select on the report pages matches the height of the
+  date inputs beside it
+- **Public form fields with a hint were misaligned** beside fields
+  without one: `<x-site.field>` put the hint between the label and the
+  box, so the email box on the donate form sat a line lower than the
+  name box. The hint now sits below the box; `aria-describedby` still
+  ties it to the field
+
 #### Fixed — the demo ledger no longer wakes the nightly reconciliation
 
 - `DemoDataSeeder` recorded 36 completed gifts and acknowledged none,
