@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\WhatsappTemplate;
 use App\Providers\CommunicationServiceProvider;
 use Closure;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -506,6 +507,10 @@ final class LaunchChecks
             'subscribers' => DB::table('subscribers')->where('email', 'like', 'demo.reader%')->count(),
             // The demo cases are keyed to the demo worker; a real database has no such account.
             'beneficiary cases' => DB::table('beneficiaries')->whereIn('case_worker_id', DB::table('users')->where('email', 'like', 'demo.%@example.test')->select('id'))->count(),
+            // The seeder fills an unfilled TIN with an obviously fake one so the
+            // demo gifts can be acknowledged. Any acknowledgement issued under
+            // it is a document a tax authority would reject.
+            'demo TIN in Settings' => (int) (app(Settings::class)->get('general.tin') === DemoDataSeeder::DEMO_TIN),
         ];
 
         $found = array_filter($signals);

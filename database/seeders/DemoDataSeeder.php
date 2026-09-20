@@ -35,6 +35,7 @@ use App\Models\User;
 use App\Models\Volunteer;
 use App\Models\VolunteerOpportunity;
 use App\Payments\OfflineDonationService;
+use App\Support\Settings;
 use App\ValueObjects\Money;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -71,6 +72,14 @@ use RuntimeException;
 class DemoDataSeeder extends Seeder
 {
     public const DEMO_PASSWORD = 'password';
+
+    /**
+     * The TIN the demo gifts are acknowledged under when the real one is still
+     * the {{TIN}} placeholder. Obviously fake, and the launch check names it:
+     * an acknowledgement carrying it is a document a tax authority would
+     * reject, which is exactly why it must never survive into production.
+     */
+    public const DEMO_TIN = 'C0000000000';
 
     /** @var array<string, string> role => email */
     public const STAFF = [
@@ -531,14 +540,6 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * Six months of gifts, through the real offline-gift service so the
-     * ledger and the appeal totals are exactly what a real cash gift
-     * produces. `record()`, not `recordAndAcknowledge()`: a receipt is an
-     * email, and these addresses belong to nobody.
-     *
-     * @param  array<string, Cause>  $causes
-     */
-    /**
      * Grants (Wave 2): two funders, three grants across the pipeline, the
      * obligations an award carries, and a paid payout charged to it so the
      * grant page has spend to show.
@@ -594,6 +595,14 @@ class DemoDataSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Six months of gifts, through the real offline-gift service and
+     * acknowledged, so the ledger, the appeal totals and the receipt series
+     * are exactly what real cash gifts produce. Acknowledged means the
+     * numbered receipt row exists; no email is sent for it.
+     *
+     * @param  array<string, Cause>  $causes
+     */
     private function giving(array $causes, User $finance): void
     {
         $donors = [
@@ -609,6 +618,20 @@ class DemoDataSeeder extends Seeder
             return;
         }
 
+        // A completed gift without its acknowledgement is what the nightly
+        // reconciliation exists to catch, so the demo ledger must not be in
+        // that state (staging's log filled with it on its first night). The
+        // acknowledgement is a numbered row, not an email — DonationNotifier
+        // sends the email, and nothing here calls it — but it refuses to
+        // issue without the foundation's TIN, which on a fresh staging is
+        // still the placeholder. Supply the demo one, and only then.
+        $settings = app(Settings::class);
+        if ($settings->get('general.tin') === null) {
+            $settings->set('general.tin', self::DEMO_TIN);
+            $settings->flush();
+            $this->command?->warn('  general.tin was unfilled: set to the demo TIN '.self::DEMO_TIN.' so acknowledgements can issue. The launch check flags it.');
+        }
+
         $service = app(OfflineDonationService::class);
         $general = Cause::query()->where('is_general_fund', true)->first();
         $targets = array_values(array_filter([$general, ...array_values($causes)]));
@@ -621,7 +644,7 @@ class DemoDataSeeder extends Seeder
             [$name, $email, $phone] = $donors[$i % count($donors)];
             $method = $methods[$i % count($methods)];
 
-            $service->record([
+            $service->recordAndAcknowledge([
                 'amount' => Money::ofMinor($amounts[mt_rand(0, count($amounts) - 1)], 'GHS'),
                 'cause' => $targets[$i % count($targets)],
                 'donor_name' => $name,

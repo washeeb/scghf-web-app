@@ -117,7 +117,8 @@ it('refuses a database that still carries the demo seeder', function () {
     expect(byKey('demo_accounts')->status)->toBe(HealthCheck::CRITICAL)
         ->and(byKey('demo_accounts')->value)->toContain('found')
         ->and(byKey('demo_data')->status)->toBe(HealthCheck::CRITICAL)
-        ->and(byKey('demo_data')->value)->toContain('36 donations');
+        ->and(byKey('demo_data')->value)->toContain('36 donations')
+        ->and(byKey('demo_data')->value)->toContain('demo TIN in Settings');
 });
 
 it('refuses a flag that is on with nothing built behind it', function () {

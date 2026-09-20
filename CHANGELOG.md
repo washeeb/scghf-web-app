@@ -181,6 +181,22 @@ exercised.
   every view/edit page as a Super Admin. Three of the four bugs above fail
   it; it is the guard the suite was missing
 
+#### Fixed — the demo ledger no longer wakes the nightly reconciliation
+
+- `DemoDataSeeder` recorded 36 completed gifts and acknowledged none,
+  on the belief that "a receipt is an email". It is not: the
+  acknowledgement is the numbered receipt row (`ReceiptIssuer`), and the
+  email is a separate step the seeder never calls. Unacknowledged
+  completed gifts are exactly what `scghf:reconcile-payments` reports, so
+  staging's scheduler logged an error every night. The seeder now
+  `recordAndAcknowledge`s every gift, no email is sent (asserted), and
+  reconciliation over the demo ledger reports zero missing receipts
+- Acknowledgements refuse to issue without the foundation's TIN, which
+  on a fresh staging is still the `{{TIN}}` placeholder. The seeder fills
+  it with an obviously fake **`C0000000000`** only when it is unfilled,
+  never over a real one, and the launch check's *No demo data* row now
+  names "demo TIN in Settings" so it can never pass as real
+
 #### Added — the staging password gate is part of the deploy
 
 - cPanel's Directory Privacy writes its directives into the docroot's

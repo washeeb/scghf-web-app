@@ -10,10 +10,13 @@ use App\Models\Post;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
+use App\Payments\ReconciliationService;
+use App\Support\Settings;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -45,6 +48,7 @@ it('refuses to run in production before touching anything', function () {
 });
 
 it('seeds a believable foundation once, and only once', function () {
+    Mail::fake();
     $this->seed(DatabaseSeeder::class);
     $this->seed(DemoDataSeeder::class);
 
@@ -67,12 +71,20 @@ it('seeds a believable foundation once, and only once', function () {
         ->and($first['donations'])->toBe(36)
         ->and($first['orders'])->toBe(8);
 
-    // Through the real ledger: completed, with a transaction row, and counted
-    // on the appeal. Not acknowledged — a receipt is an email, and a demo
-    // donor's address is nobody's.
+    // Through the real ledger: completed, with a transaction row, acknowledged
+    // (a numbered receipt row — no email is sent for it), and counted on the
+    // appeal. Unacknowledged completed gifts are what the nightly
+    // reconciliation reports; a demo ledger must not wake anybody up.
     expect(Donation::where('status', DonationStatus::Completed)->count())->toBe(36)
         ->and(Donation::whereDoesntHave('transaction')->count())->toBe(0)
+        ->and(Donation::whereDoesntHave('receipt')->count())->toBe(0)
         ->and(Cause::where('slug', 'back-to-school-2026')->sole()->raisedAmount()->toMinor())->toBeGreaterThan(0);
+
+    Mail::assertNothingSent();
+    Mail::assertNothingQueued();
+
+    $summary = app(ReconciliationService::class)->run(execute: false);
+    expect($summary['missing_receipts'])->toBe(0);
 
     $this->seed(DemoDataSeeder::class);
 
@@ -91,4 +103,21 @@ it('gives every seeded role a staff account that can sign in and has no second f
             ->and($user->canAccessPanel())->toBeTrue()
             ->and($user->two_factor_confirmed_at)->toBeNull();
     }
+});
+
+it('acknowledges under the demo TIN only when the real one is unfilled, and never overwrites a real one', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    // Fresh install: the placeholder. The seeder fills it so receipts can issue.
+    expect(app(Settings::class)->get('general.tin'))->toBeNull();
+    $this->seed(DemoDataSeeder::class);
+    expect(app(Settings::class)->get('general.tin'))->toBe(DemoDataSeeder::DEMO_TIN);
+
+    // A real TIN stays exactly as it was.
+    $this->artisan('migrate:fresh', ['--force' => true]);
+    $this->seed(DatabaseSeeder::class);
+    app(Settings::class)->set('general.tin', 'C0001234567');
+    app(Settings::class)->flush();
+    $this->seed(DemoDataSeeder::class);
+    expect(app(Settings::class)->get('general.tin'))->toBe('C0001234567');
 });
