@@ -166,17 +166,22 @@ it('completes a purchase from the product page through the basket to the order p
 it('switches the theme from the toggle and keeps it across a reload', function () {
     $page = visit('/');
 
+    // The control is an icon button that opens a menu of the four themes.
     $page->assertNoJavaScriptErrors()
-        ->select('[data-theme-toggle]', 'dark')
+        ->click('[data-theme-menu] summary')
+        ->click('[data-theme-option="dark"]')
         ->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertScript('document.documentElement.dataset.theme', 'dark')
-        ->assertScript('document.cookie.includes("scghf_theme=dark")', true);
+        ->assertScript('document.cookie.includes("scghf_theme=dark")', true)
+        // Choosing closes the menu.
+        ->assertScript('document.querySelector("[data-theme-menu]").open', false);
 
     $page->refresh()
         ->assertScript('document.documentElement.classList.contains("dark")', true)
-        ->assertScript('document.querySelector("[data-theme-toggle]").value', 'dark');
+        ->assertScript('document.querySelector("[data-theme-option=dark]").getAttribute("aria-checked")', 'true');
 
-    $page->select('[data-theme-toggle]', 'light')
+    $page->click('[data-theme-menu] summary')
+        ->click('[data-theme-option="light"]')
         ->assertScript('document.documentElement.classList.contains("dark")', false)
         ->refresh()
         ->assertScript('document.documentElement.classList.contains("dark")', false);
@@ -220,7 +225,7 @@ it('has no axe violations on the home, donate and shop pages in either theme', f
     }
 
     $page = visit('/');
-    $page->select('[data-theme-toggle]', 'dark');
+    $page->click('[data-theme-menu] summary')->click('[data-theme-option="dark"]');
 
     foreach (['/', '/donate', '/shop'] as $url) {
         visit($url)->assertNoAccessibilityIssues();

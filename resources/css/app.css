@@ -133,6 +133,32 @@ h4,
 
 @layer components {
     /*
+     * The theme button shows the icon of the theme in force. `data-theme` on
+     * <html> is set by the server before paint and by theme.js after a
+     * choice, so the icon is right without a script and follows a change.
+     * No attribute (or an unknown one) reads as "match my device".
+     */
+    .theme-icon {
+        display: none;
+    }
+
+    html[data-theme='light'] .theme-icon[data-theme-icon='light'],
+    html[data-theme='dark'] .theme-icon[data-theme-icon='dark'],
+    html[data-theme='vibrant'] .theme-icon[data-theme-icon='vibrant'],
+    html:not([data-theme='light']):not([data-theme='dark']):not([data-theme='vibrant']) .theme-icon[data-theme-icon='system'] {
+        display: block;
+    }
+
+    /* The tick beside the chosen theme in the menu. */
+    .theme-check {
+        visibility: hidden;
+    }
+
+    [aria-checked='true'] > .theme-check {
+        visibility: visible;
+    }
+
+    /*
      * The small uppercase line above a heading — "HOW WE HELP", "OUR
      * STORY" — with the short orange rule the template draws before it. On
      * a brand-coloured band the text inherits the band's ink and the rule

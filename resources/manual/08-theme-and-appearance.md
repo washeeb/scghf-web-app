@@ -4,10 +4,12 @@
 
 The site has three looks: light, dark, and a third, warmer palette
 called **Vibrant** — cream ground, the teal and the coral at full
-strength. **Visitors choose** with the small control in the header;
-*System* is not a fourth look but a rule: follow whatever their phone
-or laptop is set to, which is why it looks identical to Dark on a dark
-device. Their choice is remembered on their device.
+strength. **Visitors choose** with the icon at the right-hand end of the
+header (a sun, a moon, a screen or a swatch, whichever is in force); it
+opens a short menu with the four choices and a tick on the current one.
+*Match my device* is not a fourth look but a rule: follow whatever their
+phone or laptop is set to, which is why it looks identical to Dark on a
+dark device. Their choice is remembered on their device.
 
 *Site settings → Site & footer → Default theme* is what a **first-time**
 visitor sees before choosing — pick *Vibrant* there to make it the

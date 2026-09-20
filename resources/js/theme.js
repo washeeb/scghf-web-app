@@ -59,9 +59,38 @@ function persist(preference) {
     document.cookie = `${KEY}=${preference};path=/;max-age=${YEAR};SameSite=Lax`;
 }
 
+/** Move the tick in every theme menu to the chosen option. */
+function mark(preference) {
+    document.querySelectorAll('[data-theme-option]').forEach((option) => {
+        option.setAttribute('aria-checked', option.dataset.themeOption === preference ? 'true' : 'false');
+    });
+}
+
 export function initTheme() {
     const preference = stored();
+    mark(preference);
 
+    /*
+     * The menu: a `menuitemradio` per theme. Choosing one applies it, stores
+     * it, moves the tick, and closes the menu it sits in — the <details> does
+     * not close itself on a click inside.
+     */
+    document.querySelectorAll('[data-theme-option]').forEach((option) => {
+        option.addEventListener('click', () => {
+            const next = option.dataset.themeOption;
+            apply(next);
+            persist(next);
+            mark(next);
+
+            const menu = option.closest('details');
+            if (menu) {
+                menu.open = false;
+                menu.querySelector('summary')?.focus();
+            }
+        });
+    });
+
+    // The <select> form of the control, should a page still render one.
     document.querySelectorAll('[data-theme-toggle]').forEach((control) => {
         control.value = preference;
 
@@ -69,6 +98,7 @@ export function initTheme() {
             const next = event.target.value;
             apply(next);
             persist(next);
+            mark(next);
         });
     });
 

@@ -148,7 +148,10 @@ function initHover() {
         return;
     }
 
-    nav.querySelectorAll('[data-nav-dropdown]').forEach((details) => {
+    // Only the navigation's own dropdowns. The theme and account menus
+    // are controls, not navigation: a menu that opens because the pointer
+    // passed over an icon on its way to the donate button is a nuisance.
+    nav.querySelectorAll('[data-nav-dropdown]:not([data-no-hover])').forEach((details) => {
         let leaveTimer = null;
 
         const cancelClose = () => {

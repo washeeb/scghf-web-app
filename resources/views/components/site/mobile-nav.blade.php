@@ -107,7 +107,7 @@
         {{-- Signing in lives here below `md`, so the header's right-hand cluster
              keeps the donate button in the corner a thumb reaches first. --}}
         <div class="mt-3 border-t border-[var(--border)] pt-3">
-            <x-site.account-nav />
+            <x-site.account-nav layout="list" />
         </div>
     </div>
 </details>

@@ -202,8 +202,6 @@
                 </a>
             @endif
 
-            <x-site.theme-toggle />
-
             {{--
                 The basket, when the shop is on.
 
@@ -251,6 +249,12 @@
             >
                 {{ $donateLabel }}
             </a>
+
+            {{-- The theme, as an icon that opens a menu — after the donate
+                 button, so the row ends with the one control that is the same
+                 on every page and the button that matters stays where a thumb
+                 lands. --}}
+            <x-site.theme-toggle />
 
             {{-- Last in the DOM, so the tab order reaches the donate button
                  before the menu toggle — and drawn last, so on a phone it sits

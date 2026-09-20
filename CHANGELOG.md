@@ -36,6 +36,26 @@ Both are now used.
   browser fetches the 320px conversion rather than the 1600px one (the
   image component gained a `sizes` prop for exactly this)
 
+#### Added — the header's two menus
+
+- **The theme control is an icon that opens a menu.** The button shows
+  the icon of the theme in force (sun, moon, a screen for *Match my
+  device*, a swatch for the third palette — chosen by CSS from the
+  `data-theme` the server puts on `<html>`, so it is right before any
+  script runs) and opens a menu of the four with the current one ticked
+  (`menuitemradio`, so a screen reader hears "Dark, checked"). It sits
+  after the donate button, last in the row. A `<details>` like the
+  navigation dropdowns — Escape and click-away close it — but not opened
+  on hover: `data-no-hover` keeps hover-intent to the navigation
+- **"Your account" is one menu.** Overview, Your impact, Receipts,
+  Regular giving, Profile, Security, then Sign out set apart under a rule
+  — still a POST. In the phone panel the same links are a plain list
+  (`layout="list"`). Two top-level items ("Your account", "Sign out")
+  spent header width on the rarest action
+- `<x-ui.icon>` draws any Heroicons outline name and nothing for one the
+  set lacks; the curated `Icons::OPTIONS` list is only what the card
+  forms offer editors
+
 #### Added — the template
 
 - **Typography**: page and section titles in **Fraunces**, a serif

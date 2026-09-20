@@ -23,7 +23,8 @@ beforeEach(function () {
 
 it('offers the third palette in the theme control and honours it on the html element', function () {
     $this->get('/')->assertOk()
-        ->assertSee('<option value="vibrant">Vibrant</option>', false);
+        ->assertSee('data-theme-option="vibrant"', false)
+        ->assertSeeInOrder(['data-theme-option="vibrant"', 'Vibrant'], false);
 
     $this->withUnencryptedCookie(ThemePreference::COOKIE, 'vibrant')->get('/')
         ->assertOk()
@@ -43,8 +44,10 @@ it('names the third palette and can make it the default from the settings', func
     app(Settings::class)->flush();
 
     $this->get('/')->assertOk()
-        ->assertSee('<option value="vibrant">Sunrise</option>', false)
-        ->assertSee('class="vibrant"', false);
+        ->assertSeeInOrder(['data-theme-option="vibrant"', 'Sunrise'], false)
+        ->assertSee('class="vibrant"', false)
+        // The menu ticks the theme in force.
+        ->assertSeeInOrder(['aria-checked="true"', 'data-theme-option="vibrant"'], false);
 });
 
 it('tells the navigation script whether menus open on hover, from the settings', function () {
