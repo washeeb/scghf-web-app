@@ -245,13 +245,15 @@ it('carries a live region for things a sighted user would see happen', function 
         ->assertSee('id="announcements"', escape: false);
 });
 
-it('offers three theme states, because system is a real choice', function () {
+it('offers the theme states as a menu, because system is a real choice', function () {
     // Somebody who picked dark should stay dark when their laptop flips at
-    // sunset; somebody who picked system should follow it.
+    // sunset; somebody who picked system should follow it. The control is
+    // an icon that opens a menu of menuitemradio buttons, one per state.
     $this->get('/')
-        ->assertSee('value="system"', escape: false)
-        ->assertSee('value="light"', escape: false)
-        ->assertSee('value="dark"', escape: false);
+        ->assertSee('data-theme-option="system"', escape: false)
+        ->assertSee('data-theme-option="light"', escape: false)
+        ->assertSee('data-theme-option="dark"', escape: false)
+        ->assertSee('role="menuitemradio"', escape: false);
 });
 
 // ── Content comes from the CMS ──────────────────────────────────────────────
