@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\ThemeSetting;
 use App\Support\ContrastChecker;
+use App\Support\ThemeTokens;
 use Database\Seeders\ThemeSettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -13,14 +14,29 @@ beforeEach(function () {
     $this->seed(ThemeSettingsSeeder::class);
 });
 
-it('seeds every token in both themes', function () {
+it('seeds every token in all three themes', function () {
     $light = ThemeSetting::where('theme', 'light')->pluck('token')->sort()->values();
     $dark = ThemeSetting::where('theme', 'dark')->pluck('token')->sort()->values();
+    $vibrant = ThemeSetting::where('theme', 'vibrant')->pluck('token')->sort()->values();
 
     expect($light)->not->toBeEmpty()
         // A token existing in one theme only is how dark mode ends up with an
         // unstyled component nobody notices until a donor reports it.
-        ->and($dark->all())->toBe($light->all());
+        ->and($dark->all())->toBe($light->all())
+        ->and($vibrant->all())->toBe($light->all());
+});
+
+it('gives the vibrant palette its own colours, not a copy of light', function () {
+    $light = ThemeSetting::where('theme', 'light')->where('token', 'bg')->value('value');
+    $vibrant = ThemeSetting::where('theme', 'vibrant')->where('token', 'bg')->value('value');
+    $primary = ThemeSetting::where('theme', 'vibrant')->where('token', 'brand-primary')->value('value');
+
+    expect($vibrant)->not->toBe($light)
+        ->and($primary)->toBe(ThemeSettingsSeeder::VIBRANT['brand-primary'])
+        ->and(app(ThemeTokens::class)->css()->toHtml())->toContain('.vibrant{color-scheme:light;')
+        ->and(app(ThemeTokens::class)->value('bg', 'vibrant'))->toBe(ThemeSettingsSeeder::VIBRANT['bg'])
+        // A token the palette does not name takes the light value.
+        ->and(app(ThemeTokens::class)->value('font-body', 'vibrant'))->toBe(app(ThemeTokens::class)->value('font-body', 'light'));
 });
 
 /*

@@ -181,12 +181,24 @@
             without a code change; anything unrecognised goes under "Policies".
         --}}
         @php
-            $groups = [
-                'legal' => ['label' => __('Legal'), 'slugs' => ['privacy-policy', 'terms', 'cookie-policy', 'shipping-and-delivery']],
-                'giving' => ['label' => __('Giving'), 'slugs' => ['donation-policy', 'refund-policy']],
-                'conduct' => ['label' => __('Conduct'), 'slugs' => ['safeguarding', 'accessibility', 'whistleblowing', 'anti-fraud']],
-                'other' => ['label' => __('Policies'), 'slugs' => []],
-            ];
+            // Settings → Site → "Footer policy groups": a list of {label, slugs}.
+            // The seeded default is the three groups below; a malformed edit
+            // falls back to them rather than to an empty footer.
+            $configured = collect((array) setting('site.footer_policy_groups', []))
+                ->filter(fn ($g): bool => is_array($g) && filled($g['label'] ?? null) && is_array($g['slugs'] ?? null))
+                ->values();
+
+            $groups = $configured->isNotEmpty()
+                ? $configured->mapWithKeys(fn (array $g, int $i): array => ['g'.$i => ['label' => (string) $g['label'], 'slugs' => array_values(array_map('strval', $g['slugs']))]])->all()
+                : [
+                    'legal' => ['label' => __('Legal'), 'slugs' => ['privacy-policy', 'terms', 'cookie-policy', 'shipping-and-delivery']],
+                    'giving' => ['label' => __('Giving'), 'slugs' => ['donation-policy', 'refund-policy']],
+                    'conduct' => ['label' => __('Conduct'), 'slugs' => ['safeguarding', 'accessibility', 'whistleblowing', 'anti-fraud']],
+                ];
+            $groups['other'] = ['label' => __('Policies'), 'slugs' => []];
+
+            // The cookie-preferences link sits with whichever group holds the cookie policy.
+            $cookieGroup = collect($groups)->search(fn (array $g): bool => in_array('cookie-policy', $g['slugs'], true)) ?: array_key_first($groups);
 
             $grouped = collect($groups)->map(fn (array $g): array => ['label' => $g['label'], 'items' => collect()])->all();
 
@@ -216,16 +228,16 @@
             @if ($legal->isNotEmpty() || $cookieManage)
                 <nav aria-label="{{ __('Policies') }}" class="grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
                     @foreach ($grouped as $key => $group)
-                        @if ($group['items']->isNotEmpty() || ($key === 'legal' && $cookieManage))
+                        @if ($group['items']->isNotEmpty() || ($key === $cookieGroup && $cookieManage))
                             <div>
                                 <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-primary)]">{{ $group['label'] }}</h2>
                                 <ul class="flex flex-wrap gap-x-4 gap-y-1">
                                     @foreach ($group['items'] as $item)
-                                        <li><x-site.menu-link :item="$item" class="!px-0 !py-0.5 !font-normal !text-[var(--text-muted)]" /></li>
+                                        <li><x-site.menu-link :item="$item" class="!px-0 !py-0.5 !font-normal !text-[var(--text-muted)] hover:!text-[var(--brand-primary)] hover:underline" /></li>
                                     @endforeach
-                                    @if ($key === 'legal' && $cookieManage)
+                                    @if ($key === $cookieGroup && $cookieManage)
                                         {{-- Opens the preferences dialog; without script it is a link to the policy. --}}
-                                        <li><a href="{{ $cookiePolicyUrl }}" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ __('Cookie preferences') }}</a></li>
+                                        <li><a href="{{ $cookiePolicyUrl }}" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ __('Cookie preferences') }}</a></li>
                                     @endif
                                 </ul>
                             </div>

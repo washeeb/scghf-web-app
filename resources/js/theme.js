@@ -15,7 +15,7 @@ const YEAR = 365 * 86400;
 function stored() {
     try {
         const value = localStorage.getItem(KEY);
-        if (value === 'light' || value === 'dark' || value === 'system') {
+        if (value === 'light' || value === 'dark' || value === 'system' || value === 'vibrant') {
             return value;
         }
     } catch {
@@ -31,17 +31,20 @@ function systemPrefersDark() {
 
 function apply(preference) {
     const dark = preference === 'dark' || (preference === 'system' && systemPrefersDark());
-
     document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.classList.toggle('vibrant', preference === 'vibrant');
     document.documentElement.dataset.theme = preference;
 
     /*
      * The mobile browser chrome. Without this a dark page keeps a white bar
      * above it on Android, which reads as a rendering bug rather than a theme.
      */
+    // The browser chrome follows the palette's own page background, whichever
+    // palette that is, rather than a colour hard-coded here.
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
     document
         .querySelector('meta[name="theme-color"]')
-        ?.setAttribute('content', dark ? '#0b0b0d' : '#ffffff');
+        ?.setAttribute('content', bg || (dark ? '#0b0b0d' : '#ffffff'));
 }
 
 function persist(preference) {

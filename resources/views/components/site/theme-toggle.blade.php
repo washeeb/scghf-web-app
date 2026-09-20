@@ -1,5 +1,6 @@
 {{--
-    The three-state theme control.
+    The theme control: light, dark, the device's choice, and the third
+    palette ("Vibrant", or whatever Settings → Site names it).
 
     A `<select>` rather than a cycling button, because three states cannot be
     represented honestly by one button: whatever icon it shows, the user cannot
@@ -18,5 +19,6 @@
         <option value="system">{{ __('System') }}</option>
         <option value="light">{{ __('Light') }}</option>
         <option value="dark">{{ __('Dark') }}</option>
+        <option value="vibrant">{{ setting('site.vibrant_theme_label', __('Vibrant')) }}</option>
     </select>
 </label>

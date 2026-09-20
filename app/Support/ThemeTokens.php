@@ -94,7 +94,7 @@ class ThemeTokens
     {
         $tokens = $this->tokens();
 
-        return $tokens[$token][$theme] ?? self::FALLBACK[$token][$theme === 'dark' ? 1 : 0] ?? '#000000';
+        return $tokens[$token][$theme] ?? $tokens[$token]['light'] ?? self::FALLBACK[$token][$theme === 'dark' ? 1 : 0] ?? '#000000';
     }
 
     public function css(): HtmlString
@@ -126,6 +126,7 @@ class ThemeTokens
 
         $light = $this->declarations($tokens, 'light');
         $dark = $this->declarations($tokens, 'dark');
+        $vibrant = $this->declarations($tokens, 'vibrant');
 
         /*
          * `color-scheme` is not decoration. It tells the browser to render its
@@ -134,8 +135,12 @@ class ThemeTokens
          * blindingly light autofill dropdown, which looks broken rather than
          * themed.
          */
+        // The third palette is a light-scheme one: its own colours, the
+        // browser's light furniture. A token it has no value for keeps the
+        // :root (light) value, so `.vibrant` only ever overrides.
         return ':root{color-scheme:light;'.$light.'}'
-            .'.dark{color-scheme:dark;'.$dark.'}';
+            .'.dark{color-scheme:dark;'.$dark.'}'
+            .'.vibrant{color-scheme:light;'.$vibrant.'}';
     }
 
     /**

@@ -112,6 +112,10 @@
     <nav
         class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3"
         aria-label="{{ __('Primary') }}"
+        {{-- Settings → Site → "Open menus on hover". Read by navigation.js;
+             it only ever applies to a pointer that can hover (a mouse), so
+             touch and keyboard keep the click-to-open disclosure. --}}
+        data-nav-hover="{{ (bool) setting('site.nav_open_on_hover', true) ? '1' : '0' }}"
     >
         <a href="{{ url('/') }}" class="mr-auto flex items-center gap-2 font-semibold tracking-tight text-[var(--text-primary)]">
             @if ($logoLight || $logoDark)

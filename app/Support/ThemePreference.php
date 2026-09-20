@@ -53,6 +53,9 @@ class ThemePreference
 
     public const SYSTEM = 'system';
 
+    /** The third palette: the brand turned up. A choice, never a default the device makes. */
+    public const VIBRANT = 'vibrant';
+
     /** A year. A preference is not a session. */
     public const COOKIE_MINUTES = 525_600;
 
@@ -67,7 +70,11 @@ class ThemePreference
      */
     public function htmlClass(Request $request): string
     {
-        return $this->resolve($request) === self::DARK ? 'dark' : '';
+        return match ($this->resolve($request)) {
+            self::DARK => 'dark',
+            self::VIBRANT => 'vibrant',
+            default => '',
+        };
     }
 
     /**
@@ -92,7 +99,7 @@ class ThemePreference
 
     public function isValid(string $theme): bool
     {
-        return in_array($theme, [self::LIGHT, self::DARK, self::SYSTEM], true);
+        return in_array($theme, [self::LIGHT, self::DARK, self::SYSTEM, self::VIBRANT], true);
     }
 
     /**
@@ -130,9 +137,10 @@ class ThemePreference
               var m=document.cookie.match(/(?:^|;\\s*){$cookie}=([^;]*)/);
               if(m){stored=decodeURIComponent(m[1]);}
             }
-            if(stored!=='light'&&stored!=='dark'&&stored!=='system'){stored='system';}
+            if(stored!=='light'&&stored!=='dark'&&stored!=='system'&&stored!=='vibrant'){stored='system';}
             var dark=stored==='dark'||(stored==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
             document.documentElement.classList.toggle('dark',dark);
+            document.documentElement.classList.toggle('vibrant',stored==='vibrant');
             document.documentElement.dataset.theme=stored;
             try{localStorage.setItem(k,stored);}catch(e){}
             document.cookie=k+'='+stored+';path=/;max-age='+({$days}*86400)+';SameSite=Lax';

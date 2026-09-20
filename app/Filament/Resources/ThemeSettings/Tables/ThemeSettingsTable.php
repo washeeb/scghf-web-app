@@ -87,7 +87,7 @@ class ThemeSettingsTable
             ->filters([
                 SelectFilter::make('theme')
                     ->label(__('Theme'))
-                    ->options(['light' => __('Light'), 'dark' => __('Dark')]),
+                    ->options(['light' => __('Light'), 'dark' => __('Dark'), 'vibrant' => __('Vibrant')]),
 
                 SelectFilter::make('category')
                     ->label(__('Kind'))

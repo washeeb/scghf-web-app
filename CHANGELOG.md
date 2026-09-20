@@ -181,6 +181,32 @@ exercised.
   every view/edit page as a Super Admin. Three of the four bugs above fail
   it; it is the guard the suite was missing
 
+#### Added — a third palette, hover menus, and the switches for them
+
+- **Vibrant**, a third palette beside light and dark: warm cream ground,
+  the teal and the coral at full strength, a violet focus ring. Every
+  colour token has a value for it (`ThemeSettingsSeeder::VIBRANT`), each
+  checked against the same AA contrast obligations as the other two by
+  the existing test, and all of it editable under Appearance → Theme
+  colours like the rest. `ThemeTokens` emits it as `.vibrant{…}`;
+  `ThemePreference`, the no-flash script and `theme.js` accept it; the
+  browser's theme-colour now follows the palette's own `--bg`. *System*
+  stays what it was — follow the device — which is why it looked the same
+  as Dark on a dark PC; the colourful look is a choice a visitor makes, or
+  the default the settings set
+- Settings → Site & footer: **Default theme** offers Vibrant; **Name of the
+  third theme** is what the control calls it; **Open menus on hover**
+  (on) — with a mouse a header drop-down opens when the pointer rests on
+  it and closes 220 ms after it leaves; touch and keyboard keep the
+  click-to-open disclosure, and the switch is read by `navigation.js`
+  from the nav element; **Footer policy groups** — the list of
+  `{label, slugs}` the footer groups the legal links by, with the seeded
+  three as the fallback for a broken edit
+- The footer's policy links highlight on hover again (an `!important`
+  colour had beaten the hover colour)
+- `SiteChromeSettingsTest` covers the four switches; `ThemeSettingsTest`
+  the third palette
+
 #### Changed — the footer's bottom strip reads as groups
 
 - Ten policy links, a currency form and two utilities shared one flex

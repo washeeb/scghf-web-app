@@ -1,17 +1,22 @@
 # 8. Colours, the theme and dark mode
 
-## Light and dark
+## Light, dark and Vibrant
 
-The site has two looks: light and dark. **Visitors choose** with the
-small *System / Light / Dark* control in the header; *System* follows
-their phone's setting. Their choice is remembered on their device.
+The site has three looks: light, dark, and a third, warmer palette
+called **Vibrant** — cream ground, the teal and the coral at full
+strength. **Visitors choose** with the small control in the header;
+*System* is not a fourth look but a rule: follow whatever their phone
+or laptop is set to, which is why it looks identical to Dark on a dark
+device. Their choice is remembered on their device.
 
 *Site settings → Site & footer → Default theme* is what a **first-time**
-visitor sees before choosing. *Match their device* is the kind default.
+visitor sees before choosing — pick *Vibrant* there to make it the
+site's default. *Name of the third theme* in the same place is what the
+control calls it.
 
 You do not need to switch anything to check the dark look: choose *Dark*
 in the header on your own browser, look at the pages you changed, and
-switch back. Every part of the site was drawn for both; if something you
+switch back. Every part of the site was drawn for all three; if something you
 added looks wrong in one of them, it is almost always an image with a
 white background — use one with a transparent or dark-friendly background.
 

@@ -125,6 +125,57 @@ class ThemeSettingsSeeder extends Seeder
         ['easing-base',   'motion', 'cubic-bezier(0.4, 0, 0.2, 1)', 'cubic-bezier(0.4, 0, 0.2, 1)', 'Transition easing', null, null],
     ];
 
+    /**
+     * The third palette: "Vibrant".
+     *
+     * Light and dark are the brand as sampled from the logo pack; this one is
+     * the brand turned up — a warm cream ground, the teal and the coral at
+     * full saturation, a violet focus ring — for a visitor who wants colour
+     * rather than calm. Every value here was checked against the same
+     * contrast obligations as the other two (ThemeSettingsTest runs them
+     * for all three); a token not listed takes the light value, which is
+     * every non-colour token and any colour the design later adds.
+     *
+     * Editable in Appearance → Theme colours like the other two; this is
+     * only the starting point.
+     */
+    public const VIBRANT = [
+        'bg' => '#FFF8F0',
+        'bg-subtle' => '#FDF0E2',
+        'surface' => '#FFFFFF',
+        'surface-raised' => '#FFF1E3',
+        'surface-sunken' => '#F9E9D8',
+        'surface-inverse' => '#1B1310',
+        'text-primary' => '#1B1310',
+        'text-secondary' => '#4A3F3A',
+        'text-muted' => '#6B5E57',
+        'border' => '#F1D6BE',
+        'border-strong' => '#E3B995',
+        'border-interactive' => '#9A7B66',
+        'brand-primary' => '#0F7C6C',
+        'brand-primary-hover' => '#0B5F53',
+        'text-on-brand' => '#FFFFFF',
+        'brand-secondary' => '#FF6A3D',
+        'brand-secondary-ink' => '#B8390C',
+        'text-on-secondary' => '#2A0F05',
+        'accent-teal' => '#14B8A6',
+        'success' => '#15803D',
+        'warning' => '#8A4B00',
+        'danger' => '#C81E1E',
+        'info' => '#1D4ED8',
+        'focus-ring' => '#7C3AED',
+        'division-lifespring' => '#0F766E',
+        'division-brightpath' => '#B8390C',
+        'division-legacy' => '#6D28D9',
+        'division-everysoul' => '#1D4ED8',
+        // Elevation reads warmer on cream: a tinted, slightly bolder shadow.
+        'shadow-sm' => '0 1px 3px 0 rgb(64 32 8 / 0.10)',
+        'shadow-md' => '0 6px 12px -3px rgb(64 32 8 / 0.14)',
+        'shadow-lg' => '0 16px 28px -8px rgb(64 32 8 / 0.18)',
+    ];
+
+    public const THEMES = ['light', 'dark', 'vibrant'];
+
     public function run(): void
     {
         $order = 0;
@@ -132,7 +183,7 @@ class ThemeSettingsSeeder extends Seeder
         foreach (self::TOKENS as [$token, $category, $light, $dark, $label, $against, $minContrast]) {
             $order++;
 
-            foreach (['light' => $light, 'dark' => $dark] as $theme => $value) {
+            foreach (['light' => $light, 'dark' => $dark, 'vibrant' => self::VIBRANT[$token] ?? $light] as $theme => $value) {
                 $setting = ThemeSetting::firstOrNew(['theme' => $theme, 'token' => $token]);
 
                 /*
@@ -179,7 +230,7 @@ class ThemeSettingsSeeder extends Seeder
         }
 
         $this->command?->info(sprintf(
-            'Seeded %d theme tokens across 2 themes.',
+            'Seeded %d theme tokens across 3 themes.',
             count(self::TOKENS),
         ));
     }

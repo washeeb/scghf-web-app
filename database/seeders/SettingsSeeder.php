@@ -285,7 +285,14 @@ class SettingsSeeder extends Seeder
         ['site', 'default_theme', 'system', SettingType::Select, 'Default theme', true,
             'What a first-time visitor sees before they choose. "Match their device" respects the '
             .'setting they already made in their phone.',
-            ['light' => 'Light', 'dark' => 'Dark', 'system' => 'Match their device']],
+            ['light' => 'Light', 'dark' => 'Dark', 'vibrant' => 'Vibrant', 'system' => 'Match their device']],
+        ['site', 'vibrant_theme_label', 'Vibrant', SettingType::String, 'Name of the third theme', true,
+            'What the theme control calls the colourful palette. Its colours are under Appearance → Theme colours.'],
+        ['site', 'nav_open_on_hover', '1', SettingType::Boolean, 'Open menus on hover', true,
+            'With a mouse, a top-level menu opens when the pointer rests on it and closes when it leaves. '
+            .'Touch and keyboard always open on tap or Enter, whatever this says.'],
+        ['site', 'footer_policy_groups', '[{"label":"Legal","slugs":["privacy-policy","terms","cookie-policy","shipping-and-delivery"]},{"label":"Giving","slugs":["donation-policy","refund-policy"]},{"label":"Conduct","slugs":["safeguarding","accessibility","whistleblowing","anti-fraud"]}]', SettingType::Json, 'Footer policy groups', true,
+            'How the footer groups the policy links: a list of {label, slugs}. A page not listed goes under "Policies".'],
         ['site', 'show_donor_wall', '1', SettingType::Boolean, 'Show the donor wall', true],
         ['site', 'newsletter_double_optin', '1', SettingType::Boolean, 'Require newsletter confirmation', false,
             'Single opt-in is the fastest way to destroy the sending domain reputation. Leave on.'],

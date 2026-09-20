@@ -48,6 +48,15 @@ item:
 Drag the handle on the left to reorder. An item under another item becomes
 a drop-down in the header. Save, and the site reflects it.
 
+A header drop-down opens on a click or a tap, and — with a mouse — when
+the pointer rests on it. *Site settings → Site & footer → Open menus on
+hover* turns the hover part off; touch and keyboard are unaffected.
+
+The footer's **legal** menu is shown in groups (*Legal*, *Giving*,
+*Conduct*) decided by the page each link points at. *Site settings →
+Site & footer → Footer policy groups* is that list; a policy page not
+named in it appears under *Policies*.
+
 ## Announcements
 
 An announcement is a band across the top of every page (or the pages you
