@@ -25,38 +25,63 @@ use Throwable;
  */
 class OpcacheReset extends Command
 {
-    protected $signature = 'scghf:opcache-reset {--url= : Base URL to call (default: APP_URL)}';
+    protected $signature = 'scghf:opcache-reset {--url= : Base URL to call (default: APP_URL)} {--pause=15 : Seconds between attempts while the previous release still answers}';
 
     protected $description = 'Empty the PHP-FPM OPcache in the web workers, through a one-time token';
 
+    /** Attempts while the workers still answer with the previous release. */
+    public const ATTEMPTS = 8;
+
     public function handle(): int
     {
-        $token = Str::random(48);
-        Cache::put(OpcacheResetController::PREFIX.$token, true, now()->addMinutes(2));
-
         $base = rtrim((string) ($this->option('url') ?: config('app.url')), '/');
         $url = $base.'/deploy/opcache-reset';
+        $pause = max(0, (int) $this->option('pause'));
 
-        try {
-            $response = Http::timeout(20)
-                ->withUserAgent('SCGHF deploy (opcache reset)')
-                ->post($url, ['token' => $token]);
-        } catch (Throwable $e) {
+        /*
+         * Right after the flip the workers may still be running the previous
+         * release — the very condition this command exists to end — and that
+         * release has no such route: the CMS catch-all answers 405 to a POST,
+         * or 404. Those answers come from the old code, so we wait for the
+         * workers' own revalidation to bring the new route into reach and try
+         * again, for a couple of minutes. A 403 is the new route refusing a
+         * token, and is final.
+         */
+        for ($attempt = 1; $attempt <= self::ATTEMPTS; $attempt++) {
+            $token = Str::random(48);
+            Cache::put(OpcacheResetController::PREFIX.$token, true, now()->addMinutes(2));
+
+            try {
+                $response = Http::timeout(20)
+                    ->withUserAgent('SCGHF deploy (opcache reset)')
+                    ->acceptJson()
+                    ->post($url, ['token' => $token]);
+            } catch (Throwable $e) {
+                Cache::forget(OpcacheResetController::PREFIX.$token);
+                $this->error("Could not reach {$url}: {$e->getMessage()}");
+
+                return self::FAILURE;
+            }
+
+            $body = $response->json();
+
+            if ($response->successful() && ($body['reset'] ?? false) === true) {
+                $this->info(sprintf('OPcache reset in the web workers (%s, %s scripts were cached, attempt %d).', $body['sapi'] ?? '?', $body['scripts_before'] ?? '?', $attempt));
+
+                return self::SUCCESS;
+            }
+
             Cache::forget(OpcacheResetController::PREFIX.$token);
-            $this->error("Could not reach {$url}: {$e->getMessage()}");
 
-            return self::FAILURE;
+            if (! in_array($response->status(), [404, 405], true) || $attempt === self::ATTEMPTS) {
+                $this->error(sprintf('OPcache was not reset: HTTP %d %s', $response->status(), is_array($body) ? ($body['reason'] ?? json_encode($body)) : 'not a JSON answer (the previous release is still answering)'));
+
+                return self::FAILURE;
+            }
+
+            $this->line(sprintf('  workers still answer with the previous release (HTTP %d); waiting %ds (attempt %d of %d)', $response->status(), $pause, $attempt, self::ATTEMPTS));
+            sleep($pause);
         }
-
-        $body = $response->json();
-
-        if ($response->successful() && ($body['reset'] ?? false) === true) {
-            $this->info(sprintf('OPcache reset in the web workers (%s, %s scripts were cached).', $body['sapi'] ?? '?', $body['scripts_before'] ?? '?'));
-
-            return self::SUCCESS;
-        }
-
-        $this->error(sprintf('OPcache was not reset: HTTP %d %s', $response->status(), $body['reason'] ?? $response->body()));
 
         return self::FAILURE;
     }

@@ -25,6 +25,7 @@ CURRENT_LINK="$DEPLOY_PATH/current"
 
 say()  { printf '\n\033[1;36m▸ %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[0;32m✓\033[0m %s\n' "$*"; }
+warn() { printf '  \033[0;33m!\033[0m %s\n' "$*"; }
 die()  { printf '\n\033[1;31m✗ FATAL: %s\033[0m\n' "$*" >&2; exit 1; }
 
 # ── Preconditions ────────────────────────────────────────────────────────────

@@ -50,7 +50,7 @@ it('mints a token, calls the site, and reports what the workers said', function 
     });
 
     $this->artisan('scghf:opcache-reset', ['--url' => 'https://example.test'])
-        ->expectsOutputToContain('OPcache reset in the web workers (fpm-fcgi, 3808 scripts were cached)')
+        ->expectsOutputToContain('OPcache reset in the web workers (fpm-fcgi, 3808 scripts were cached, attempt 1)')
         ->assertSuccessful();
 
     Http::assertSent(fn ($request) => $request->url() === 'https://example.test/deploy/opcache-reset' && strlen((string) $request['token']) === 48);
@@ -62,4 +62,22 @@ it('exits non-zero when the site could not be reached or refused, and leaves no 
     $this->artisan('scghf:opcache-reset', ['--url' => 'https://example.test'])
         ->expectsOutputToContain('OPcache was not reset: HTTP 403 no such token')
         ->assertFailed();
+});
+
+it('keeps trying while the workers still answer with the previous release, which has no such route', function () {
+    $calls = 0;
+    Http::fake(function ($request) use (&$calls) {
+        $calls++;
+
+        // The old code: the CMS catch-all, 405 to a POST. The new code arrives on the third try.
+        return $calls < 3
+            ? Http::response('<html>Method Not Allowed</html>', 405)
+            : Http::response(['reset' => true, 'sapi' => 'fpm-fcgi', 'scripts_before' => 12]);
+    });
+
+    $this->artisan('scghf:opcache-reset', ['--url' => 'https://example.test', '--pause' => 0])
+        ->expectsOutputToContain('attempt 3')
+        ->assertSuccessful();
+
+    expect($calls)->toBe(3);
 });

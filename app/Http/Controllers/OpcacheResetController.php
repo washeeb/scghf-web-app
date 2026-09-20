@@ -54,6 +54,9 @@ class OpcacheResetController extends Controller
         $status = function_exists('opcache_get_status') ? opcache_get_status(false) : false;
         $before = is_array($status) ? (int) ($status['opcache_statistics']['num_cached_scripts'] ?? 0) : null;
 
+        // The realpath cache too: it is how a worker keeps resolving the
+        // `current` symlink to the release it pointed at two minutes ago.
+        clearstatcache(true);
         $ok = @opcache_reset();
 
         return response()->json([
