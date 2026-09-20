@@ -53,6 +53,11 @@ final class ReceiptIssuer
      */
     public function issue(Donation $donation, ?User $by = null): DonationReceipt
     {
+        // Explicit, so a donation that arrived in a collection (a bulk
+        // issue, a script) does not trip strict Eloquent's lazy-load guard on
+        // the relations the document reads. A single fresh model is unaffected.
+        $donation->loadMissing(['cause', 'donor', 'items.cause']);
+
         $existing = DonationReceipt::where('donation_id', $donation->getKey())->first();
 
         if ($existing !== null) {
