@@ -232,9 +232,16 @@ LimitRequestBody 33554432
 
 # Block a handful of noisy, always-hostile probe paths outright, so they never
 # reach PHP and never fill the log. This site is not WordPress.
+#
+# NOT `storage`: this file sits in public/, and public/storage is the link
+# to the media library — every uploaded picture is served from under it.
+# The rule listed it from the first commit, meaning to cover the Laravel
+# root's storage/ (which the docroot cannot reach anyway), and no uploaded
+# image was ever visible on a real server until staging was looked at on
+# 2026-09-20. `tests/Feature/PublicHtaccessTest` guards it now.
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^(wp-admin|wp-login\.php|wp-content|wp-includes|xmlrpc\.php) - [F,L]
     RewriteRule ^(\.git|\.svn|\.hg)(/|$) - [F,L]
-    RewriteRule ^(vendor|node_modules|storage|bootstrap)(/|$) - [F,L]
+    RewriteRule ^(vendor|node_modules|bootstrap)(/|$) - [F,L]
 </IfModule>

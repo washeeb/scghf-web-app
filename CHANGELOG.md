@@ -87,6 +87,14 @@ Both are now used.
 
 #### Fixed — the deploy
 
+- **No uploaded image was ever visible on a real server.** `public/.htaccess`
+  has blocked `^(vendor|node_modules|storage|bootstrap)` since the first
+  commit — a rule meant for the Laravel root, in the file that lives in
+  `public/`, where `storage/` is the media library's public link. Apache
+  answered 403 for every picture, the logo included; local development
+  (`artisan serve`, no Apache) never saw it, and staging had not been
+  looked at with pictures on it until today. `storage` is out of the rule;
+  `PublicHtaccessTest` keeps it out
 - **Staging served a release from the morning all day.** PHP-FPM on this
   host runs OPcache with `opcache.revalidate_path=0`: a script is cached
   under the path it was requested by (`…/current/public/index.php`),
