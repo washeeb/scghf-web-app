@@ -111,6 +111,7 @@ GitHub → Settings → Secrets and variables → Actions, per environment
 | `SSH_KNOWN_HOSTS` | `ssh-keyscan -p <port> <host>` |
 | `DEPLOY_PATH` | `/home/<account>/scghf` (staging: `…/scghf-staging`) |
 | `PHP_BIN` | `/opt/cpanel/ea-php84/root/usr/bin/php` |
+| `SMOKE_BASIC_AUTH` | staging only, optional: `user:password` from `shared/htpasswd`, so the smoke test checks the homepage through the Basic-auth gate. Without it a 401 there counts as alive and `/up` (left open) proves the boot |
 
 | Variable | What |
 |---|---|
@@ -140,7 +141,12 @@ Scheduled jobs* and *Background queue* say whether they are running.
 
 Deployed from `develop`, its own database and `.env`, `PAYMENT_DRIVER`
 either `fake` or `paystack` with **test** keys, `seo.allow_indexing` off
-(the setting; `robots.txt` says so), `APP_ENV=staging`. Load it with
+(the setting; `robots.txt` says so), `APP_ENV=staging`, and behind HTTP
+Basic auth: `activate.sh` writes the gate into every release from
+`shared/htpasswd` (`htpasswd -c <DEPLOY_PATH>/shared/htpasswd <user>`),
+leaving `/up`, `/webhooks/*` and `/.well-known/*` open. Not cPanel's
+Directory Privacy, which writes into the release's `.htaccess` and is lost
+on the next deploy. Load it with
 `php artisan db:seed --class=DemoDataSeeder` for testers; the seeder
 refuses to run on production.
 

@@ -49,7 +49,7 @@
 > | 7.2 — PHP-FPM | ✖ not offered on this plan: the API accepts `php_fpm=1` and leaves it 0. Nothing to do |
 > | 7.3 — INI values | ✅ nothing to set: InMotion's `99-inmotion.ini` already gives `memory_limit=768M`, uploads `512M`, `max_input_vars=6200`, OPcache on — above the runbook's values. Per-directory `php.ini`/`.user.ini` are ignored under suPHP here |
 > | 7.4 — databases | ✅ `n789825_scghf_prod`, `_stage`, `_restore` created (`uapi Mysql create_database`). **Users, passwords and grants: yours** — a password must not pass through the assistant |
-> | 7.5 — staging subdomain | ✅ created (`uapi SubDomain addsubdomain`). **Directory Privacy: yours** |
+> | 7.5 — staging subdomain | ✅ created (`uapi SubDomain addsubdomain`). Password gate: `shared/htpasswd` + `activate.sh` (see 7.5) — **create the file** |
 > | 7.6 — SSL | ✅ Let's Encrypt issued for the domain, `www` and `staging` (`uapi SSL start_autossl_check`), once the docroot resolved — a dangling docroot fails HTTP validation, hence the holding release in `bootstrap-server.sh` |
 > | 7.7 — mail, 7.8 — cPanel 2FA | ⬜ |
 > | 8 — bootstrap | ✅ both. `shared/.env` **pre-filled** from `.env.example` with `APP_ENV`, `APP_URL`, `DB_CONNECTION=mariadb` (the server is **MariaDB 10.6.28**), database names, `FORCE_HTTPS`, `SESSION_SECURE_COOKIE`, `LOG_LEVEL=warning`; `APP_KEY` and `BACKUP_ARCHIVE_PASSWORD` generated on the server into the file. Production's Paystack keys blanked (the activate guard refuses `sk_test_` there). **Empty and yours: `DB_PASSWORD`** now, mail and Paystack later |
@@ -631,7 +631,19 @@ While in phpMyAdmin, note the **Server version** from the home page — it is th
 
 **Domains → Create A Domain**: `staging.greaterhopefoundations.org`, document root `/home/n789825/staging.greaterhopefoundations.org`.
 
-Then **Files → Directory Privacy** on that folder: enable protection, create a user. Staging is now behind a password as well as noindexed.
+~~Then **Files → Directory Privacy** on that folder.~~ **Not that way (2026-09-20):** cPanel writes the auth directives into the docroot's `.htaccess`, which on this layout is the release's `public/.htaccess` and is replaced on every deploy — and its folder picker offers the old `.bak` directory rather than the symlinked docroot. Instead, create the password file once, in `shared/`, from cPanel → Terminal:
+
+```bash
+htpasswd -c /home/n789825/scghf-staging/shared/htpasswd tester
+```
+
+`activate.sh` then writes the Basic-auth block into every staging release, leaving `/up`, `/webhooks/*` and `/.well-known/*` open (health check, Paystack test events, AutoSSL renewals). Never on production. Optionally give the deploy's smoke test the credentials so it checks the homepage through the gate — from PowerShell, not Git Bash:
+
+```powershell
+gh secret set SMOKE_BASIC_AUTH --env staging --body "tester:<password>"
+```
+
+Without the secret, a 401 on the homepage counts as alive and `/up` decides.
 
 ### 7.6 SSL
 

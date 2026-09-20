@@ -220,6 +220,43 @@ HT
   ok "staging robots.txt (disallow all) + X-Robots-Tag header"
 fi
 
+# ── Staging gate ─────────────────────────────────────────────────────────────
+# Staging is on a real domain with documented demo credentials, so it sits
+# behind HTTP Basic auth. cPanel's Directory Privacy would write the same
+# directives into the docroot's .htaccess — which is this release's
+# public/.htaccess and is replaced on every deploy — so the gate is applied
+# here, from a password file that lives in shared/ and survives releases:
+#
+#     htpasswd -c $DEPLOY_PATH/shared/htpasswd <username>
+#
+# Never on production, whatever is in shared/. Three paths stay open: the
+# health check (the deploy's smoke test and Site Health), the payment
+# webhooks (Paystack test events must reach staging), and .well-known
+# (AutoSSL renewals validate over HTTP).
+if [ "$APP_ENV_VAL" != "production" ] && [ -f "$SHARED_DIR/htpasswd" ]; then
+  if ! grep -q 'AuthUserFile' "$RELEASE_DIR/public/.htaccess" 2>/dev/null; then
+    cat >> "$RELEASE_DIR/public/.htaccess" <<HT
+
+# ── Added at deploy time: this environment is password-protected ────────────
+<IfModule mod_auth_basic.c>
+    AuthType Basic
+    AuthName "Staging — testers only"
+    AuthUserFile $SHARED_DIR/htpasswd
+    SetEnvIf Request_URI "^/up\$" scghf_open
+    SetEnvIf Request_URI "^/webhooks/" scghf_open
+    SetEnvIf Request_URI "^/\.well-known/" scghf_open
+    <RequireAny>
+        Require env scghf_open
+        Require valid-user
+    </RequireAny>
+</IfModule>
+HT
+  fi
+  ok "Basic auth gate from shared/htpasswd (/up, /webhooks, /.well-known open)"
+elif [ "$APP_ENV_VAL" != "production" ]; then
+  warn "No shared/htpasswd — this non-production environment is OPEN to the internet. Create one: htpasswd -c $SHARED_DIR/htpasswd <username>"
+fi
+
 # ── PHP handler ──────────────────────────────────────────────────────────────
 # cPanel pins a domain's PHP version by writing an AddHandler block into the
 # docroot's .htaccess — and our docroot is a symlink to THIS release's public/,

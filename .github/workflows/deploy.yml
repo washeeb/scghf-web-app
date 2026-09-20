@@ -293,14 +293,31 @@ jobs:
       - name: Smoke test
         env:
           APP_URL: ${{ vars.APP_URL }}
+          # Staging sits behind Basic auth (activate.sh, shared/htpasswd).
+          # Set this secret as "user:password" on the staging environment
+          # and the homepage is checked through the gate; without it, a 401
+          # on the homepage counts as alive (Apache, docroot and .htaccess
+          # all answered) and /up — which the gate leaves open — proves the
+          # application boots.
+          SMOKE_BASIC_AUTH: ${{ secrets.SMOKE_BASIC_AUTH }}
         run: |
           set -euo pipefail
           # InMotion's edge answers 406 to curl's default User-Agent; a
           # browser-shaped one goes through. Found on the first deploy.
           UA="Mozilla/5.0 (compatible; SCGHF-deploy-check)"
+          AUTH=()
+          [ -n "${SMOKE_BASIC_AUTH:-}" ] && AUTH=(-u "$SMOKE_BASIC_AUTH")
           echo "Checking $APP_URL …"
-          code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 30 -L "$APP_URL/")
-          [ "$code" = "200" ] || { echo "::error::Homepage returned $code, expected 200"; exit 1; }
+          code=$(curl -sS -A "$UA" "${AUTH[@]}" -o /dev/null -w '%{http_code}' --max-time 30 -L "$APP_URL/")
+          if [ -n "${SMOKE_BASIC_AUTH:-}" ]; then
+            [ "$code" = "200" ] || { echo "::error::Homepage returned $code through the gate, expected 200"; exit 1; }
+          else
+            case "$code" in
+              200) echo "  OK   / → 200" ;;
+              401) echo "  OK   / → 401 (behind the staging gate; /up decides)" ;;
+              *)   echo "::error::Homepage returned $code, expected 200 (or 401 behind the gate)"; exit 1 ;;
+            esac
+          fi
 
           code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 30 "$APP_URL/up")
           [ "$code" = "200" ] || { echo "::error::Health check returned $code, expected 200"; exit 1; }

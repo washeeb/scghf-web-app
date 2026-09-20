@@ -152,6 +152,21 @@ unchanged; the values were re-pointed.
   `staging`; staging answers `/up` with 200 over verified TLS on PHP
   8.4.24 with all 140 tables on InnoDB
 
+#### Added — the staging password gate is part of the deploy
+
+- cPanel's Directory Privacy writes its directives into the docroot's
+  `.htaccess` — the release's `public/.htaccess`, replaced on every deploy
+  — and its folder picker offered the old `.bak` directory, which is what
+  got protected. `activate.sh` now writes an HTTP Basic-auth block into
+  every non-production release from `shared/htpasswd` (created once with
+  `htpasswd -c`), leaving `/up`, `/webhooks/*` and `/.well-known/*` open
+  for the health check, Paystack test events and AutoSSL renewals. Never
+  on production; a non-production deploy with no password file warns that
+  the environment is open
+- The smoke test takes an optional `SMOKE_BASIC_AUTH` secret (`user:pass`)
+  to check the homepage through the gate; without it a 401 on the
+  homepage counts as alive and `/up` proves the boot
+
 #### Fixed — nobody could sign in to the admin panel on the real host
 
 - `public/.htaccess` carried a `Header always setifempty
