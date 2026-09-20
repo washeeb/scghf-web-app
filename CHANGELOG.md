@@ -38,10 +38,10 @@ Both are now used.
 
 #### Added — the template
 
-- **Typography**: page and section titles in a serif display face
-  (`font-display` token, new; resolves to the device's own serif until a
-  file is shipped — see *Open*), card titles and everything else in the
-  sans as before
+- **Typography**: page and section titles in **Fraunces**, a serif
+  display face self-hosted like Inter and Plus Jakarta Sans (`font-display`
+  token, new; two variable WOFF2 subsets, SIL OFL, `public/fonts/README.md`),
+  card titles and everything else in the sans as before
 - **The header**: the top bar on by default (`header.show_top_bar` → `1`
   on new installs), on the accent colour with the address, phone, email
   and hours from *Contact* — it renders only once one of those is filled;
@@ -111,10 +111,6 @@ Both are now used.
   to be increased"* (GitHub → Settings → Billing). This release reached
   staging by hand — the workflow's steps replayed from this machine over
   SSH — and is recorded in `docs/DEPLOYMENT.md`'s manual-deploy note
-- No serif font file is shipped. The `font-display` stack names Fraunces
-  and Source Serif 4 first (both SIL OFL) and falls back to Georgia / the
-  device serif. Downloading a font file needs the owner's go-ahead; until
-  then titles render in the system serif
 
 ### Hosting — the foundation's own cPanel account and domain — 2026-09-19
 

@@ -96,8 +96,8 @@ class ThemeSettingsSeeder extends Seeder
         ['focus-ring',      'colour', '#0B7D66', '#2EC4A8', 'Focus ring',             'bg', 3.0],
 
         // ── Typography ───────────────────────────────────────────────────────
-        // The serif for page and section titles, from the chosen template. No
-        // serif file ships yet, so this resolves to the device's own serif.
+        // The serif for page and section titles, from the chosen template.
+        // Fraunces is self-hosted (public/fonts); the rest is the fallback.
         ['font-display', 'typography', 'Fraunces, "Source Serif 4", Georgia, "Times New Roman", serif', 'Fraunces, "Source Serif 4", Georgia, "Times New Roman", serif', 'Display typeface (titles)', null, null],
         ['font-heading', 'typography', '"Plus Jakarta Sans", system-ui, sans-serif', '"Plus Jakarta Sans", system-ui, sans-serif', 'Heading typeface', null, null],
         ['font-body',    'typography', 'Inter, system-ui, sans-serif', 'Inter, system-ui, sans-serif', 'Body typeface', null, null],
