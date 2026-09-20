@@ -50,7 +50,7 @@ What `activate.sh` does, in order, and why the order:
 | `config:cache`, `route:cache`, `view:cache`, `event:cache`, `filament:optimize`, `icons:cache` | built in the **new** directory, before it is live |
 | `scghf:preflight` | placeholders still in settings, missing keys, flags on with nothing behind them, cron and queue heartbeats. Printed on every deploy; **stops a production deploy** only once the GitHub variable `PREFLIGHT_GATE=1` is set on the production environment (the first deploy cannot pass it — cron points at `current/`, which does not exist until the flip) |
 | flip `current` | `ln -sfn` — atomic |
-| `queue:restart`, `scghf:cache-clear`, `up` | the next cron worker picks up the new code; pages stored by the old release are gone |
+| `queue:restart`, `scghf:cache-clear`, `scghf:opcache-reset`, `up` | the next cron worker picks up the new code; pages stored by the old release are gone; the web workers' OPcache is emptied through a one-time token (PHP-FPM keeps bytecode across deploys — without this the site can serve the previous release's code after the flip) |
 | prune to five releases | disk and inodes |
 
 ## 3. A hotfix

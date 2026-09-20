@@ -36,6 +36,7 @@ use App\Http\Controllers\GrantDocumentController;
 use App\Http\Controllers\ImpactController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NewsletterController;
+use App\Http\Controllers\OpcacheResetController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\PaystackWebhookController;
@@ -762,3 +763,14 @@ Route::get('screen/{cause:slug}/feed.json', [ScreenController::class, 'feed'])->
 Route::get('/{path}', [PageController::class, 'show'])
     ->where('path', '.*')
     ->name('pages.show');
+
+/*
+|--------------------------------------------------------------------------
+| Deploy: OPcache reset
+|--------------------------------------------------------------------------
+| Called by activate.sh (through scghf:opcache-reset) after the release
+| symlink moves. One-time token, rate-limited, nothing but a cache flush.
+*/
+Route::post('deploy/opcache-reset', OpcacheResetController::class)
+    ->middleware('throttle:6,1')
+    ->name('deploy.opcache-reset');

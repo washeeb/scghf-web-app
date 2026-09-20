@@ -72,7 +72,12 @@ class BlockDataResolver
                 'hero', 'page-header', 'split-content', 'cta-band', 'video' => $this->media($section),
                 default => [],
             };
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            // Absent, not a 500 — but never silent. An exception here hid
+            // the reason for a page rendering without its pictures for an
+            // hour on the first staging deploy of the launch content.
+            report($e);
+
             return [];
         }
     }

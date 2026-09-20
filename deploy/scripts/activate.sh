@@ -242,8 +242,9 @@ fi
 #
 # Never on production, whatever is in shared/. Three paths stay open: the
 # health check (the deploy's smoke test and Site Health), the payment
-# webhooks (Paystack test events must reach staging), and .well-known
-# (AutoSSL renewals validate over HTTP).
+# webhooks (Paystack test events must reach staging), .well-known
+# (AutoSSL renewals validate over HTTP) and /deploy/ (the OPcache reset
+# the deploy itself calls, guarded by its own one-time token).
 # Both env names are needed: the rewrite to index.php is an internal
 # redirect, and Apache renames variables across it with a REDIRECT_ prefix.
 if [ "$APP_ENV_VAL" != "production" ] && [ -f "$SHARED_DIR/htpasswd" ]; then
@@ -263,6 +264,7 @@ if [ "$APP_ENV_VAL" != "production" ] && [ -f "$SHARED_DIR/htpasswd" ]; then
     SetEnvIf Request_URI "^/up\$" scghf_open
     SetEnvIf Request_URI "^/webhooks/" scghf_open
     SetEnvIf Request_URI "^/\.well-known/" scghf_open
+    SetEnvIf Request_URI "^/deploy/" scghf_open
     <RequireAny>
         Require env scghf_open
         Require env REDIRECT_scghf_open
@@ -335,6 +337,13 @@ say "Post-activation"
 # Pages stored by the previous release must not be the first thing this one
 # serves. Empties the page cache and starts a new fragment generation.
 "$PHP_BIN" "$CURRENT_LINK/artisan" scghf:cache-clear --no-interaction 2>/dev/null && ok "page and fragment caches emptied" || true
+# PHP-FPM keeps compiled bytecode across deploys; nothing restarts the pool
+# when the symlink moves, so the web workers can go on serving the previous
+# release's code while every artisan command here sees the new one. The
+# first staging deploy of the launch content served pages without their
+# pictures for exactly this reason. Non-fatal: a stale cache clears itself
+# as files are revalidated; a rolled-back release would not.
+"$PHP_BIN" "$CURRENT_LINK/artisan" scghf:opcache-reset --no-interaction && ok "web workers' OPcache emptied" || warn "OPcache was not reset (see above) — the web workers may serve the previous release's code until it revalidates"
 "$PHP_BIN" "$CURRENT_LINK/artisan" up --no-interaction 2>/dev/null || true
 echo "$REL" > "$SHARED_DIR/current_release"
 

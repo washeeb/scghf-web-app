@@ -43,6 +43,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // A browser's CSP violation report: a POST from the browser
             // itself, no form, no token. The endpoint stores nothing.
             'csp-report',
+            // The deploy's OPcache reset: a server-to-server POST with a
+            // one-time token, no session. OpcacheResetController explains.
+            'deploy/opcache-reset',
         ]);
 
         /*

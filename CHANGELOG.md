@@ -181,6 +181,20 @@ exercised.
   every view/edit page as a Super Admin. Three of the four bugs above fail
   it; it is the guard the suite was missing
 
+#### Fixed — the first deploy of the launch content served pages without their pictures
+
+- InMotion's PHP runs under **PHP-FPM after all** (the API had said no),
+  and FPM keeps compiled bytecode across deploys; nothing restarts the
+  pool when the release symlink moves. Every artisan command the deploy
+  runs is a fresh process and saw the new code; the web workers served
+  pages with no pictures until `opcache_reset()` ran inside a web
+  request. New: `POST /deploy/opcache-reset` (CSRF-exempt, rate-limited,
+  guarded by a one-time token the deploy mints into the shared cache) and
+  `scghf:opcache-reset`, which `activate.sh` calls after the flip,
+  non-fatally. The staging gate leaves `/deploy/` open for it
+- `BlockDataResolver` reports the exceptions it swallows instead of
+  hiding them
+
 ### Launch content — the site as it goes live — 2026-09-20
 
 #### Added
