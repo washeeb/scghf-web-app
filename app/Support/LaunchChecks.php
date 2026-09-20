@@ -21,6 +21,7 @@ use App\Models\WhatsappTemplate;
 use App\Providers\CommunicationServiceProvider;
 use Closure;
 use Database\Seeders\DemoDataSeeder;
+use Database\Seeders\LaunchContentSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -97,6 +98,7 @@ final class LaunchChecks
             $this->wrap('staff_2fa', 'Two-factor on every staff account', fn () => $this->staffTwoFactor()),
             $this->wrap('demo_accounts', 'No demo accounts', fn () => $this->demoAccounts()),
             $this->wrap('demo_data', 'No demo data', fn () => $this->demoData()),
+            $this->wrap('placeholders', 'Launch placeholders replaced', fn () => $this->placeholders()),
         ]);
     }
 
@@ -521,6 +523,38 @@ final class LaunchChecks
         }
 
         return HealthCheck::ok('demo_data', 'No demo data', 'None');
+    }
+
+    /**
+     * The launch content seeder writes placeholder programmes, appeals,
+     * news, events, testimonials and goals so the site reads as a whole on
+     * day one. Each carries the marker in a field an editor sees. None may
+     * still be there when the site goes live: a placeholder testimonial is
+     * an invented voice, a placeholder appeal is money asked for work that
+     * is not yet real.
+     */
+    private function placeholders(): HealthCheck
+    {
+        $marker = LaunchContentSeeder::PLACEHOLDER;
+        $like = '%'.$marker.'%';
+
+        $found = array_filter([
+            'projects' => DB::table('projects')->where('description', 'like', $like)->count(),
+            'appeals' => DB::table('causes')->where('description', 'like', $like)->count(),
+            'news posts' => DB::table('posts')->where('body', 'like', $like)->count(),
+            'events' => DB::table('events')->where('description', 'like', $like)->count(),
+            'testimonials' => DB::table('testimonials')->where('author_role', 'like', $like)->count(),
+            'impact goals' => DB::table('impact_metrics')->where('description', 'like', $like)->count(),
+            'galleries' => DB::table('galleries')->where('description', 'like', $like)->count(),
+        ]);
+
+        if ($found !== []) {
+            return HealthCheck::critical('placeholders', 'Launch placeholders replaced',
+                implode(', ', array_map(fn ($k, $v) => "{$v} {$k}", array_keys($found), $found)),
+                'These records still carry "'.$marker.'". Replace each with the real programme, appeal, story or voice — or unpublish it — before launch. Search the marker in the admin panel to find them.');
+        }
+
+        return HealthCheck::ok('placeholders', 'Launch placeholders replaced', 'None left');
     }
 
     // ── Plumbing ─────────────────────────────────────────────────────────────

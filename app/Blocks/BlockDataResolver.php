@@ -105,7 +105,7 @@ class BlockDataResolver
     /** @return Collection<int, Division> */
     private function divisions(): Collection
     {
-        return Division::query()->active()->orderBy('sort_order')->get();
+        return Division::query()->active()->with('heroImage')->orderBy('sort_order')->get();
     }
 
     /** @return Collection<int, Testimonial> */

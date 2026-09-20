@@ -181,6 +181,45 @@ exercised.
   every view/edit page as a Super Admin. Three of the four bugs above fail
   it; it is the guard the suite was missing
 
+### Launch content — the site as it goes live — 2026-09-20
+
+#### Added
+
+- **`LaunchContentSeeder`** — the foundation's own words from its
+  profile (vision, mission, purpose, the seven values, the four
+  divisions and their focus areas, the beneficiary groups, the founder)
+  on the home, about, story, vision, values, leadership, how-we-work,
+  transparency, contact and FAQ pages; and placeholder programmes (two
+  per division), appeals (one per division), news, events, impact goals,
+  FAQs, a gallery and two testimonials, written in the foundation's
+  voice. Every invented record carries `[Placeholder — replace with the
+  real thing]` in a field staff see. Idempotent; never overwrites a page
+  that has sections; publishes the pages it wrote and leaves the legal
+  pages as drafts. Placeholder testimonials are seeded **unpublished** —
+  the model refuses to publish a beneficiary's words without a consent,
+  and an invented voice has nobody to consent
+- **`scghf:launch-images`** and `database/seeders/launch-images.json` —
+  47 licensed Unsplash photographs (27 photographers, mostly Ghanaian),
+  each with the slot it fills, alt text, photographer and source page.
+  Fetched through `MediaLibrary::add()` (policy, metadata stripping,
+  conversions) into a *Launch photography* folder, tagged by slot,
+  idempotent; `activate.sh` runs it on every deploy, non-fatally. The
+  files never enter git
+- **Media licence** — `media.licence` (`own` | `stock`) and
+  `licence_url`, with a *Licence* section on the media form. The
+  photo-consent gate applies to the foundation's own photographs; a
+  licensed picture's permission is the licence. Manual chapter 4 says
+  what that means and what it must not be used for
+- Launch-check row **Launch placeholders replaced** (`X6c`): fails while
+  any placeholder record remains
+- The divisions block shows each division's picture
+- `DemoDataSeeder` on a database that has the launch content keeps its
+  accounts and transactions but skips its invented programmes, appeals
+  and posts, and gives to the real appeals
+- `LaunchContentTest`: the licence gate, the command (faked Unsplash),
+  the seeder twice, the seeder without pictures, the launch-check row,
+  the demo seeder's deference
+
 #### Fixed — the custom admin pages rendered as unstyled text
 
 - Shop reports, Giving reports, Accounting export, Site health,

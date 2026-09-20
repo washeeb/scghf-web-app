@@ -110,9 +110,17 @@ class DemoDataSeeder extends Seeder
             $staff = $this->staff();
             $division = Division::query()->orderBy('id')->firstOrFail();
 
-            $projects = $this->projects($division, $staff['Programme Officer']);
-            $causes = $this->causes($division, $projects);
-            $this->posts($staff['Content Editor']);
+            // With the launch content present (staging, production) the site
+            // already has its programmes, appeals and news; the demo ones would
+            // sit beside them on the public pages. Keep the accounts and the
+            // transactions, and point the giving at the real appeals.
+            $launch = app(Settings::class)->get(LaunchContentSeeder::SEEDED_AT) !== null;
+
+            $projects = $launch ? Project::query()->orderBy('id')->get()->keyBy('slug')->all() : $this->projects($division, $staff['Programme Officer']);
+            $causes = $launch ? Cause::query()->where('is_general_fund', false)->orderBy('id')->get()->keyBy('slug')->all() : $this->causes($division, $projects);
+            if (! $launch) {
+                $this->posts($staff['Content Editor']);
+            }
             $products = $this->products();
             $this->events();
             $this->volunteers();

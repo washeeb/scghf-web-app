@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
@@ -80,6 +81,25 @@ class MediaForm
                             'Who took it. Donated photography usually comes with a condition that it is '
                             .'credited, and this is the field that keeps that promise.'
                         )),
+                ]),
+
+            Section::make(__('Licence'))
+                ->description(__('Where the right to show this picture comes from. A licensed stock image carries the provider’s model release, so the consent rule below does not apply to it; the foundation’s own photograph of a person needs a consent on record.'))
+                ->columns(2)
+                ->schema([
+                    Select::make('licence')
+                        ->label(__('Source'))
+                        ->options(Media::LICENCES)
+                        ->default(Media::LICENCE_OWN)
+                        ->required()
+                        ->native(false)
+                        ->live(),
+                    TextInput::make('licence_url')
+                        ->label(__('Licence or source link'))
+                        ->url()
+                        ->maxLength(500)
+                        ->visible(fn (Get $get): bool => $get('licence') === Media::LICENCE_STOCK)
+                        ->helperText(__('The page the picture was licensed from, so the licence can be shown if anybody asks.')),
                 ]),
 
             Section::make(__('People in the picture'))

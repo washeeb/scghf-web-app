@@ -126,6 +126,17 @@ else
   "$PHP_BIN" artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction || die "Permission seeding failed. Nothing was flipped."
   "$PHP_BIN" artisan scghf:encrypt-at-rest --execute --no-interaction || die "Encryption sweep failed. Nothing was flipped."
   ok "Permissions current, encrypted columns swept"
+
+  # The launch photography: fetched into the library for any slot that has
+  # no picture yet (database/seeders/launch-images.json). Idempotent, and a
+  # network hiccup must not stop a release — the site renders without the
+  # pictures, so warn and carry on.
+  say "Launch photography"
+  if "$PHP_BIN" artisan scghf:launch-images --no-interaction; then
+    ok "launch photography present"
+  else
+    warn "scghf:launch-images could not fetch everything; run it again by hand."
+  fi
 fi
 
 # ── Stamp the build ──────────────────────────────────────────────────────────

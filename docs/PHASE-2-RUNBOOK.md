@@ -55,6 +55,7 @@
 > | 8 — bootstrap | ✅ both. `shared/.env` **pre-filled** from `.env.example` with `APP_ENV`, `APP_URL`, `DB_CONNECTION=mariadb` (the server is **MariaDB 10.6.28**), database names, `FORCE_HTTPS`, `SESSION_SECURE_COOKIE`, `LOG_LEVEL=warning`; `APP_KEY` and `BACKUP_ARCHIVE_PASSWORD` generated on the server into the file. Production's Paystack keys blanked (the activate guard refuses `sk_test_` there). **Empty and yours: `DB_PASSWORD`** now, mail and Paystack later |
 > | 9 — cron | ✅ four project lines installed with `crontab`, per-minute test run |
 > | ModSecurity | ⚠️ InMotion's rules answer 406 to curl's default User-Agent (the smoke test sends a browser-shaped one) and to `POST /csp-report` (CSP violation reports are lost — ask support to exempt the path). Hits are not shown in cPanel → ModSecurity for this account |
+> | Launch content | ✅ on each environment, once, after the first deploy: `php artisan db:seed --class=LaunchContentSeeder` (the photographs are fetched by the deploy itself). Then the placeholders are the editors' to replace — launch check row X6c counts them |
 > | 10 — first deploy | ✅ staging live on 2026-09-19 after seven pipeline/host fixes (see `CHANGELOG.md`): 140 tables migrated on InnoDB, caches built, Let's Encrypt, `/up` 200 |
 
 ---

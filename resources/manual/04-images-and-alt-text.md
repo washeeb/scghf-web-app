@@ -50,6 +50,23 @@ every page it was on at once, and stays in the library marked withdrawn.
 If you are not sure whether somebody agreed, the answer is no. Use a
 different photograph.
 
+## Licensed stock photographs
+
+The site launched with licensed photographs — real pictures of Ghanaian
+life from Unsplash — in a folder called **Launch photography**. Each one
+is marked **Source: Licensed stock image** with a link to where it came
+from and the photographer's name in the credit. The consent rule above does
+not apply to them: the people in them were released to the photo
+provider, and the licence is the permission.
+
+They are placeholders. As the foundation's own photographs arrive,
+**replace** each one from its page in the library (the *Replace* action):
+the new picture takes the old one's place everywhere it was used, and the
+consent rule applies to it as normal. Do not upload your own photograph as
+"stock" to skip the consent — the launch checklist counts stock pictures
+of people, and a photograph of a beneficiary recorded as stock is a
+promise to that person broken twice.
+
 ## Documents
 
 PDFs (the annual report, a policy) go in the library too and appear on

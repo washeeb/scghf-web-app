@@ -24,6 +24,17 @@ class Media extends BaseMedia
 {
     use HasFactory;
 
+    /** The foundation's own photography: people in it need a recorded consent. */
+    public const LICENCE_OWN = 'own';
+
+    /** A licensed picture (Unsplash, Adobe Stock, an agency): the licence is the permission. */
+    public const LICENCE_STOCK = 'stock';
+
+    public const LICENCES = [
+        self::LICENCE_OWN => 'Our own photograph',
+        self::LICENCE_STOCK => 'Licensed stock image',
+    ];
+
     protected function casts(): array
     {
         return array_merge(parent::casts(), [
@@ -253,6 +264,11 @@ class Media extends BaseMedia
         $this->forceFill(['withdrawn_at' => null, 'withdrawn_reason' => null, 'withdrawn_by' => null])->save();
     }
 
+    public function isStock(): bool
+    {
+        return $this->licence === self::LICENCE_STOCK;
+    }
+
     /**
      * Why this file may not be published, or null if it may.
      *
@@ -265,7 +281,9 @@ class Media extends BaseMedia
                 .' It will not appear anywhere until it is reinstated.';
         }
 
-        if ($this->depicts_people && ! $this->hasValidPhotoConsent()) {
+        // A licensed picture's people were released to the provider; the
+        // licence is the permission, and there is nobody here to ask.
+        if ($this->depicts_people && ! $this->isStock() && ! $this->hasValidPhotoConsent()) {
             return $this->depicts_children
                 ? 'This photograph shows a child and has no valid consent from a named parent or guardian. '
                     .'Record the consent on the Consent tab before it can be published.'

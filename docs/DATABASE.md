@@ -361,6 +361,8 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `stripped_metadata_keys` | json | yes |  |  |
 | `sanitisation_error` | varchar(500) | yes |  |  |
 | `credit` | varchar(191) | yes |  |  |
+| `licence` | varchar(16) |  |  | `own` |
+| `licence_url` | varchar(500) | yes |  |  |
 | `file_name` | varchar(255) |  |  |  |
 | `mime_type` | varchar(255) | yes |  |  |
 | `disk` | varchar(255) |  |  |  |
@@ -1235,6 +1237,7 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `donor_phone` | varchar(32) | yes |  |  |
 | `consent_email` | tinyint(1) |  |  | `0` |
 | `consent_sms` | tinyint(1) |  |  | `0` |
+| `consent_whatsapp` | tinyint(1) |  |  | `0` |
 | `consent_text` | text | yes |  |  |
 | `consent_ip` | varchar(45) | yes |  |  |
 | `consent_at` | timestamp | yes |  |  |
@@ -1324,6 +1327,7 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `country` | varchar(2) | yes |  |  |
 | `consent_email` | tinyint(1) |  |  | `0` |
 | `consent_sms` | tinyint(1) |  |  | `0` |
+| `consent_whatsapp` | tinyint(1) |  |  | `0` |
 | `consent_text` | text | yes |  |  |
 | `consent_ip` | varchar(45) | yes |  |  |
 | `consent_at` | timestamp | yes |  |  |
@@ -2522,6 +2526,24 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `updated_at` | timestamp | yes |  |  |
 | `deleted_at` | timestamp | yes |  |  |
 
+#### `whatsapp_templates`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `key` | varchar(64) |  | U |  |
+| `name` | varchar(191) |  |  |  |
+| `description` | text | yes |  |  |
+| `category` | varchar(32) |  |  | `transactional` |
+| `meta_name` | varchar(191) | yes |  |  |
+| `language` | varchar(16) |  |  | `en` |
+| `variables` | json | yes |  |  |
+| `body` | text | yes |  |  |
+| `is_approved` | tinyint(1) |  |  | `0` |
+| `is_active` | tinyint(1) |  |  | `1` |
+| `created_at` | timestamp | yes |  |  |
+| `updated_at` | timestamp | yes |  |  |
+
 #### `email_logs`
 
 | Column | Type | Null | Key | Default |
@@ -2565,6 +2587,7 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 |---|---|---|---|---|
 | `id` | bigint unsigned |  | PK | auto |
 | `ulid` | char(26) |  | U |  |
+| `channel` | varchar(16) |  | I | `sms` |
 | `sms_template_id` | bigint unsigned | yes | I FK → `sms_templates.id` |  |
 | `template_key` | varchar(64) | yes |  |  |
 | `category` | varchar(32) |  |  | `transactional` |

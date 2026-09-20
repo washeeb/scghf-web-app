@@ -9,7 +9,12 @@
     <x-blocks.section :section="$section" :heading="$section->field('heading')" :intro="$section->field('intro')">
         <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ($divisions as $division)
-                <li class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
+                <li class="flex flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+                    @if ($division->heroImage?->isPublishable())
+                        <x-media.image :media="$division->heroImage" size="card" class="aspect-[3/2] w-full object-cover" />
+                    @endif
+
+                    <div class="p-6">
                     <span
                         class="block h-1 w-12 rounded-full"
                         style="background: var(--{{ preg_replace('/[^a-z0-9-]/', '', (string) $division->colour_token) ?: 'brand-primary' }})"
@@ -25,6 +30,7 @@
                     @if ($division->summary)
                         <p class="mt-2 text-sm text-[var(--text-muted)]">{{ $division->summary }}</p>
                     @endif
+                    </div>
                 </li>
             @endforeach
         </ul>
