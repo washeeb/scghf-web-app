@@ -233,6 +233,8 @@ fi
 # health check (the deploy's smoke test and Site Health), the payment
 # webhooks (Paystack test events must reach staging), and .well-known
 # (AutoSSL renewals validate over HTTP).
+# Both env names are needed: the rewrite to index.php is an internal
+# redirect, and Apache renames variables across it with a REDIRECT_ prefix.
 if [ "$APP_ENV_VAL" != "production" ] && [ -f "$SHARED_DIR/htpasswd" ]; then
   if ! grep -q 'AuthUserFile' "$RELEASE_DIR/public/.htaccess" 2>/dev/null; then
     cat >> "$RELEASE_DIR/public/.htaccess" <<HT
@@ -247,6 +249,7 @@ if [ "$APP_ENV_VAL" != "production" ] && [ -f "$SHARED_DIR/htpasswd" ]; then
     SetEnvIf Request_URI "^/\.well-known/" scghf_open
     <RequireAny>
         Require env scghf_open
+        Require env REDIRECT_scghf_open
         Require valid-user
     </RequireAny>
 </IfModule>
