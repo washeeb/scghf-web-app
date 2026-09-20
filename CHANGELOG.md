@@ -181,6 +181,24 @@ exercised.
   every view/edit page as a Super Admin. Three of the four bugs above fail
   it; it is the guard the suite was missing
 
+#### Changed — the footer's bottom strip reads as groups
+
+- Ten policy links, a currency form and two utilities shared one flex
+  row and wrapped into a ragged pair of lines. The strip is now two
+  rows: the policies grouped by what they govern — **Legal** (privacy,
+  terms, cookies, cookie preferences), **Giving** (donation policy,
+  refunds), **Conduct** (safeguarding, accessibility, raising a concern,
+  anti-fraud) — under small labels, decided by each link's page so an
+  editor's addition lands in the right group; then the copyright and
+  registration line with the currency picker, *Back to top* and *Add to
+  your phone* aligned on the right. The currency label no longer wraps;
+  its "approximate" note takes its own line on phones. The
+  cookie-preferences link is drawn only when the cookie policy is live —
+  the accessibility sweep caught an `href="#"` otherwise
+- `scghf:opcache-reset` retries on a timeout as well as on the previous
+  release's 404/405, with a 40 s request timeout; the first real run
+  showed the workers taking two attempts to reach the new release
+
 #### Fixed — the first deploy of the launch content served pages without their pictures
 
 - InMotion's PHP runs under **PHP-FPM after all** (the API had said no),

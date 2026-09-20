@@ -52,15 +52,25 @@ class OpcacheReset extends Command
             Cache::put(OpcacheResetController::PREFIX.$token, true, now()->addMinutes(2));
 
             try {
-                $response = Http::timeout(20)
+                $response = Http::timeout(40)
                     ->withUserAgent('SCGHF deploy (opcache reset)')
                     ->acceptJson()
                     ->post($url, ['token' => $token]);
             } catch (Throwable $e) {
                 Cache::forget(OpcacheResetController::PREFIX.$token);
-                $this->error("Could not reach {$url}: {$e->getMessage()}");
 
-                return self::FAILURE;
+                // A timeout right after the flip is the workers being slow to
+                // load the new release, not the site being down: try again.
+                if ($attempt === self::ATTEMPTS) {
+                    $this->error("Could not reach {$url}: {$e->getMessage()}");
+
+                    return self::FAILURE;
+                }
+
+                $this->line(sprintf('  no answer yet (%s); waiting %ds (attempt %d of %d)', $e->getMessage(), $pause, $attempt, self::ATTEMPTS));
+                sleep($pause);
+
+                continue;
             }
 
             $body = $response->json();

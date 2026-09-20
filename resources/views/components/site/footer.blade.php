@@ -166,78 +166,109 @@
             </div>
         </div>
 
-        {{-- Legal strip. --}}
-        <div class="mt-10 flex flex-col gap-4 border-t border-[var(--border)] pt-6 text-sm text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
-            <div class="space-y-1">
-                <p>
+        {{--
+            The strip below the columns: the policies, then the line that says
+            who we are and the small controls.
+
+            ── Grouped, not listed ─────────────────────────────────────────────
+
+            Ten policy links in one row wrap into a ragged pair of lines at most
+            widths, and a reader looking for "how do I get a refund" scans all
+            ten. Grouped by what they govern — the site, giving, conduct — each
+            group is three or four links under a label, and the row reads. The
+            groups are decided by the page each item points at, so an editor
+            adding a policy to the footer menu lands it in the right group
+            without a code change; anything unrecognised goes under "Policies".
+        --}}
+        @php
+            $groups = [
+                'legal' => ['label' => __('Legal'), 'slugs' => ['privacy-policy', 'terms', 'cookie-policy', 'shipping-and-delivery']],
+                'giving' => ['label' => __('Giving'), 'slugs' => ['donation-policy', 'refund-policy']],
+                'conduct' => ['label' => __('Conduct'), 'slugs' => ['safeguarding', 'accessibility', 'whistleblowing', 'anti-fraud']],
+                'other' => ['label' => __('Policies'), 'slugs' => []],
+            ];
+
+            $grouped = collect($groups)->map(fn (array $g): array => ['label' => $g['label'], 'items' => collect()])->all();
+
+            foreach ($legal as $item) {
+                // The cached item carries the page's path, not its slug; the
+                // legal pages are top-level, so the last segment is the slug.
+                $slug = basename(trim((string) parse_url((string) $item->resolveUrl(), PHP_URL_PATH), '/')) ?: null;
+                $key = collect($groups)->search(fn (array $g): bool => $slug !== null && in_array($slug, $g['slugs'], true)) ?: 'other';
+                $grouped[$key]['items']->push($item);
+            }
+
+            // A destination as well as a dialog: with the policy page unpublished
+            // there is nowhere for the link to go without script, and a link to
+            // '#' is a trap. The banner itself still offers the preferences.
+            $cookiePolicyUrl = (bool) setting('site.cookie_banner_enabled', true) ? App\Models\Page::liveUrl('cookie-policy') : null;
+            $cookieManage = $cookiePolicyUrl !== null;
+            $registration = collect([
+                setting('general.registration_number')
+                    ? __('Registration').' '.setting('general.registration_number')
+                    : null,
+                setting('general.registering_authority'),
+                setting('general.tin') ? __('TIN').' '.setting('general.tin') : null,
+            ])->filter();
+        @endphp
+
+        <div class="mt-10 border-t border-[var(--border)] pt-6 text-sm text-[var(--text-muted)]">
+            @if ($legal->isNotEmpty() || $cookieManage)
+                <nav aria-label="{{ __('Policies') }}" class="grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach ($grouped as $key => $group)
+                        @if ($group['items']->isNotEmpty() || ($key === 'legal' && $cookieManage))
+                            <div>
+                                <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-primary)]">{{ $group['label'] }}</h2>
+                                <ul class="flex flex-wrap gap-x-4 gap-y-1">
+                                    @foreach ($group['items'] as $item)
+                                        <li><x-site.menu-link :item="$item" class="!px-0 !py-0.5 !font-normal !text-[var(--text-muted)]" /></li>
+                                    @endforeach
+                                    @if ($key === 'legal' && $cookieManage)
+                                        {{-- Opens the preferences dialog; without script it is a link to the policy. --}}
+                                        <li><a href="{{ $cookiePolicyUrl }}" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ __('Cookie preferences') }}</a></li>
+                                    @endif
+                                </ul>
+                            </div>
+                        @endif
+                    @endforeach
+                </nav>
+            @endif
+
+            {{-- Who we are, and the small controls, on one line where there is room. --}}
+            <div class="mt-6 flex flex-col gap-4 border-t border-[var(--border)] pt-5 lg:flex-row lg:items-center lg:justify-between">
+                <p class="leading-relaxed">
                     &copy; {{ now()->year }}
                     {{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}
+                    @if ($registration->isNotEmpty())
+                        <span class="block sm:inline sm:before:mx-2 sm:before:content-['·']">{{ $registration->implode(' · ') }}</span>
+                    @endif
                 </p>
 
-                @php
-                    $registration = collect([
-                        setting('general.registration_number')
-                            ? __('Registration').' '.setting('general.registration_number')
-                            : null,
-                        setting('general.registering_authority'),
-                        setting('general.tin') ? __('TIN').' '.setting('general.tin') : null,
-                    ])->filter();
-                @endphp
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <x-site.currency-picker />
 
-                @if ($registration->isNotEmpty())
-                    <p>{{ $registration->implode(' · ') }}</p>
-                @endif
-            </div>
+                    {{--
+                        Back to top: a plain in-page link to the skip-link's own
+                        target, not a floating button and not a script. Pointing
+                        it at `#main-content` MOVES FOCUS as well as scrolling —
+                        a JavaScript scroll leaves a keyboard user's focus
+                        stranded at the bottom of the page they just left.
+                    --}}
+                    @if (setting('site.show_back_to_top', true))
+                        <a href="#main-content" class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ __('Back to top') }}</a>
+                    @endif
 
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-                @if ($legal->isNotEmpty())
-                    <nav aria-label="{{ __('Legal') }}">
-                        <ul class="flex flex-wrap gap-x-4 gap-y-1">
-                            @foreach ($legal as $item)
-                                <li><x-site.menu-link :item="$item" /></li>
-                            @endforeach
-                            @if ((bool) setting('site.cookie_banner_enabled', true))
-                                {{-- Opens the preferences dialog; without script it is a link to the policy. --}}
-                                <li><a href="{{ App\Models\Page::liveUrl('cookie-policy') ?? '#' }}" data-cookie-consent-manage class="inline-block py-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ __('Cookie preferences') }}</a></li>
-                            @endif
-                        </ul>
-                    </nav>
-                @endif
-
-                {{--
-                    Back to top.
-
-                    A plain in-page link to the skip-link's own target, not a
-                    floating button and not a script. Pointing it at
-                    `#main-content` rather than at the document top means it
-                    MOVES FOCUS as well as scrolling — a JavaScript scroll
-                    leaves a keyboard user's focus stranded at the bottom of the
-                    page they just left, which is the usual way this control is
-                    built and the usual way it is broken.
-                --}}
-                <x-site.currency-picker />
-
-                @if (setting('site.show_back_to_top', true))
-                    <a
-                        href="#main-content"
-                        class="shrink-0 hover:text-[var(--brand-primary)] hover:underline"
-                    >{{ __('Back to top') }}</a>
-                @endif
-
-                {{--
-                    Add to home screen. Hidden until the browser says the site
-                    is installable (`beforeinstallprompt`, in pwa.js); most
-                    browsers never fire it, so most visitors never see this.
-                    Nothing on the page asks — the link just becomes available.
-                --}}
-                @if (app(App\Support\Pwa::class)->enabled())
-                    <a
-                        href="{{ route('pwa.offline') }}"
-                        hidden
-                        data-pwa-install
-                        class="shrink-0 hover:text-[var(--brand-primary)] hover:underline"
-                    >{{ __('Add to your phone') }}</a>
-                @endif
+                    {{--
+                        Add to home screen. Hidden until the browser says the
+                        site is installable (`beforeinstallprompt`, in pwa.js);
+                        most browsers never fire it, so most visitors never see
+                        this. Nothing on the page asks — the link just becomes
+                        available.
+                    --}}
+                    @if (app(App\Support\Pwa::class)->enabled())
+                        <a href="{{ route('pwa.offline') }}" hidden data-pwa-install class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ __('Add to your phone') }}</a>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

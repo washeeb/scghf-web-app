@@ -15,10 +15,10 @@
 @endphp
 
 @if ($hasRates)
-    <form method="POST" action="{{ route('currency.set') }}" class="flex flex-wrap items-center gap-2" data-currency-picker>
+    <form method="POST" action="{{ route('currency.set') }}" class="flex flex-wrap items-center gap-x-2 gap-y-1" data-currency-picker>
         @csrf
         <input type="hidden" name="return" value="{{ url()->current() }}">
-        <label for="currency-picker" class="text-sm text-[var(--text-muted)]">{{ __('Also show amounts in') }}</label>
+        <label for="currency-picker" class="whitespace-nowrap text-sm text-[var(--text-muted)]">{{ __('Amounts also in') }}</label>
         <select
             id="currency-picker"
             name="currency"
@@ -30,7 +30,7 @@
         </select>
         <button type="submit" class="rounded-md border border-[var(--border)] px-2 py-1.5 text-sm text-[var(--text-primary)]" data-currency-apply>{{ __('Apply') }}</button>
         @if ($active)
-            <span class="text-xs text-[var(--text-muted)]">{{ __('Approximate; gifts are taken in cedis.') }}</span>
+            <span class="basis-full text-xs text-[var(--text-muted)] sm:basis-auto">{{ __('Approximate; gifts are taken in cedis.') }}</span>
         @endif
     </form>
 @endif
