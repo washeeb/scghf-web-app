@@ -50,7 +50,7 @@ What `activate.sh` does, in order, and why the order:
 | `config:cache`, `route:cache`, `view:cache`, `event:cache`, `filament:optimize`, `icons:cache` | built in the **new** directory, before it is live |
 | `scghf:preflight` | placeholders still in settings, missing keys, flags on with nothing behind them, cron and queue heartbeats. Printed on every deploy; **stops a production deploy** only once the GitHub variable `PREFLIGHT_GATE=1` is set on the production environment (the first deploy cannot pass it — cron points at `current/`, which does not exist until the flip) |
 | flip `current` | `ln -sfn` — atomic |
-| `queue:restart`, `scghf:cache-clear`, `scghf:opcache-reset`, `up` | the next cron worker picks up the new code; pages stored by the old release are gone; the web workers' OPcache is emptied through a one-time token (PHP-FPM keeps bytecode across deploys — without this the site can serve the previous release's code after the flip) |
+| `queue:restart`, `scghf:cache-clear`, `scghf:opcache-reset`, `up` | the next cron worker picks up the new code; pages stored by the old release are gone; the web workers' OPcache is emptied through a one-time token (PHP-FPM keeps bytecode across deploys — without this the site can serve the previous release's code after the flip). If the workers still run a release without that route, a one-off file under `public/deploy/` does the reset instead. The release's `public/.user.ini` sets `opcache.revalidate_path=1`, so the docroot symlink is resolved per request and a new release is new files to OPcache — with the host's default (`0`) the workers kept the first resolution and never saw a flip at all |
 | prune to five releases | disk and inodes |
 
 ## 3. A hotfix
@@ -62,6 +62,27 @@ Never push to `main` from a machine; never `--force`.
 `workflow_dispatch` lets you run the deploy by hand from the Actions tab
 with **Skip migrations** ticked — for the one case where a migration was
 run manually on the server and running it again would fail.
+
+### 3a. When Actions cannot run
+
+On 2026-09-20 every workflow run was refused: *"The job was not started
+because recent account payments have failed or your spending limit needs
+to be increased"* (GitHub → Settings → Billing & plans). Until that is
+settled nothing deploys by itself. A release can be shipped by hand by
+replaying the workflow's steps from a developer machine:
+
+1. `npm run build`, then `bash deploy/scripts/build-release-locally.sh /tmp/scghf-release`
+   — the same tree the workflow assembles (no-dev vendor, Vite output, the
+   same exclusions).
+2. Name it and upload it (rsync is not on Windows; tar over SSH is):
+   `REL=$(date -u +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)`, then
+   `(cd /tmp/scghf-release && tar czf - .) | ssh -p 2222 n789825@HOST "mkdir -p ~/scghf-staging/releases/$REL && tar xzf - -C ~/scghf-staging/releases/$REL"`.
+3. Activate exactly as the workflow does:
+   `ssh -p 2222 n789825@HOST "DEPLOY_PATH=/home/n789825/scghf-staging REL=$REL PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php SKIP_MIGRATIONS=0 PREFLIGHT_GATE=0 bash -s" < deploy/scripts/activate.sh`.
+4. Run the smoke checks from §2 by hand (`/up` → 200, `/.env` → not 200).
+
+The quality gate does not run this way: run `php artisan test` locally
+first. For production substitute `~/scghf` and `PREFLIGHT_GATE=1`.
 
 ## 4. Rollback
 

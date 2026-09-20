@@ -79,17 +79,38 @@ Both are now used.
 - A card's photograph credit goes into the image's `title` attribute
   (`credit="title"`) rather than an italic line under every thumbnail;
   page-level pictures keep the visible caption
-- `activate.sh` runs `SettingsSeeder` and `ThemeSettingsSeeder` (both
-  create-only) on every deploy, so a setting or token a release introduces
-  reaches the panel with its default
 - Tests: `SiteTemplateTest` — the import, its idempotence, the
   never-overwrite rule, the header's two logo files, the PWA icon following
   the square icon, the home page's template markup and block order, the
   layout refresh keeping an editor's heading, the photograph band and the
   FAQ picture, and the credit placement
 
+#### Fixed — the deploy
+
+- **Staging served a release from the morning all day.** PHP-FPM on this
+  host runs OPcache with `opcache.revalidate_path=0`: a script is cached
+  under the path it was requested by (`…/current/public/index.php`),
+  resolved once, and the timestamp check re-reads that first resolution —
+  the previous release's file, unchanged — so moving `current` changed
+  nothing the workers could see. The deploy's own reset route lives in the
+  new release, which the workers did not have, hence the 405s. Now:
+  `activate.sh` writes `public/.user.ini` with `opcache.revalidate_path=1`
+  (FPM reads it; the symlink is resolved per request), and when the reset
+  route is unreachable it resets through a one-off file under
+  `public/deploy/` — a script the workers have never seen — and removes it
+- The release tree lets `resources/brand/` through the image exclusion, as
+  it already did the manual
+- `activate.sh` runs `SettingsSeeder` and `ThemeSettingsSeeder` (both
+  create-only), so a setting or token a release introduces reaches the
+  panel with its default
+
 #### Open
 
+- **GitHub Actions is not running**: every run since `12603b9` was refused
+  with *"recent account payments have failed or your spending limit needs
+  to be increased"* (GitHub → Settings → Billing). This release reached
+  staging by hand — the workflow's steps replayed from this machine over
+  SSH — and is recorded in `docs/DEPLOYMENT.md`'s manual-deploy note
 - No serif font file is shipped. The `font-display` stack names Fraunces
   and Source Serif 4 first (both SIL OFL) and falls back to Georgia / the
   device serif. Downloading a font file needs the owner's go-ahead; until

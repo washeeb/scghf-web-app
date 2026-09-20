@@ -226,6 +226,7 @@ jobs:
             --exclude 'phpunit.xml' \
             --exclude 'pint.json' \
             --include 'resources/manual/***' \
+            --include 'resources/brand/***' \
             --exclude '*.md' \
             --exclude '*.png' \
             --exclude '*.jpg' \

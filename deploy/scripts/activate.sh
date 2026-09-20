@@ -320,6 +320,26 @@ HT
     ;;
 esac
 
+# ── OPcache and the symlink ──────────────────────────────────────────────────
+# PHP-FPM on this host runs OPcache with `revalidate_path=0`: a script is
+# cached under the path it was REQUESTED by (…/current/public/index.php),
+# resolved once, and the timestamp check re-reads that first resolution —
+# the previous release's file, unchanged. So moving `current` changed
+# nothing the workers could see, ever: staging served a release from the
+# morning all day, and the deploy's own reset route, which that release did
+# not have, answered 405. `.user.ini` in the docroot is read by FPM
+# (user_ini.filename) and `revalidate_path` is PHP_INI_ALL, so each
+# request resolves the symlink afresh and a new release is new files.
+# `.user.ini` is itself cached for user_ini.cache_ttl (300s), which is why
+# the reset below still runs.
+if [ ! -f "$RELEASE_DIR/public/.user.ini" ] || ! grep -q 'opcache.revalidate_path' "$RELEASE_DIR/public/.user.ini"; then
+  cat >> "$RELEASE_DIR/public/.user.ini" <<INI
+; Written by activate.sh. See deploy/scripts/activate.sh, "OPcache and the symlink".
+opcache.revalidate_path=1
+INI
+fi
+ok "OPcache revalidates the docroot symlink (.user.ini)"
+
 # ── Permissions ──────────────────────────────────────────────────────────────
 # cPanel runs PHP as the account user, so 755/644 is sufficient. Never 777 —
 # on shared hosting that is world-writable to other tenants' processes.
@@ -359,7 +379,27 @@ say "Post-activation"
 # first staging deploy of the launch content served pages without their
 # pictures for exactly this reason. Non-fatal: a stale cache clears itself
 # as files are revalidated; a rolled-back release would not.
-"$PHP_BIN" "$CURRENT_LINK/artisan" scghf:opcache-reset --no-interaction && ok "web workers' OPcache emptied" || warn "OPcache was not reset (see above) — the web workers may serve the previous release's code until it revalidates"
+if "$PHP_BIN" "$CURRENT_LINK/artisan" scghf:opcache-reset --no-interaction; then
+  ok "web workers' OPcache emptied"
+else
+  # The route is in the NEW release; workers still running an old one that
+  # lacks it answer 404/405 for as long as their cache lives. A one-off
+  # file under public/deploy/ — the path the staging gate leaves open — is
+  # a script the workers have never seen, so it runs on the first request
+  # whatever they have cached. Removed the moment it has answered.
+  warn "the reset route was not reachable; resetting through a one-off file"
+  ONE_OFF="$CURRENT_LINK/public/deploy"
+  ONE_OFF_NAME="reset-$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n').php"
+  mkdir -p "$ONE_OFF"
+  printf '%s
+' '<?php header("Content-Type: text/plain"); echo function_exists("opcache_reset") && opcache_reset() ? "reset" : "no-opcache";' > "$ONE_OFF/$ONE_OFF_NAME"
+  ONE_OFF_ANSWER=$(curl -sS -A "Mozilla/5.0 (compatible; SCGHF-deploy-check)" --max-time 30 "${APP_URL_VAL}/deploy/$ONE_OFF_NAME" 2>/dev/null || true)
+  rm -rf "$ONE_OFF"
+  case "$ONE_OFF_ANSWER" in
+    reset) ok "web workers' OPcache emptied (one-off file)" ;;
+    *) warn "OPcache was not reset (answer: ${ONE_OFF_ANSWER:-none}) — the web workers may serve the previous release's code until it revalidates" ;;
+  esac
+fi
 "$PHP_BIN" "$CURRENT_LINK/artisan" up --no-interaction 2>/dev/null || true
 echo "$REL" > "$SHARED_DIR/current_release"
 
