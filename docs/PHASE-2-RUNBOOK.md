@@ -645,6 +645,16 @@ gh secret set SMOKE_BASIC_AUTH --env staging --body "tester:<password>"
 
 Without the secret, a 401 on the homepage counts as alive and `/up` decides.
 
+> ⚠️ **Two doors, and browsers confuse them.** The grey browser dialog is the
+> gate (`tester` + the htpasswd password); the dark page with the foundation's
+> name is the application (`demo.superadmin@example.test` etc.). Chrome and
+> Edge save the application's credentials for the site and then **pre-fill
+> them into the gate dialog**, which fails silently and re-prompts forever —
+> the first tester lost an hour to it (2026-09-20). Clear both fields and
+> type the gate credentials by hand, or use a private window once; after
+> that the browser remembers the gate for the session. The same server-side
+> check that proves the password is right: `htpasswd -v <file> tester`.
+
 ### 7.6 SSL
 
 **Security → SSL/TLS Status.** Confirm `greaterhopefoundations.org`, `www.greaterhopefoundations.org` and the staging subdomain all show a valid AutoSSL certificate. Run AutoSSL if any is missing.
