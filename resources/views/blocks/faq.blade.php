@@ -7,9 +7,9 @@
     and from a search engine reading the page.
 --}}
 @if ($faqs->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading')" :intro="$section->field('intro')">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')" :intro="$section->field('intro')">
         <div class="grid gap-8 md:grid-cols-2">
-            <ul class="divide-y divide-[var(--border)]">
+            <ul class="divide-y divide-[var(--border)] rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface)] px-6">
                 @foreach ($faqs as $faq)
                     <li>
                         <details class="group py-4">
@@ -29,7 +29,7 @@
 
             @if (($image ?? null)?->isPublishable())
                 <div class="hidden md:block">
-                    <x-media.image :media="$image" size="card" class="rounded-lg" />
+                    <x-media.image :media="$image" size="card" credit="title" class="aspect-[4/5] w-full rounded-[var(--radius-2xl)] object-cover shadow-[var(--shadow-lg)]" />
                 </div>
             @endif
         </div>

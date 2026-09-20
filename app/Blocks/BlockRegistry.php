@@ -139,6 +139,7 @@ class BlockRegistry
                 category: 'Content',
                 icon: 'heroicon-o-squares-2x2',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     'columns' => ['type' => 'integer', 'default' => 4],
@@ -153,6 +154,7 @@ class BlockRegistry
                 category: 'Content',
                 icon: 'heroicon-o-rectangle-group',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     'show_focus_areas' => ['type' => 'boolean', 'default' => true],
@@ -167,6 +169,7 @@ class BlockRegistry
                 category: 'Content',
                 icon: 'heroicon-o-heart',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                 ],
@@ -180,6 +183,7 @@ class BlockRegistry
                 category: 'Fundraising',
                 icon: 'heroicon-o-gift',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     // Null falls back to donations.presets in settings, so the
@@ -201,6 +205,7 @@ class BlockRegistry
                 category: 'Fundraising',
                 icon: 'heroicon-o-banknotes',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     'limit' => ['type' => 'integer', 'default' => 3],
@@ -216,6 +221,7 @@ class BlockRegistry
                 category: 'Fundraising',
                 icon: 'heroicon-o-chart-bar',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'metric_ids' => ['type' => 'list', 'default' => []],
                     // Unsourced statistics are a trust risk; the date is shown
@@ -232,6 +238,7 @@ class BlockRegistry
                 category: 'Programmes',
                 icon: 'heroicon-o-briefcase',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     'limit' => ['type' => 'integer', 'default' => 3],
@@ -246,6 +253,7 @@ class BlockRegistry
                 category: 'Media',
                 icon: 'heroicon-o-photo',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'gallery_id' => ['type' => 'integer'],
                     'layout' => ['type' => 'string', 'default' => 'mosaic'],
@@ -259,6 +267,7 @@ class BlockRegistry
                 category: 'Media',
                 icon: 'heroicon-o-play-circle',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'video_url' => ['type' => 'url', 'required' => true],
                     'poster' => ['type' => 'media'],
@@ -274,6 +283,7 @@ class BlockRegistry
                 category: 'Social proof',
                 icon: 'heroicon-o-chat-bubble-bottom-center-text',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'limit' => ['type' => 'integer', 'default' => 3],
                     'layout' => ['type' => 'string', 'default' => 'carousel'],
@@ -287,6 +297,7 @@ class BlockRegistry
                 category: 'Social proof',
                 icon: 'heroicon-o-building-office-2',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'grayscale' => ['type' => 'boolean', 'default' => true],
                 ],
@@ -299,6 +310,7 @@ class BlockRegistry
                 category: 'Social proof',
                 icon: 'heroicon-o-users',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'department_id' => ['type' => 'integer'],
                 ],
@@ -312,6 +324,7 @@ class BlockRegistry
                 category: 'Conversion',
                 icon: 'heroicon-o-megaphone',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'required' => true, 'max' => 160],
                     'body' => ['type' => 'text'],
                     'cta_label' => ['type' => 'string', 'max' => 40],
@@ -328,6 +341,7 @@ class BlockRegistry
                 category: 'Conversion',
                 icon: 'heroicon-o-envelope',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     'button_label' => ['type' => 'string', 'default' => 'Subscribe', 'max' => 40],
@@ -342,6 +356,7 @@ class BlockRegistry
                 category: 'Conversion',
                 icon: 'heroicon-o-question-mark-circle',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     'category_id' => ['type' => 'integer'],
@@ -356,6 +371,7 @@ class BlockRegistry
                 category: 'Conversion',
                 icon: 'heroicon-o-map-pin',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'show_map' => ['type' => 'boolean', 'default' => false],
                 ],
@@ -375,6 +391,7 @@ class BlockRegistry
                 category: 'Conversion',
                 icon: 'heroicon-o-envelope-open',
                 fields: [
+                    'eyebrow' => ['type' => 'string', 'max' => 80],
                     'heading' => ['type' => 'string', 'max' => 160],
                     'intro' => ['type' => 'text'],
                     'kind' => ['type' => 'select', 'required' => true, 'default' => 'partner',

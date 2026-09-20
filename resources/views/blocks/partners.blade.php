@@ -1,6 +1,6 @@
 {{-- A strip of supporter marks. --}}
 @if ($partners->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading')">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')">
         <ul class="flex flex-wrap items-center justify-center gap-8">
             @foreach ($partners as $partner)
                 @if ($partner->logo?->isPublishable())

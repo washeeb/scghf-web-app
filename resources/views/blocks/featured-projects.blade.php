@@ -1,15 +1,15 @@
 {{-- Project cards. --}}
 @if ($projects->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading')" :intro="$section->field('intro')">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')" :intro="$section->field('intro')">
         <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($projects as $project)
-                <li class="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+                <li class="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition hover:shadow-[var(--shadow-md)]">
                     @if ($project->featuredImage?->isPublishable())
-                        <x-media.image :media="$project->featuredImage" size="card" class="aspect-[3/2] w-full object-cover" />
+                        <x-media.image :media="$project->featuredImage" size="card" credit="title" class="aspect-[4/3] w-full object-cover" />
                     @endif
 
-                    <div class="p-5">
-                        <h3 class="font-semibold text-[var(--text-primary)]">{{ $project->title }}</h3>
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-[var(--text-primary)]">{{ $project->title }}</h3>
 
                         @if ($project->summary)
                             <p class="mt-2 text-sm text-[var(--text-muted)]">{{ $project->summary }}</p>

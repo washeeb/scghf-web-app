@@ -6,6 +6,7 @@ namespace App\Filament\Blocks;
 
 use App\Blocks\BlockDefinition;
 use App\Models\Media;
+use App\Support\Icons;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -104,6 +105,11 @@ class BlockFieldFactory
             'repeater' => Repeater::make("data.{$name}")
                 ->schema([
                     TextInput::make('title')->label(__('Title'))->maxLength(160),
+                    // The small symbol in the card's corner. A short fixed list
+                    // (see resources/views/components/ui/icon.blade.php) rather
+                    // than a free field: an editor should not need to know an
+                    // icon set's names.
+                    Select::make('icon')->label(__('Icon'))->options(Icons::options())->placeholder(__('None')),
                     Textarea::make('body')->label(__('Text'))->rows(2)->maxLength(500),
                     TextInput::make('url')->label(__('Link'))->maxLength(500),
                 ])

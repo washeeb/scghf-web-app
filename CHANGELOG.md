@@ -8,6 +8,93 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### The visual template and the logo — 2026-09-20
+
+The site was built on its own layout while the foundation's chosen
+template (`Sample-Web-App-Template.jpg`, the KidHope design) and logo pack
+(`SCGHF Logo.png`, `SCGHF Logo 2.3.png`) sat unused at the repository root.
+Both are now used.
+
+#### Added — the logo
+
+- **`resources/brand/`** — the logo pack in the repository: the square icon,
+  the lockup as uploaded (for light backgrounds), a **dark-background
+  lockup** derived from it (the dark-green wordmark set in white; the
+  orange word and the mark unchanged), and a **1200×630 social card**
+  (the lockup on white with an orange rule) for links shared on WhatsApp
+  and Facebook. Derived files carry a provenance note on their library row
+- **`scghf:brand-assets`** — imports the four files into the media library
+  (folder *Brand*, licence *own*, `custom_properties.brand_asset`) and
+  fills **Header → Logo (light)**, **Logo (dark)**, the new **Logo — square
+  icon** and **Search engines → Social image** wherever they are empty.
+  Never overwrites a logo the foundation has since chosen; `--check`
+  reports without importing. `activate.sh` runs it on every deploy
+- Setting **`header.logo_icon`**; `Pwa::logo()` prefers it to the lockup,
+  so the home-screen icon is the mark rather than a wide lockup squashed
+  into a tile
+- The header renders the logo at 40/48px with `sizes="220px"`, so the
+  browser fetches the 320px conversion rather than the 1600px one (the
+  image component gained a `sizes` prop for exactly this)
+
+#### Added — the template
+
+- **Typography**: page and section titles in a serif display face
+  (`font-display` token, new; resolves to the device's own serif until a
+  file is shipped — see *Open*), card titles and everything else in the
+  sans as before
+- **The header**: the top bar on by default (`header.show_top_bar` → `1`
+  on new installs), on the accent colour with the address, phone, email
+  and hours from *Contact* — it renders only once one of those is filled;
+  a search icon when site search is on; the Donate button as a green pill
+- **The hero**: the headline with its first word underlined in the accent,
+  pill calls to action, a gradient rather than a flat overlay, and the next
+  section's white panel rising into the foot of the photograph with
+  rounded corners
+- **Eyebrows**: every block with a heading gained an `eyebrow` field — the
+  short uppercase line with the orange rule above the title; the section
+  wrapper renders it, in the band's ink on a brand or inverse band
+- **Feature cards** carry a line icon in a tinted disc, chosen per card
+  from a short list (`App\Support\Icons`, drawn by `<x-ui.icon>`, Heroicons
+  via the package Filament already ships); with none chosen the card
+  shows its initial. Division, appeal and project cards: larger radius,
+  shadow, 4:3 pictures, an orange pill on each appeal
+- **Text and image** sets the photograph slightly askew on a tinted card
+  and straightens it on hover; **impact numbers** put the figure large in
+  the display face with the unit under it (`ImpactMetric::formatFigure()`)
+  and hairlines between the four; the **donation widget**, **FAQ**,
+  **testimonials**, **newsletter** and **core values** take the same radii
+  and pills
+- **The CTA band's `background = image`** now draws the photograph band
+  it had offered since the block was defined — the picture edge to edge,
+  darkened, the title centred — instead of silently dropping the picture.
+  The **FAQ block's `image`** field is likewise resolved and rendered now
+- `.btn`, `.btn-brand`, `.btn-accent`, `.btn-outline`, `.btn-sm` and
+  `.eyebrow` in `app.css`, so every call to action is one shape
+- **The home page arrangement** in `LaunchContentSeeder`: eyebrows on
+  every section, the impact numbers and the new **donation band** on the
+  brand colour, appeals with "Donate now", a **FAQ with its side picture**
+  before the closing band. On a page already seeded, `refreshLayout()`
+  fills in only what is missing — an eyebrow, an icon, a band's settings,
+  a block the page has none of — and never a word an editor changed
+- A card's photograph credit goes into the image's `title` attribute
+  (`credit="title"`) rather than an italic line under every thumbnail;
+  page-level pictures keep the visible caption
+- `activate.sh` runs `SettingsSeeder` and `ThemeSettingsSeeder` (both
+  create-only) on every deploy, so a setting or token a release introduces
+  reaches the panel with its default
+- Tests: `SiteTemplateTest` — the import, its idempotence, the
+  never-overwrite rule, the header's two logo files, the PWA icon following
+  the square icon, the home page's template markup and block order, the
+  layout refresh keeping an editor's heading, the photograph band and the
+  FAQ picture, and the credit placement
+
+#### Open
+
+- No serif font file is shipped. The `font-display` stack names Fraunces
+  and Source Serif 4 first (both SIL OFL) and falls back to Georgia / the
+  device serif. Downloading a font file needs the owner's go-ahead; until
+  then titles render in the system serif
+
 ### Hosting — the foundation's own cPanel account and domain — 2026-09-19
 
 The project left the shared `presti98` account on 2026-09-02 and parked

@@ -168,7 +168,9 @@ final class Pwa
 
     private function logo(): ?Media
     {
-        $id = (int) (setting('header.logo_light') ?: 0);
+        // The square icon when there is one; the wide lockup otherwise, which
+        // the renderer letterboxes rather than squashes.
+        $id = (int) (setting('header.logo_icon') ?: setting('header.logo_light') ?: 0);
 
         return $id > 0 ? Media::query()->find($id) : null;
     }

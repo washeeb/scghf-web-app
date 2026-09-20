@@ -18,7 +18,7 @@
     <div class="flex items-center gap-2">
         <a
             href="{{ route('account.dashboard') }}"
-            class="rounded-md px-2 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            class="whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
         >
             {{ __('Your account') }}
             <span class="sr-only">— {{ auth()->user()->name }}</span>
@@ -28,13 +28,13 @@
             @csrf
             <button
                 type="submit"
-                class="rounded-md px-2 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                class="whitespace-nowrap rounded-md px-2 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >{{ __('Sign out') }}</button>
         </form>
     </div>
 @else
     <a
         href="{{ route('login') }}"
-        class="rounded-md px-2 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+        class="whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
     >{{ __('Sign in') }}</a>
 @endauth

@@ -66,7 +66,9 @@ class BlockDataResolver
                 'testimonials' => ['testimonials' => $this->testimonials($section)],
                 'partners' => ['partners' => $this->partners()],
                 'team' => ['members' => $this->team($section)],
-                'faq' => ['faqs' => $this->faqs($section)],
+                // The FAQ's side picture is a media field like the hero's; it went
+                // unresolved (and so unrendered) until the template restyle used it.
+                'faq' => ['faqs' => $this->faqs($section)] + $this->media($section),
                 'impact-stats' => ['metrics' => $this->metrics($section)],
                 'gallery' => ['gallery' => $this->gallery($section)],
                 'hero', 'page-header', 'split-content', 'cta-band', 'video' => $this->media($section),

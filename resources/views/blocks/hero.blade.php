@@ -35,8 +35,27 @@
     @endpush
 @endif
 
-<section class="relative isolate {{ $presentation->sectionClasses() }}">
-    @if ($desktop?->isPublishable())
+{{--
+    ── The shape, from the chosen template ─────────────────────────────────────
+
+    A full-bleed photograph, the headline in the serif display face with its
+    first word underlined in the accent, two pill buttons, and — the detail
+    that makes it read as the template — the next section's white panel
+    rising into the bottom of the picture with rounded corners. That panel is
+    the `aria-hidden` div at the foot; the extra bottom padding on the text
+    box makes room for it.
+--}}
+@php
+    $heading = (string) $section->field('heading');
+    // The first word gets the underline. Split on whitespace only, so a
+    // heading in one long word is simply underlined whole.
+    $words = preg_split('/\s+/u', trim($heading), 2) ?: [$heading];
+    $centred = $presentation->get('alignment') === 'centre';
+    $hasImage = $desktop?->isPublishable();
+@endphp
+
+<section class="relative isolate overflow-hidden {{ $presentation->sectionClasses() }}">
+    @if ($hasImage)
         <picture>
             @if ($mobile?->isPublishable())
                 <source media="(max-width: 767px)" srcset="{{ $mobile->conversionUrl('card') }}">
@@ -58,40 +77,58 @@
             >
         </picture>
 
-        <div class="absolute inset-0 -z-10 bg-black" style="opacity: {{ $opacity / 100 }}"></div>
+        {{-- Darker at the foot than the head, so the headline sits on the
+             calmer part of any photograph and the panel below has an edge. --}}
+        <div class="absolute inset-0 -z-10 bg-linear-to-b from-black/30 via-black to-black" style="opacity: {{ $opacity / 100 }}"></div>
     @endif
 
-    <div class="{{ $presentation->containerClasses() }} {{ $desktop?->isPublishable() ? 'py-24 text-white sm:py-32' : '' }}">
-        @if ($eyebrow = $section->field('eyebrow'))
-            <p class="text-sm font-semibold uppercase tracking-wide opacity-90">{{ $eyebrow }}</p>
-        @endif
+    <div class="{{ $presentation->containerClasses() }} {{ $hasImage ? 'pt-20 pb-28 text-white sm:pt-28 sm:pb-36 lg:pt-32 lg:pb-40' : '' }}">
+        <div @class(['max-w-3xl', 'mx-auto text-center' => $centred])>
+            @if ($eyebrow = $section->field('eyebrow'))
+                <p @class(['eyebrow', 'eyebrow-on-dark' => $hasImage])>{{ $eyebrow }}</p>
+            @endif
 
-        <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-5xl">{{ $section->field('heading') }}</h1>
+            <h1 class="mt-3 text-4xl leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+                <span class="underline decoration-[var(--brand-secondary)] decoration-[0.12em] underline-offset-[0.14em]">{{ $words[0] }}</span>{{ isset($words[1]) ? ' '.$words[1] : '' }}
+            </h1>
 
-        @if ($subheading = $section->field('subheading'))
-            <p class="mt-4 max-w-2xl text-lg opacity-95 {{ $presentation->get('alignment') === 'centre' ? 'mx-auto' : '' }}">{{ $subheading }}</p>
-        @endif
+            @if ($subheading = $section->field('subheading'))
+                <p class="mt-5 max-w-2xl text-lg leading-relaxed opacity-95 sm:text-xl {{ $centred ? 'mx-auto' : '' }}">{{ $subheading }}</p>
+            @endif
 
-        @php
-            $ctas = collect([
-                ['label' => $section->field('primary_cta_label'), 'url' => $section->field('primary_cta_url'), 'primary' => true],
-                ['label' => $section->field('secondary_cta_label'), 'url' => $section->field('secondary_cta_url'), 'primary' => false],
-            ])->filter(fn (array $cta) => filled($cta['label']) && filled($cta['url']));
-        @endphp
+            @php
+                $ctas = collect([
+                    ['label' => $section->field('primary_cta_label'), 'url' => $section->field('primary_cta_url'), 'primary' => true],
+                    ['label' => $section->field('secondary_cta_label'), 'url' => $section->field('secondary_cta_url'), 'primary' => false],
+                ])->filter(fn (array $cta) => filled($cta['label']) && filled($cta['url']));
+            @endphp
 
-        @if ($ctas->isNotEmpty())
-            <div class="mt-8 flex flex-wrap gap-3 {{ $presentation->get('alignment') === 'centre' ? 'justify-center' : '' }}">
-                @foreach ($ctas as $cta)
-                    <a
-                        href="{{ $cta['url'] }}"
-                        @class([
-                            'rounded-md px-5 py-3 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]',
-                            'bg-[var(--brand-secondary)] text-[var(--text-on-secondary)]' => $cta['primary'],
-                            'border border-current' => ! $cta['primary'],
-                        ])
-                    >{{ $cta['label'] }}</a>
-                @endforeach
-            </div>
-        @endif
+            @if ($ctas->isNotEmpty())
+                <div class="mt-8 flex flex-wrap gap-3 {{ $centred ? 'justify-center' : '' }}">
+                    @foreach ($ctas as $cta)
+                        <a
+                            href="{{ $cta['url'] }}"
+                            @class([
+                                'btn',
+                                'btn-accent' => $cta['primary'],
+                                'btn-outline' => ! $cta['primary'],
+                                'backdrop-blur-sm' => ! $cta['primary'] && $hasImage,
+                            ])
+                        >
+                            {{ $cta['label'] }}
+                            @unless ($cta['primary'])
+                                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" /></svg>
+                            @endunless
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
     </div>
+
+    @if ($hasImage)
+        {{-- The panel the next section stands on, drawn in the page background
+             so whichever palette is active it matches what follows. --}}
+        <div aria-hidden="true" class="absolute inset-x-3 bottom-0 h-8 rounded-t-[var(--radius-2xl)] bg-[var(--bg)] sm:inset-x-6 sm:h-12"></div>
+    @endif
 </section>

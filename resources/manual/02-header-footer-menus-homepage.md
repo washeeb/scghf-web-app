@@ -9,7 +9,7 @@ a developer.
 |---|---|
 | The phone number, email, address, office hours, social links | *Website → Site settings* → the **Contact** and **Social** tabs |
 | The foundation's name, the wordmark, the motto, the TIN | *Site settings* → **Organisation** |
-| The logo (light and dark), whether the header sticks, the top bar | *Site settings* → **Header** |
+| The logo (light, dark and the square icon), whether the header sticks, the top bar | *Site settings* → **Header** |
 | The footer headings, the newsletter box, the "back to top" link, the cookie notice text | *Site settings* → **Site & footer** |
 | Which links appear in the header and in the three footer columns | *Website → Menus* |
 | A message across the top of every page ("Office closed on Monday") | *Website → Announcements* |
@@ -19,6 +19,13 @@ a developer.
 **Every change is live the moment you press Save.** There is no
 "publish the site" step. (Behind the scenes the site keeps a copy of each
 page for a few minutes to stay fast; your save clears those copies.)
+
+## The top bar
+
+The thin orange strip above the header shows the office address, phone,
+email and hours from the **Contact** tab. It appears only once at least
+one of those is filled in, and only on screens wider than a phone. *Site
+settings → Header → Show the top bar* switches it off.
 
 ## Site settings
 
@@ -76,7 +83,11 @@ a paragraph, an impact-numbers strip, a call-to-action band, a gallery,
 the newsletter box, and so on. To change the homepage:
 
 1. **Add a section**: the *Add section* button, choose the kind.
-2. **Fill in its fields**: each kind asks only for what it needs.
+2. **Fill in its fields**: each kind asks only for what it needs. Most
+   have an **Eyebrow** — the short line in capitals above the title
+   ("HOW WE HELP", "OUR STORY"); leave it empty and nothing shows. Cards
+   in a *Feature cards* section each have an **Icon**, chosen from a short
+   list; with none chosen the card shows its first letter instead.
 3. **Presentation** (the small row under the fields): background,
    width, spacing — a closed list of choices, so every page stays on-brand.
 4. **Reorder** by dragging; **hide** a section with its toggle rather than

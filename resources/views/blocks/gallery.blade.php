@@ -1,6 +1,6 @@
 {{-- A mosaic of photographs. --}}
 @if (($gallery ?? null) && $gallery->items->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading') ?: $gallery->title">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading') ?: $gallery->title">
         <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             @foreach ($gallery->items as $item)
                 @if ($item->media?->isPublishable())

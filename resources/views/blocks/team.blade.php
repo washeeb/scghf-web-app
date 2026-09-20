@@ -1,6 +1,6 @@
 {{-- Trustees, leadership and staff. --}}
 @if ($members->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading')">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')">
         <ul class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ($members as $member)
                 <li class="text-center">

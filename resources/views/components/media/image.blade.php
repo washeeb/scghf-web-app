@@ -30,11 +30,21 @@
     @param size      thumb | card | hero — the largest this will render at
     @param eager     true for the ONE image above the fold; everything else lazy
     @param class     passed through to the <img>
+    @param sizes     the `sizes` attribute, when the image is drawn narrower
+                     than the content column — a logo, an avatar
+    @param credit    where the photographer's credit goes: `caption` (default)
+                     renders it under the picture; `title` puts it in the
+                     image's title attribute — for a card, where a line of
+                     italic under every thumbnail is noise and the licence
+                     (Unsplash) does not require the credit to be visible.
+                     Never `none`: a credit is carried, one way or the other.
 --}}
 @props([
     'media' => null,
     'size' => 'card',
     'eager' => false,
+    'sizes' => null,
+    'credit' => 'caption',
 ])
 
 @php
@@ -78,6 +88,7 @@
             sizes="{{ $sizes ?? '(min-width: 1152px) 1100px, 100vw' }}"
         @endif
         alt="{{ $media->altText() }}"
+        @if ($credit === 'title' && $media->credit) title="{{ __('Photo: :credit', ['credit' => $media->credit]) }}" @endif
         @if ($displayWidth) width="{{ $displayWidth }}" @endif
         @if ($displayHeight) height="{{ $displayHeight }}" @endif
         {{-- `eager` for the one image above the fold and lazy for the rest.
@@ -89,13 +100,13 @@
         {{ $attributes->class(['max-w-full h-auto']) }}
     >
 
-    @if ($media->caption || $media->credit)
+    @if ($media->caption || ($media->credit && $credit !== 'title'))
         {{-- A caption belongs to the image, so it is rendered by whatever draws
              the image. Credit is a legal obligation for donated photography and
              is the first thing dropped when captions are left to page authors. --}}
         <figcaption class="mt-2 text-sm text-[var(--text-muted)]">
             {{ $media->caption }}
-            @if ($media->credit)
+            @if ($media->credit && $credit !== 'title')
                 <span class="italic">{{ __('Photo: :credit', ['credit' => $media->credit]) }}</span>
             @endif
         </figcaption>

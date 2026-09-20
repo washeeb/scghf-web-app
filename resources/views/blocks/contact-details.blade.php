@@ -7,7 +7,7 @@
 
     Each detail is omitted when unfilled rather than rendering an empty label.
 --}}
-<x-blocks.section :section="$section" :heading="$section->field('heading')">
+<x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')">
     <address class="not-italic">
         <ul class="space-y-3 text-[var(--text-primary)]">
             @if ($address = setting('contact.address'))

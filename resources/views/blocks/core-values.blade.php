@@ -8,10 +8,10 @@
 @php $values = collect(setting('general.core_values', []))->filter(); @endphp
 
 @if ($values->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading')" :intro="$section->field('intro')">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')" :intro="$section->field('intro')">
         <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($values as $value)
-                <li class="rounded-lg border border-[var(--border)] px-5 py-4 font-medium text-[var(--text-primary)]">{{ $value }}</li>
+                <li class="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] px-5 py-4 font-medium text-[var(--text-primary)]"><span class="size-2 shrink-0 rounded-full bg-[var(--brand-secondary)]" aria-hidden="true"></span>{{ $value }}</li>
             @endforeach
         </ul>
     </x-blocks.section>

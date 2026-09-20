@@ -14,10 +14,10 @@
     @endif
 
     <div class="{{ $presentation->containerClasses() }}">
-        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ $section->field('heading') }}</h1>
+        <h1 class="max-w-3xl text-4xl tracking-tight sm:text-5xl">{{ $section->field('heading') }}</h1>
 
         @if ($subheading = $section->field('subheading'))
-            <p class="mt-3 max-w-2xl text-[var(--text-muted)]">{{ $subheading }}</p>
+            <p class="mt-4 max-w-2xl text-lg text-[var(--text-muted)]">{{ $subheading }}</p>
         @endif
     </div>
 </section>

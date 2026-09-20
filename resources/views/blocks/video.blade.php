@@ -12,7 +12,7 @@
     So the poster image is a link. Pressing it opens the video; not pressing it
     costs nothing and tracks nobody.
 --}}
-<x-blocks.section :section="$section" :heading="$section->field('heading')">
+<x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')">
     <a
         href="{{ $section->field('video_url') }}"
         target="_blank"

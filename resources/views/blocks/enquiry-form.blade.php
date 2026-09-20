@@ -16,7 +16,7 @@
 @endphp
 
 @if ($spec && Route::has('enquiries.store'))
-    <x-blocks.section :section="$section" :heading="$section->field('heading', $spec['label'])" :intro="$section->field('intro', $spec['intro'])">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading', $spec['label'])" :intro="$section->field('intro', $spec['intro'])">
         <div class="max-w-2xl">
             <x-site.status />
 

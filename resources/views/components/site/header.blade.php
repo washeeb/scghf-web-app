@@ -78,22 +78,46 @@
         $topBarPhone = setting('contact.phone_primary');
         $topBarEmail = setting('contact.email_general');
         $topBarHours = setting('contact.office_hours');
+        // The first line of the street address, with the city — enough to
+        // place the office, short enough for a strip.
+        $topBarPlace = collect([
+            \Illuminate\Support\Str::before((string) setting('contact.address', ''), "\n"),
+            setting('contact.city'),
+        ])->filter()->implode(', ');
     @endphp
 
-    @if ($topBarPhone || $topBarEmail || $topBarHours)
-        <div class="hidden border-b border-[var(--border)] bg-[var(--surface)] text-xs text-[var(--text-muted)] sm:block">
-            <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-end gap-x-4 gap-y-1 px-4 py-1.5">
-                @if ($topBarHours)
-                    <span>{{ $topBarHours }}</span>
+    @if ($topBarPhone || $topBarEmail || $topBarHours || $topBarPlace)
+        {{-- The template's strip: on the accent colour, contact on the left,
+             email and hours on the right. The ink is the token that passes AA
+             on the orange; white on it does not. --}}
+        <div class="hidden bg-[var(--brand-secondary)] text-xs font-medium text-[var(--text-on-secondary)] sm:block">
+            <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-1.5">
+                @if ($topBarPlace)
+                    <span class="inline-flex items-center gap-1.5">
+                        <x-ui.icon name="home" class="size-3.5" />
+                        {{ $topBarPlace }}
+                    </span>
                 @endif
 
                 @if ($topBarPhone)
-                    <a class="hover:text-[var(--brand-primary)]" href="tel:{{ preg_replace('/\s+/', '', $topBarPhone) }}">{{ $topBarPhone }}</a>
+                    <a class="inline-flex items-center gap-1.5 hover:underline" href="tel:{{ preg_replace('/\s+/', '', $topBarPhone) }}">
+                        <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" /></svg>
+                        {{ $topBarPhone }}
+                    </a>
                 @endif
 
-                @if ($topBarEmail)
-                    <a class="hover:text-[var(--brand-primary)]" href="mailto:{{ $topBarEmail }}">{{ $topBarEmail }}</a>
-                @endif
+                <span class="ml-auto flex flex-wrap items-center gap-x-6 gap-y-1">
+                    @if ($topBarEmail)
+                        <a class="inline-flex items-center gap-1.5 hover:underline" href="mailto:{{ $topBarEmail }}">
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
+                            {{ $topBarEmail }}
+                        </a>
+                    @endif
+
+                    @if ($topBarHours)
+                        <span>{{ $topBarHours }}</span>
+                    @endif
+                </span>
             </div>
         </div>
     @endif
@@ -122,11 +146,15 @@
                 {{-- When only one file is uploaded it serves both themes. The
                      alternative — showing nothing in dark until somebody
                      uploads a second file — is a site with no logo. --}}
+                {{-- `sizes` says how wide the logo is drawn; without it the
+                     browser assumes full width and fetches the 1600px file
+                     for a 200px logo. --}}
                 <x-media.image
                     :media="$logoLight ?? $logoDark"
                     size="thumb"
                     :eager="true"
-                    class="h-9 w-auto {{ $logoDark && $logoLight ? 'dark:hidden' : '' }}"
+                    sizes="220px"
+                    class="h-10 w-auto sm:h-12 {{ $logoDark && $logoLight ? 'dark:hidden' : '' }}"
                 />
 
                 @if ($logoDark && $logoLight)
@@ -134,7 +162,8 @@
                         :media="$logoDark"
                         size="thumb"
                         :eager="true"
-                        class="hidden h-9 w-auto dark:block"
+                        sizes="220px"
+                        class="hidden h-10 w-auto sm:h-12 dark:block"
                     />
                 @endif
 
@@ -150,7 +179,7 @@
         {{-- Wide screens: a row, with a dropdown for anything that has
              children. `max_depth 1` on the seeded menu means one level, and
              this is the level. --}}
-        <ul class="hidden items-center gap-1 lg:flex">
+        <ul class="hidden items-center gap-0.5 lg:flex">
             @foreach ($nav as $item)
                 <li>
                     @if ($item->children->isNotEmpty())
@@ -163,6 +192,16 @@
         </ul>
 
         <div class="flex items-center gap-2">
+            @if (Route::has('search') && app(App\Support\Features::class)->enabled('site_search'))
+                <a
+                    href="{{ route('search') }}"
+                    class="hidden rounded-full p-2 text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] md:inline-flex"
+                    aria-label="{{ __('Search') }}"
+                >
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+                </a>
+            @endif
+
             <x-site.theme-toggle />
 
             {{--
@@ -208,7 +247,7 @@
             --}}
             <a
                 href="{{ $donateUrl }}"
-                class="rounded-md bg-[var(--brand-secondary)] px-4 py-2 text-sm font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                class="btn btn-sm btn-brand uppercase tracking-wide"
             >
                 {{ $donateLabel }}
             </a>

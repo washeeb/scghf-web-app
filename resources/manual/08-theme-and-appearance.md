@@ -48,17 +48,28 @@ change anything.
 
 ## Logos and fonts
 
-The logos (a light-background version and a dark-background version)
-are in *Site settings → Header*. The typefaces are part of the design and
+The logos are in *Site settings → Header*: a **light-background** version
+(the full name beside the mark), a **dark-background** version (the same,
+with the green words in white) and a **square icon** (the mark alone, for
+the phone icon). The site arrived with the foundation's own logo pack in
+all three, in the *Brand* folder of the media library. To change a logo,
+open that file in *Media* and use **Replace file** — every place that
+shows it (header, receipts, emails, the phone icon) updates at once. The
+picture shown when a link to the site is shared on WhatsApp or Facebook
+is *Site settings → Search engines → Social image*; it, too, arrived
+filled in.
+
+Titles are set in a serif typeface and everything else in a sans, as in
+the design the foundation chose. The typefaces are part of the design and
 are not changed from the admin.
 
 ## The phone icon and the offline page
 
 Visitors on Android can add the site to their home screen ("Add to your
 phone" appears in the footer when their browser offers it). The icon is made
-from the **light-background logo** on a square of the primary brand colour,
-so uploading a new logo or changing the colour changes the icon; nothing to
-do. When a visitor loses their connection, they see the foundation's own
+from the **square icon** logo (or the light-background one if there is no
+square icon) on a square of the primary brand colour, so replacing a logo or
+changing the colour changes the icon; nothing to do. When a visitor loses their connection, they see the foundation's own
 "You are offline" page with the Mobile Money and bank details from *Site
 settings → Offline giving* instead of the browser's error — so keep those
 filled in. If the feature must be switched off, `FEATURE_PWA_OFFLINE=false` in the

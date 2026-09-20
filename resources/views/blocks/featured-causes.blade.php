@@ -1,15 +1,15 @@
 {{-- Cause cards with live progress towards goal. --}}
 @if ($causes->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading')" :intro="$section->field('intro')">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')" :intro="$section->field('intro')">
         <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($causes as $cause)
-                <li class="flex flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+                <li class="flex flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition hover:shadow-[var(--shadow-md)]">
                     @if ($cause->featuredImage?->isPublishable())
-                        <x-media.image :media="$cause->featuredImage" size="card" class="aspect-[3/2] w-full object-cover" />
+                        <x-media.image :media="$cause->featuredImage" size="card" credit="title" class="aspect-[4/3] w-full object-cover" />
                     @endif
 
-                    <div class="flex flex-1 flex-col p-5">
-                        <h3 class="font-semibold text-[var(--text-primary)]">{{ $cause->title }}</h3>
+                    <div class="flex flex-1 flex-col p-6">
+                        <h3 class="text-lg font-semibold text-[var(--text-primary)]">{{ $cause->title }}</h3>
 
                         @if ($cause->summary)
                             <p class="mt-2 text-sm text-[var(--text-muted)]">{{ $cause->summary }}</p>
@@ -41,7 +41,7 @@
 
                         <a
                             href="{{ url('/causes/'.$cause->slug) }}"
-                            class="mt-4 inline-block font-semibold text-[var(--brand-primary)] hover:underline"
+                            class="btn btn-sm btn-accent mt-5 self-start"
                         >
                             {{ $section->field('cta_label') ?: __('Support this') }}
                             <span class="sr-only">— {{ $cause->title }}</span>

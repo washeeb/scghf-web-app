@@ -125,6 +125,11 @@ else
   # also idempotent, for any column a release moved to an encrypted cast.
   say "Seeding permissions and roles"
   "$PHP_BIN" artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction || die "Permission seeding failed. Nothing was flipped."
+  # Settings and theme tokens a release introduces: both seeders create what
+  # is missing and never touch a value already there, so a new switch shows
+  # up in the panel with its default rather than not at all.
+  "$PHP_BIN" artisan db:seed --class=SettingsSeeder --force --no-interaction || die "Settings seeding failed. Nothing was flipped."
+  "$PHP_BIN" artisan db:seed --class=ThemeSettingsSeeder --force --no-interaction || die "Theme token seeding failed. Nothing was flipped."
   "$PHP_BIN" artisan scghf:encrypt-at-rest --execute --no-interaction || die "Encryption sweep failed. Nothing was flipped."
   ok "Permissions current, encrypted columns swept"
 
@@ -137,6 +142,16 @@ else
     ok "launch photography present"
   else
     warn "scghf:launch-images could not fetch everything; run it again by hand."
+  fi
+
+  # The logo pack (resources/brand): into the library once, and into any
+  # header/PWA/social-image setting that is still empty. Never overwrites a
+  # logo the foundation has replaced in the panel.
+  say "Brand assets"
+  if "$PHP_BIN" artisan scghf:brand-assets --no-interaction; then
+    ok "logo files present and the settings point at them"
+  else
+    warn "scghf:brand-assets could not import everything; run it again by hand."
   fi
 fi
 

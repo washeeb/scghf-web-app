@@ -217,7 +217,7 @@ it('does not render an image that is not publishable', function () {
 
     $this->get($page->path)
         ->assertOk()
-        ->assertSee('A headline')
+        ->assertSeeText('A headline') // the first word is wrapped for its underline
         ->assertDontSee($media->file_name);
 });
 

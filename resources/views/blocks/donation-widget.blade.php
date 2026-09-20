@@ -28,8 +28,8 @@
     $id = 'dw-'.$section->getKey();
 @endphp
 
-<x-blocks.section :section="$section" :heading="$section->field('heading')" :intro="$section->field('intro')">
-    <form method="get" action="{{ route('donate') }}" class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
+<x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')" :intro="$section->field('intro')">
+    <form method="get" action="{{ route('donate') }}" class="rounded-[var(--radius-2xl)] border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--text-primary)] shadow-[var(--shadow-lg)] sm:p-8">
         @if ($cause !== null)
             <input type="hidden" name="cause" value="{{ $cause->slug }}">
             <p class="mb-4 text-sm text-[var(--text-secondary)]">{{ __('Giving to :appeal', ['appeal' => $cause->title]) }}</p>
@@ -42,7 +42,7 @@
                     @foreach (['once' => __('Just once'), 'monthly' => __('Every month')] as $value => $label)
                         <label class="cursor-pointer">
                             <input type="radio" name="frequency" value="{{ $value }}" @checked($loop->first) class="peer sr-only">
-                            <span class="block rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] peer-checked:border-[var(--brand-primary)] peer-checked:bg-[var(--brand-primary)] peer-checked:text-[var(--text-on-brand)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus-ring)]">{{ $label }}</span>
+                            <span class="block rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] peer-checked:border-[var(--brand-primary)] peer-checked:bg-[var(--brand-primary)] peer-checked:text-[var(--text-on-brand)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus-ring)]">{{ $label }}</span>
                         </label>
                     @endforeach
                 </div>
@@ -55,7 +55,7 @@
                 @foreach ($presets as $amount)
                     <label class="cursor-pointer">
                         <input type="radio" name="amount" value="{{ $amount->toMajorString() }}" @checked($loop->first) class="peer sr-only">
-                        <span class="block rounded-md border border-[var(--border)] px-4 py-2 font-semibold text-[var(--text-primary)] peer-checked:border-[var(--brand-primary)] peer-checked:bg-[var(--brand-primary)] peer-checked:text-[var(--text-on-brand)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus-ring)]">{{ $amount->format() }}</span>
+                        <span class="block rounded-full border border-[var(--border)] px-4 py-2 font-semibold text-[var(--text-primary)] peer-checked:border-[var(--brand-primary)] peer-checked:bg-[var(--brand-primary)] peer-checked:text-[var(--text-on-brand)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus-ring)]">{{ $amount->format() }}</span>
                     </label>
                 @endforeach
             </div>
@@ -77,9 +77,6 @@
             </div>
         </fieldset>
 
-        <button
-            type="submit"
-            class="mt-6 inline-block rounded-md bg-[var(--brand-secondary)] px-6 py-3 font-semibold text-[var(--text-on-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
-        >{{ __('Give now') }}</button>
+        <button type="submit" class="btn btn-accent mt-6">{{ __('Give now') }}</button>
     </form>
 </x-blocks.section>

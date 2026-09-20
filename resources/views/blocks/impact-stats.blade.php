@@ -21,8 +21,11 @@
     later finds out which will not give again.
 --}}
 @if ($metrics->isNotEmpty())
-    <x-blocks.section :section="$section" :heading="$section->field('heading')">
-        <dl class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <x-blocks.section :section="$section" :eyebrow="$section->field('eyebrow')" :heading="$section->field('heading')">
+        {{-- Four figures in a row with hairlines between them, as the
+             template draws its numbers. The hairline is the current text
+             colour at a quarter strength, so it is right on any band. --}}
+        <dl class="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 lg:[&>div+div]:border-l lg:[&>div+div]:border-current/25 lg:[&>div+div]:pl-8">
             @foreach ($metrics as $metric)
                 <div>
                     {{-- The figure is the thing being described, so it is the
@@ -30,11 +33,18 @@
                          commonest misuse of a description list. --}}
                     <dt class="sr-only">{{ $metric->name }}</dt>
                     <dd>
-                        <span class="block text-4xl font-bold tracking-tight">
-                            {{ $metric->format($metric->publishedTotal()) }}
+                        @php $total = $metric->publishedTotal(); @endphp
+                        <span class="font-display block text-5xl tracking-tight sm:text-6xl">
+                            {{ $metric->formatFigure($total) }}
                         </span>
 
-                        <span class="mt-1 block font-medium">{{ $metric->name }}</span>
+                        {{-- The unit, when the figure is a count, then the name. --}}
+                        @if ($total !== null && $metric->value_type === App\Models\ImpactMetric::TYPE_INTEGER && $metric->unit)
+                            <span class="mt-1 block text-lg font-medium">{{ $metric->unit }}</span>
+                            <span class="mt-0.5 block text-sm opacity-80">{{ $metric->name }}</span>
+                        @else
+                            <span class="mt-2 block font-medium">{{ $metric->name }}</span>
+                        @endif
 
                         @if ($section->field('show_as_of_date', true) && $metric->values_max_period_end)
                             <span class="mt-1 block text-sm opacity-75">

@@ -75,7 +75,7 @@
 
                 @if ($items->isNotEmpty())
                     <nav aria-label="{{ $column['heading'] }}">
-                        <h2 class="mb-3 text-sm font-semibold text-[var(--text-primary)]">{{ $column['heading'] }}</h2>
+                        <h2 class="font-heading mb-3 text-sm font-semibold text-[var(--text-primary)]">{{ $column['heading'] }}</h2>
                         <ul class="space-y-1">
                             @foreach ($items as $item)
                                 <li><x-site.menu-link :item="$item" /></li>
@@ -87,7 +87,7 @@
 
             {{-- Newsletter and social. --}}
             <div class="space-y-4">
-                <h2 class="text-sm font-semibold text-[var(--text-primary)]">
+                <h2 class="font-heading text-sm font-semibold text-[var(--text-primary)]">
                     {{ setting('site.footer_newsletter_heading', __('Stay in touch')) }}
                 </h2>
 
@@ -230,7 +230,7 @@
                     @foreach ($grouped as $key => $group)
                         @if ($group['items']->isNotEmpty() || ($key === $cookieGroup && $cookieManage))
                             <div>
-                                <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-primary)]">{{ $group['label'] }}</h2>
+                                <h2 class="font-heading mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-primary)]">{{ $group['label'] }}</h2>
                                 <ul class="flex flex-wrap gap-x-4 gap-y-1">
                                     @foreach ($group['items'] as $item)
                                         <li><x-site.menu-link :item="$item" class="!px-0 !py-0.5 !font-normal !text-[var(--text-muted)] hover:!text-[var(--brand-primary)] hover:underline" /></li>

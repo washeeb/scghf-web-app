@@ -304,10 +304,12 @@ class SettingsSeeder extends Seeder
         ['header', 'logo_light', null, SettingType::Media, 'Logo — for light backgrounds', true],
         ['header', 'logo_dark', null, SettingType::Media, 'Logo — for dark backgrounds', true,
             'A separate file. Inverting the light one with CSS produces a colour the brand does not own.'],
+        ['header', 'logo_icon', null, SettingType::Media, 'Logo — square icon', true,
+            'The mark on its own, square. Used for the app icon on a phone\'s home screen and wherever a wide logo would not fit.'],
         ['header', 'is_sticky', '1', SettingType::Boolean, 'Keep the header visible when scrolling', true,
             'Keeps the Donate button reachable the whole way down a long page.'],
-        ['header', 'show_top_bar', '0', SettingType::Boolean, 'Show the top bar', true,
-            'A thin strip above the header carrying the phone number and social links.'],
+        ['header', 'show_top_bar', '1', SettingType::Boolean, 'Show the top bar', true,
+            'A thin strip above the header carrying the address, phone number and email. It only appears once at least one of those is filled in under Contact.'],
 
         // ── The footer ───────────────────────────────────────────────────────
         // Read by the footer since Phase 4 with no row behind them, so the

@@ -548,38 +548,54 @@ class LaunchContentSeeder extends Seeder
                     'overlay_opacity' => 50,
                 ]],
                 ['type' => 'divisions', 'data' => [
+                    'eyebrow' => 'How we help',
                     'heading' => 'Four ways we serve',
                     'intro' => 'Health, education, care for orphans, widows and widowers, and the gospel — one foundation, four divisions, each with its own fund.',
                     'show_focus_areas' => true,
-                ]],
-                ['type' => 'featured-causes', 'data' => [
-                    'heading' => 'Appeals that need you now',
-                    'intro' => 'Each appeal names what a gift pays for, and every cedi given to it stays with it.',
-                    'limit' => 3,
-                    'cta_label' => 'See every appeal',
                 ]],
                 ['type' => 'split-content', 'data' => [
                     'eyebrow' => 'Our story',
                     'heading' => 'Named for a mother. Built for a community.',
                     'body' => '<p>Mrs Cecilia Anyatuik Adam cared for people the way a mother does — without being asked, and without keeping count. The foundation that carries her name does the same work, in the open, with the accounts published.</p>',
                     'image' => $this->image('about-legacy'),
-                    'image_position' => 'right',
+                    'image_position' => 'left',
                     'cta_label' => 'Read our story',
                     'cta_url' => $path('our-story'),
                 ]],
                 ['type' => 'impact-stats', 'data' => [
+                    'eyebrow' => 'Where we are going',
                     'heading' => 'Our goals for the first full year',
                     'metric_ids' => $metricIds,
                     'show_as_of_date' => false,
+                ], 'settings' => ['background' => 'brand', 'padding' => 'large']],
+                ['type' => 'featured-causes', 'data' => [
+                    'eyebrow' => 'Featured appeals',
+                    'heading' => 'Appeals that need you now',
+                    'intro' => 'Each appeal names what a gift pays for, and every cedi given to it stays with it.',
+                    'limit' => 3,
+                    'cta_label' => 'Donate now',
                 ]],
+                ['type' => 'donation-widget', 'data' => [
+                    'eyebrow' => 'Make a gift',
+                    'heading' => 'Make an impact all year long',
+                    'intro' => 'Choose an amount and how often. Card or mobile money; a receipt every time.',
+                    'show_frequency_toggle' => true,
+                ], 'settings' => ['background' => 'brand', 'padding' => 'large', 'width' => 'narrow']],
                 ['type' => 'featured-projects', 'data' => [
+                    'eyebrow' => 'On the ground',
                     'heading' => 'Work under way',
                     'intro' => 'Programmes under way with the communities and partners who carry them with us.',
                     'limit' => 3,
                 ]],
-                ['type' => 'testimonials', 'data' => ['heading' => 'In their words', 'limit' => 2, 'layout' => 'grid']],
-                ['type' => 'gallery', 'data' => ['heading' => 'Life in the communities we serve', 'gallery_id' => $gallery?->id, 'layout' => 'mosaic']],
+                ['type' => 'testimonials', 'data' => ['eyebrow' => 'Testimonials', 'heading' => 'In their words', 'limit' => 2, 'layout' => 'grid']],
+                ['type' => 'gallery', 'data' => ['eyebrow' => 'In pictures', 'heading' => 'Life in the communities we serve', 'gallery_id' => $gallery?->id, 'layout' => 'mosaic']],
+                ['type' => 'faq', 'data' => [
+                    'eyebrow' => 'Common questions',
+                    'heading' => 'Frequently asked questions',
+                    'image' => $this->image('gallery-3'),
+                ]],
                 ['type' => 'cta-band', 'data' => [
+                    'eyebrow' => 'Give hope',
                     'heading' => 'Give hope today',
                     'body' => 'A gift of any size, by card or mobile money, goes straight to the work. You will see where it went.',
                     'cta_label' => 'Donate',
@@ -588,6 +604,7 @@ class LaunchContentSeeder extends Seeder
                     'image' => $this->image('home-cta'),
                 ]],
                 ['type' => 'newsletter', 'data' => [
+                    'eyebrow' => 'Newsletter',
                     'heading' => 'Hear how it goes',
                     'intro' => 'One email a month: what happened, what it cost, what is next. No more than that.',
                 ]],
@@ -609,14 +626,14 @@ class LaunchContentSeeder extends Seeder
                     'heading' => 'Who we serve',
                     'columns' => 2,
                     'items' => [
-                        ['title' => 'Orphans and vulnerable children', 'body' => 'Care, schooling and someone who checks on them.'],
-                        ['title' => 'Widows and widowers', 'body' => 'Support after loss, and a way to earn.'],
-                        ['title' => 'Needy students', 'body' => 'Fees, books and a mentor through to graduation.'],
-                        ['title' => 'Low-income families', 'body' => 'Food, household support and health outreach.'],
-                        ['title' => 'Sick and vulnerable individuals', 'body' => 'Screening, referral and a visit on the ward.'],
-                        ['title' => 'Elderly persons', 'body' => 'Wellness, company and practical help at home.'],
-                        ['title' => 'Families affected by loss', 'body' => 'Presence in the first months, and help with what a funeral costs.'],
-                        ['title' => 'Communities needing spiritual encouragement', 'body' => 'Outreach, prayer and the Scriptures in their own language.'],
+                        ['title' => 'Orphans and vulnerable children', 'body' => 'Care, schooling and someone who checks on them.', 'icon' => 'face-smile'],
+                        ['title' => 'Widows and widowers', 'body' => 'Support after loss, and a way to earn.', 'icon' => 'hand-raised'],
+                        ['title' => 'Needy students', 'body' => 'Fees, books and a mentor through to graduation.', 'icon' => 'academic-cap'],
+                        ['title' => 'Low-income families', 'body' => 'Food, household support and health outreach.', 'icon' => 'home'],
+                        ['title' => 'Sick and vulnerable individuals', 'body' => 'Screening, referral and a visit on the ward.', 'icon' => 'beaker'],
+                        ['title' => 'Elderly persons', 'body' => 'Wellness, company and practical help at home.', 'icon' => 'users'],
+                        ['title' => 'Families affected by loss', 'body' => 'Presence in the first months, and help with what a funeral costs.', 'icon' => 'heart'],
+                        ['title' => 'Communities needing spiritual encouragement', 'body' => 'Outreach, prayer and the Scriptures in their own language.', 'icon' => 'sparkles'],
                     ],
                 ]],
                 ['type' => 'team', 'data' => ['heading' => 'Leadership']],
@@ -661,10 +678,10 @@ class LaunchContentSeeder extends Seeder
                     'heading' => 'Four questions before a cedi is spent',
                     'columns' => 2,
                     'items' => [
-                        ['title' => 'Is it within a division?', 'body' => 'Health, education, orphans and widows, evangelism. If it is not one of those, it is not ours to do.'],
-                        ['title' => 'Is there a partner on the ground?', 'body' => 'A clinic, a school, a church or an assembly that will still be there when we are not.'],
-                        ['title' => 'Do we know what "done" looks like?', 'body' => 'A number, a date and a way to check, agreed before the first payment.'],
-                        ['title' => 'Can we show where the money went?', 'body' => 'Line by line, to the donor who gave it. If we cannot, we do not start.'],
+                        ['title' => 'Is it within a division?', 'body' => 'Health, education, orphans and widows, evangelism. If it is not one of those, it is not ours to do.', 'icon' => 'shield-check'],
+                        ['title' => 'Is there a partner on the ground?', 'body' => 'A clinic, a school, a church or an assembly that will still be there when we are not.', 'icon' => 'user-group'],
+                        ['title' => 'Do we know what "done" looks like?', 'body' => 'A number, a date and a way to check, agreed before the first payment.', 'icon' => 'light-bulb'],
+                        ['title' => 'Can we show where the money went?', 'body' => 'Line by line, to the donor who gave it. If we cannot, we do not start.', 'icon' => 'globe-alt'],
                     ],
                 ]],
             ],
@@ -706,7 +723,13 @@ class LaunchContentSeeder extends Seeder
         foreach ($content as $slug => $sections) {
             $page = Page::query()->where('slug', $slug)->first();
 
-            if ($page === null || $page->sections()->exists()) {
+            if ($page === null) {
+                continue;
+            }
+
+            if ($page->sections()->exists()) {
+                $this->refreshLayout($page, $sections);
+
                 continue;
             }
 
@@ -714,6 +737,7 @@ class LaunchContentSeeder extends Seeder
                 $page->sections()->create([
                     'block_type' => $section['type'],
                     'data' => $section['data'],
+                    'settings' => $section['settings'] ?? null,
                     'sort_order' => $order,
                 ]);
             }
@@ -732,5 +756,101 @@ class LaunchContentSeeder extends Seeder
         }
 
         $this->command?->info(sprintf('Pages: %d given their launch content.', $seeded));
+    }
+
+    /**
+     * Bring a page seeded by an earlier version of this seeder up to the
+     * current arrangement — without touching a word an editor has changed.
+     *
+     * ── What it does, and what it refuses to do ─────────────────────────────
+     *
+     * The template restyle added eyebrows, icons and band settings to the
+     * home page, and a donation band and an FAQ that were not there before.
+     * A staging site seeded a week earlier has the old arrangement, and this
+     * seeder's rule is to leave a page alone once it has sections. So the
+     * refresh fills in only what is EMPTY: a data key the section does not
+     * have yet (an eyebrow, an icon on a card), presentation settings when
+     * the section has none, and a block the page has none of — inserted at
+     * the position the arrangement gives it. A heading somebody rewrote, a
+     * background somebody chose, a block somebody removed: all kept. (A
+     * removed block is one the page has none of, so it does come back once;
+     * remove it again and it stays gone until the seeder is next changed.)
+     *
+     * @param  array<int, array{type: string, data: array<string, mixed>, settings?: array<string, mixed>}>  $sections
+     */
+    private function refreshLayout(Page $page, array $sections): void
+    {
+        $existing = $page->sections()->orderBy('sort_order')->get();
+        $seen = [];
+
+        foreach ($sections as $position => $wanted) {
+            // The first section of this type not already matched to an
+            // earlier entry of the arrangement.
+            $section = $existing->first(fn ($s) => $s->block_type === $wanted['type'] && ! in_array($s->getKey(), $seen, true));
+
+            if ($section === null) {
+                $section = $page->sections()->create([
+                    'block_type' => $wanted['type'],
+                    'data' => $wanted['data'],
+                    'settings' => $wanted['settings'] ?? null,
+                    // Just after the previous section in the arrangement, so a
+                    // new band lands where the layout puts it, not at the end.
+                    'sort_order' => $this->slotAfter($page, $seen),
+                ]);
+                $seen[] = $section->getKey();
+
+                continue;
+            }
+
+            $seen[] = $section->getKey();
+            $data = $section->data ?? [];
+
+            foreach ($wanted['data'] as $key => $value) {
+                if (! array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '') {
+                    $data[$key] = $value;
+                } elseif ($key === 'items' && is_array($value) && is_array($data[$key])) {
+                    // Cards keep their words; each gains an icon if it has none.
+                    foreach ($value as $i => $item) {
+                        if (isset($data[$key][$i]) && blank($data[$key][$i]['icon'] ?? null) && filled($item['icon'] ?? null)) {
+                            $data[$key][$i]['icon'] = $item['icon'];
+                        }
+                    }
+                }
+            }
+
+            $section->data = $data;
+
+            if (blank($section->settings) && isset($wanted['settings'])) {
+                $section->settings = $wanted['settings'];
+            }
+
+            if ($section->isDirty()) {
+                $section->save();
+            }
+        }
+
+        // A clean 0..n sequence, whatever gaps deletions left behind.
+        foreach ($page->sections()->orderBy('sort_order')->orderBy('id')->get() as $i => $section) {
+            if ((int) $section->sort_order !== $i) {
+                $section->forceFill(['sort_order' => $i])->save();
+            }
+        }
+    }
+
+    /**
+     * A sort_order just after the last section already placed, moving what
+     * follows down by one. `sort_order` is unsigned, so the increment comes
+     * before anything is written at the new position.
+     *
+     * @param  array<int, int>  $placed  ids of the sections placed so far, in order
+     */
+    private function slotAfter(Page $page, array $placed): int
+    {
+        $lastId = end($placed);
+        $after = $lastId ? (int) $page->sections()->whereKey($lastId)->value('sort_order') : -1;
+
+        $page->sections()->where('sort_order', '>', $after)->increment('sort_order');
+
+        return $after + 1;
     }
 }

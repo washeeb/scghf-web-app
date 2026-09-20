@@ -188,6 +188,20 @@ class ImpactMetric extends Model
         };
     }
 
+    /**
+     * The figure alone, for a display where the unit is written beside it
+     * in smaller type — the impact band puts "1,200" large and "people" under
+     * it, rather than "1,200 people" in one size. Same disclosure rule.
+     */
+    public function formatFigure(?float $value): string
+    {
+        if ($value === null || $this->value_type !== self::TYPE_INTEGER) {
+            return $this->format($value);
+        }
+
+        return number_format($value);
+    }
+
     public function progressToTarget(): ?int
     {
         if ($this->target_value === null || (float) $this->target_value === 0.0) {
