@@ -20,6 +20,7 @@
 
 import { initAnalytics } from './analytics';
 import { initAnnouncement } from './announcement';
+import { initChat } from './chat';
 import { initCookieConsent } from './cookie-consent';
 import { initCurrencyPicker } from './currency';
 import { initNavigation } from './navigation';
@@ -37,3 +38,4 @@ initCurrencyPicker();
 initAnalytics();
 initPwa();
 initScreen();
+initChat();

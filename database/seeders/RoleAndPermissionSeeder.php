@@ -118,6 +118,9 @@ class RoleAndPermissionSeeder extends Seeder
             'contact.view', 'contact.reply', 'contact.view_safeguarding',
             'newsletter.view', 'newsletter.draft', 'newsletter.send',
             'prayer_requests.view',
+            // Live chat: reading the inbox, answering, and closing or
+            // reassigning somebody else's conversation.
+            'chat.view', 'chat.reply', 'chat.manage',
         ],
         'communications' => [
             'templates.email.manage', 'templates.sms.manage',
@@ -360,6 +363,7 @@ class RoleAndPermissionSeeder extends Seeder
         'Support' => [
             'admin.access',
             'contact.view', 'contact.reply',
+            'chat.view', 'chat.reply',
             'donations.view', 'donations.receipt_reissue',
             'orders.view',
             'volunteers.view',

@@ -16,6 +16,7 @@ use App\Media\MediaUsage;
 use App\Media\UploadPolicy;
 use App\Models\Announcement;
 use App\Models\Beneficiary;
+use App\Models\ChatConversation;
 use App\Models\BeneficiaryDocument;
 use App\Models\BlogCategory;
 use App\Models\Cause;
@@ -424,6 +425,7 @@ class AppServiceProvider extends ServiceProvider
         // the most sensitive thing most people ever send this foundation.
         $runner->register('event_registration', EventRegistration::class);
         $runner->register('prayer_request', PrayerRequest::class);
+        $runner->register('chat_conversation', ChatConversation::class);
 
         /*
          * Delivery logs. Two years, then deleted.

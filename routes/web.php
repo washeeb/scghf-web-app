@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Chat\ChatController;
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailController;
 use App\Http\Controllers\Account\ImpactController as AccountImpactController;
@@ -397,6 +398,24 @@ Route::get('newsletter/preferences/{token}', [NewsletterController::class, 'pref
 Route::post('newsletter/preferences/{token}', [NewsletterController::class, 'updatePreferences'])
     ->middleware('throttle:10,1')
     ->name('newsletter.preferences.update');
+
+/*
+|--------------------------------------------------------------------------
+| Live chat — the visitor's end
+|--------------------------------------------------------------------------
+|
+| Four JSON endpoints behind the widget (resources/js/chat.js). Starting a
+| chat is limited per IP because each one emails the office; the rest are
+| limited to what a person typing can produce. The conversation's own token
+| (header X-Chat-Token) is the credential; a wrong one is a 404.
+*/
+Route::prefix('chat')->name('chat.')->group(function (): void {
+    Route::get('status', [ChatController::class, 'status'])->middleware('throttle:60,1')->name('status');
+    Route::post('start', [ChatController::class, 'start'])->middleware('throttle:5,10')->name('start');
+    Route::get('{conversation}/messages', [ChatController::class, 'messages'])->middleware('throttle:120,1')->name('messages');
+    Route::post('{conversation}/messages', [ChatController::class, 'send'])->middleware('throttle:30,1')->name('send');
+    Route::post('{conversation}/close', [ChatController::class, 'close'])->middleware('throttle:10,1')->name('close');
+});
 
 /*
 | Open and click tracking, only when switched on in .env and only on

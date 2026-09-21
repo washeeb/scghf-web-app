@@ -357,6 +357,38 @@ class SettingsSeeder extends Seeder
         ['site', 'footer_copyright_prefix', '©', SettingType::String, 'Before the year in the copyright line', true,
             'The © sign by default. Some foundations prefer "Copyright ©" or nothing.'],
 
+        // ── Live chat ────────────────────────────────────────────────────────
+        // The widget's switch and every word in it. The module itself is
+        // FEATURE_LIVE_CHAT in .env; this is the editor's side.
+        ['chat', 'enabled', '1', SettingType::Boolean, 'Show the chat', true,
+            'The chat button in the corner of every page. Off hides it; conversations already open stay in the inbox.'],
+        ['chat', 'title', 'Chat with us', SettingType::String, 'Panel title', true],
+        ['chat', 'button_label', 'Chat', SettingType::String, 'Button label', true],
+        ['chat', 'greeting', 'Hello! How can we help?', SettingType::Text, 'Greeting', true,
+            'The first thing a visitor reads when they open the chat.'],
+        ['chat', 'online_label', 'We are online', SettingType::String, 'Status when somebody is there', true],
+        ['chat', 'away_label', 'We are away right now', SettingType::String, 'Status when nobody is there', true],
+        ['chat', 'offline_message', 'Leave a message and we will reply by email.', SettingType::Text, 'Away message', true,
+            'Shown under the greeting when nobody has the chat inbox open. The visitor can still write; the office is emailed.'],
+        ['chat', 'hours', '', SettingType::String, 'Hours', true,
+            'For example "Mon–Fri, 8am–5pm". Shown with the away message. Empty shows nothing.'],
+        ['chat', 'require_email', '1', SettingType::Boolean, 'Ask for an email address', true,
+            'Off makes the email optional. Without one there is no way to reply once the visitor has left, and no transcript.'],
+        ['chat', 'send_transcript', '1', SettingType::Boolean, 'Email the transcript when a chat ends', true],
+        ['chat', 'notify_email', '', SettingType::Email, 'Tell this address when a chat starts', false,
+            'Empty uses the general enquiries address under Contact.'],
+        ['chat', 'position', 'right', SettingType::Select, 'Corner', true, null, ['right' => 'Bottom right', 'left' => 'Bottom left']],
+        ['chat', 'name_label', 'Your name', SettingType::String, 'Name field label', true],
+        ['chat', 'email_label', 'Email', SettingType::String, 'Email field label', true],
+        ['chat', 'message_placeholder', 'Type a message…', SettingType::String, 'Message box placeholder', true],
+        ['chat', 'start_label', 'Start chat', SettingType::String, 'Start button', true],
+        ['chat', 'send_label', 'Send', SettingType::String, 'Send button', true],
+        ['chat', 'end_label', 'End chat', SettingType::String, 'End-chat button', true],
+        ['chat', 'closed_line', 'This chat has ended. Start a new one any time.', SettingType::String, 'Line shown when a chat has ended', true],
+        ['chat', 'new_chat_label', 'New chat', SettingType::String, 'New-chat link', true],
+        ['chat', 'closed_by_staff_line', 'This chat has been closed. Thank you for talking to us.', SettingType::String, 'Closing line — closed by the office', true],
+        ['chat', 'closed_by_visitor_line', 'The visitor ended the chat.', SettingType::String, 'Closing line — closed by the visitor', true],
+
         // ── Analytics (Phase 13) ─────────────────────────────────────────────
         // None by default. Whichever is chosen loads only after the visitor
         // allows the Analytics category in the cookie notice; until then the

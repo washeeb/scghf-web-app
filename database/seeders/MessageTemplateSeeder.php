@@ -681,6 +681,53 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'chat.new_conversation',
+                'name' => 'Live chat started — to the office',
+                'description' => 'Sent to the chat address (or general enquiries) when a visitor starts a '
+                    .'live chat, whether or not anybody has the inbox open, so no chat is missed.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['name', 'email', 'message', 'page_url', 'online', 'admin_url'],
+                'required' => ['name', 'message'],
+                'subject' => 'Live chat from {{name}}',
+                'html' => <<<'HTML'
+                    <p><strong>{{name}}</strong> ({{email}}) started a chat on {{page_url}} — {{online}}.</p>
+                    <blockquote>{{message}}</blockquote>
+                    <p>Answer it here: {{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    {{name}} ({{email}}) started a chat on {{page_url}} — {{online}}.
+
+                    {{message}}
+
+                    Answer it here: {{admin_url}}
+                    TEXT,
+            ],
+            [
+                'key' => 'chat.transcript',
+                'name' => 'Live chat transcript — to the visitor',
+                'description' => 'Sent to the visitor when a chat ends, if they gave an email address and '
+                    .'Settings → Live chat says to send one.',
+                'category' => EmailTemplate::CATEGORY_TRANSACTIONAL,
+                'variables' => ['name', 'transcript', 'date'],
+                'required' => ['transcript'],
+                'subject' => 'Your chat with us on {{date}}',
+                'html' => <<<'HTML'
+                    <p>Hello {{name}},</p>
+                    <p>Here is what was said in your chat with us on {{date}}:</p>
+                    <pre style="white-space:pre-wrap">{{transcript}}</pre>
+                    <p>Reply to this email if there is anything more we can do.</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Hello {{name}},
+
+                    Here is what was said in your chat with us on {{date}}:
+
+                    {{transcript}}
+
+                    Reply to this email if there is anything more we can do.
+                    TEXT,
+            ],
+            [
                 'key' => 'stock.low',
                 'name' => 'Low stock — to the shop email',
                 'description' => 'One digest a morning, to the shop email, listing what has fallen to '

@@ -161,6 +161,26 @@ return [
             | in aggregate. It is not long enough to become an archive of a
             | congregation's private difficulties.
             */
+            /*
+            |------------------------------------------------------------------
+            | Live chat
+            |------------------------------------------------------------------
+            |
+            | A conversation, not a case file. Twelve months from the last
+            | line — long enough to answer "what did you tell me in March?"
+            | and to see what people ask — then the whole conversation goes,
+            | messages with it. Anything that needs keeping belongs in the
+            | contact inbox or a case record, not a chat transcript.
+            */
+            'chat_conversation' => [
+                'label' => 'Live chat conversation',
+                'months' => 12,
+                'anchor' => 'last_message_at',
+                'action' => 'delete',
+                'purpose' => 'Answering a visitor\'s question at the time and following it up. '
+                    .'A transcript has no purpose past that.',
+            ],
+
             'prayer_request' => [
                 'label' => 'Prayer request',
                 'months' => 12,

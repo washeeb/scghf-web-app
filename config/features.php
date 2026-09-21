@@ -37,4 +37,7 @@ return [
     // a genuine deferral on a real dependency, not an empty flag; the launch
     // check says what is missing when it is on.
     'whatsapp' => env('FEATURE_WHATSAPP', false),
+    // Live chat with the office, held on this server and answered from the
+    // admin inbox. Settings → Live chat has the daily switch and the words.
+    'live_chat' => env('FEATURE_LIVE_CHAT', true),
 ];

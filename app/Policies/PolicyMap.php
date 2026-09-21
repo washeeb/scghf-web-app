@@ -155,6 +155,8 @@ final class PolicyMap
             Models\IssuedTicket::class => EventPolicy::class,
 
             Models\ContactMessage::class => ContactPolicy::class,
+            Models\ChatConversation::class => ChatPolicy::class,
+            Models\ChatMessage::class => ChatPolicy::class,
             Models\ContactDepartment::class => ContactPolicy::class,
 
             Models\Newsletter::class => NewsletterPolicy::class,

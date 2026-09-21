@@ -143,6 +143,7 @@
     <x-site.footer />
     <x-site.newsletter-popup />
     <x-site.cookie-consent />
+    <x-site.chat-widget />
     <x-site.analytics />
 
     {{--

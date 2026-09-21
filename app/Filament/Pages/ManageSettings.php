@@ -109,6 +109,7 @@ class ManageSettings extends Page
         'currency' => 'Currency',
         'header' => 'Header',
         'site' => 'Site & footer',
+        'chat' => 'Live chat',
         'seo' => 'Search engines',
         'compliance' => 'Consent wording',
     ];
