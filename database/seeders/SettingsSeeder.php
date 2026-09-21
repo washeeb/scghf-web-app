@@ -310,6 +310,26 @@ class SettingsSeeder extends Seeder
             'Keeps the Donate button reachable the whole way down a long page.'],
         ['header', 'show_top_bar', '1', SettingType::Boolean, 'Show the top bar', true,
             'A thin strip above the header carrying the address, phone number and email. It only appears once at least one of those is filled in under Contact.'],
+        // The header's own words. Everything a visitor reads in the header that
+        // is not a menu item — the account control, the icon labels a screen
+        // reader hears, the theme names — is a setting, so none of it needs a
+        // deploy to change.
+        ['header', 'account_label', 'Account', SettingType::String, 'Account control', true,
+            'What the signed-in control in the header says. The menu under it lists the account pages and Sign out.'],
+        ['header', 'sign_in_label', 'Sign in', SettingType::String, 'Sign-in link', true],
+        ['header', 'sign_out_label', 'Sign out', SettingType::String, 'Sign-out item', true],
+        ['header', 'signed_in_as_label', 'Signed in as :name', SettingType::String, 'Signed-in line', true,
+            'The first line of the account menu. :name is replaced by the person\'s name.'],
+        ['header', 'search_label', 'Search', SettingType::String, 'Search icon label', true,
+            'Read out by screen readers for the magnifier icon.'],
+        ['header', 'menu_label', 'Menu', SettingType::String, 'Phone menu button label', true],
+        ['header', 'theme_label', 'Colour theme', SettingType::String, 'Theme icon label', true,
+            'Read out by screen readers for the theme icon, and shown when the pointer rests on it.'],
+        ['header', 'theme_light_label', 'Light', SettingType::String, 'Theme name — light', true],
+        ['header', 'theme_dark_label', 'Dark', SettingType::String, 'Theme name — dark', true],
+        ['header', 'theme_system_label', 'Match my device', SettingType::String, 'Theme name — follow the device', true],
+        ['header', 'account_menu', '[{"route":"account.dashboard","label":"Overview"},{"route":"account.impact","label":"Your impact"},{"route":"account.receipts","label":"Receipts"},{"route":"account.giving","label":"Regular giving"},{"route":"account.profile","label":"Profile"},{"route":"account.security","label":"Security"}]', SettingType::Json, 'Account menu items', true,
+            'The pages under the account control, in order: a list of {route, label}. Routes: account.dashboard, account.impact, account.receipts, account.giving, account.profile, account.security, account.privacy. Sign out is always last.'],
 
         // ── The footer ───────────────────────────────────────────────────────
         // Read by the footer since Phase 4 with no row behind them, so the
@@ -317,7 +337,25 @@ class SettingsSeeder extends Seeder
         ['site', 'footer_primary_heading', 'Our work', SettingType::String, 'Footer column 1 heading', true],
         ['site', 'footer_support_heading', 'Support us', SettingType::String, 'Footer column 2 heading', true],
         ['site', 'footer_newsletter_heading', 'Stay in touch', SettingType::String, 'Footer newsletter heading', true],
+        ['site', 'footer_join_label', 'Join', SettingType::String, 'Footer newsletter button', true],
+        ['site', 'footer_email_placeholder', 'you@example.com', SettingType::String, 'Footer newsletter placeholder', true],
+        ['site', 'footer_social_heading', '', SettingType::String, 'Footer social links heading', true,
+            'A small heading above the social links, if you want one. Empty shows none.'],
+        ['site', 'footer_gps_label', 'GPS', SettingType::String, 'Label before the Ghana Post address', true],
+        ['site', 'footer_registration_label', 'Registration', SettingType::String, 'Label before the registration number', true],
+        ['site', 'footer_tin_label', 'TIN', SettingType::String, 'Label before the TIN', true],
+        ['site', 'footer_policies_label', 'Policies', SettingType::String, 'Footer policy group — the rest', true,
+            'The heading for any policy link that is not in one of the groups below.'],
+        ['site', 'footer_cookie_label', 'Cookie preferences', SettingType::String, 'Cookie preferences link', true],
         ['site', 'show_back_to_top', '1', SettingType::Boolean, 'Show a back-to-top link', true],
+        ['site', 'footer_back_to_top_label', 'Back to top', SettingType::String, 'Back-to-top link', true],
+        ['site', 'footer_install_label', 'Add to your phone', SettingType::String, 'Add-to-phone link', true,
+            'Shown only when the visitor\'s browser offers to install the site.'],
+        ['site', 'footer_currency_label', 'Amounts also in', SettingType::String, 'Currency picker label', true],
+        ['site', 'footer_currency_apply_label', 'Apply', SettingType::String, 'Currency picker button', true],
+        ['site', 'footer_currency_note', 'Approximate; gifts are taken in cedis.', SettingType::String, 'Currency picker note', true],
+        ['site', 'footer_copyright_prefix', '©', SettingType::String, 'Before the year in the copyright line', true,
+            'The © sign by default. Some foundations prefer "Copyright ©" or nothing.'],
 
         // ── Analytics (Phase 13) ─────────────────────────────────────────────
         // None by default. Whichever is chosen loads only after the visitor

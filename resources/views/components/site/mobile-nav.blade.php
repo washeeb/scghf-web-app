@@ -36,7 +36,7 @@
 >
     <summary
         class="flex cursor-pointer list-none items-center rounded-md p-2 text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
-        aria-label="{{ __('Menu') }}"
+        aria-label="{{ setting('header.menu_label', __('Menu')) }}"
     >
         {{-- Two icons, one shown at a time, so the control says what it will do
              next rather than what state it is in. --}}

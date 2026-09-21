@@ -259,7 +259,7 @@ it('puts the account link inside the panel on a phone', function () {
 it('offers the account rather than sign-in once signed in', function () {
     $this->actingAs(User::factory()->create());
 
-    $this->get('/')->assertSee(__('Your account'));
+    $this->get('/')->assertSee(setting('header.account_label', 'Account'));
 });
 
 // ── It does not fall over ───────────────────────────────────────────────────

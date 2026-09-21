@@ -56,7 +56,7 @@
                     {{-- The Ghana Post digital address. Frequently the only way
                          to find a Ghanaian address, and useless if omitted. --}}
                     @if ($gps = setting('contact.gps_address'))
-                        <p>{{ __('GPS') }}: {{ $gps }}</p>
+                        <p>{{ setting('site.footer_gps_label', __('GPS')) }}: {{ $gps }}</p>
                     @endif
 
                     @if ($phone = setting('contact.phone_primary'))
@@ -125,14 +125,14 @@
                                 name="email"
                                 required
                                 autocomplete="email"
-                                placeholder="{{ __('you@example.com') }}"
+                                placeholder="{{ setting('site.footer_email_placeholder', __('you@example.com')) }}"
                                 @error('email') aria-invalid="true" aria-describedby="footer-email-error" @enderror
                                 class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text-primary)]"
                             >
                             <button
                                 type="submit"
                                 class="rounded-md bg-[var(--brand-primary)] px-3 py-2 text-sm font-semibold text-[var(--text-on-brand)]"
-                            >{{ __('Join') }}</button>
+                            >{{ setting('site.footer_join_label', __('Join')) }}</button>
                         </div>
 
                         @error('email')
@@ -150,6 +150,9 @@
                 @endif
 
                 @if ($socials->isNotEmpty())
+                    @if ($socialHeading = setting('site.footer_social_heading'))
+                        <h2 class="font-heading text-sm font-semibold text-[var(--text-primary)]">{{ $socialHeading }}</h2>
+                    @endif
                     <ul class="flex flex-wrap gap-3 text-sm">
                         @foreach ($socials as $network => $url)
                             <li>
@@ -195,7 +198,7 @@
                     'giving' => ['label' => __('Giving'), 'slugs' => ['donation-policy', 'refund-policy']],
                     'conduct' => ['label' => __('Conduct'), 'slugs' => ['safeguarding', 'accessibility', 'whistleblowing', 'anti-fraud']],
                 ];
-            $groups['other'] = ['label' => __('Policies'), 'slugs' => []];
+            $groups['other'] = ['label' => setting('site.footer_policies_label', __('Policies')), 'slugs' => []];
 
             // The cookie-preferences link sits with whichever group holds the cookie policy.
             $cookieGroup = collect($groups)->search(fn (array $g): bool => in_array('cookie-policy', $g['slugs'], true)) ?: array_key_first($groups);
@@ -210,25 +213,31 @@
                 $grouped[$key]['items']->push($item);
             }
 
-            // A destination as well as a dialog: with the policy page unpublished
-            // there is nowhere for the link to go without script, and a link to
-            // '#' is a trap. The banner itself still offers the preferences.
-            $cookiePolicyUrl = (bool) setting('site.cookie_banner_enabled', true) ? App\Models\Page::liveUrl('cookie-policy') : null;
-            $cookieManage = $cookiePolicyUrl !== null;
+            // The cookie-preferences control. With the cookie policy published it
+            // is a link there that the script upgrades to open the dialog; with
+            // the policy still a draft it is a button that opens the dialog and
+            // nothing else — never a link to '#', which is a trap.
+            $cookieManage = (bool) setting('site.cookie_banner_enabled', true);
+            $cookiePolicyUrl = $cookieManage ? App\Models\Page::liveUrl('cookie-policy') : null;
             $registration = collect([
                 setting('general.registration_number')
-                    ? __('Registration').' '.setting('general.registration_number')
+                    ? setting('site.footer_registration_label', __('Registration')).' '.setting('general.registration_number')
                     : null,
                 setting('general.registering_authority'),
-                setting('general.tin') ? __('TIN').' '.setting('general.tin') : null,
+                setting('general.tin') ? setting('site.footer_tin_label', __('TIN')).' '.setting('general.tin') : null,
             ])->filter();
+
+            // Only groups with something in them are drawn — and only the strip
+            // when at least one group is. On staging every policy page was still
+            // a draft, so the strip rendered as an empty band between two rules.
+            $visibleGroups = collect($grouped)->filter(fn (array $g, string $key): bool => $g['items']->isNotEmpty() || ($key === $cookieGroup && $cookieManage));
         @endphp
 
         <div class="mt-10 border-t border-[var(--border)] pt-6 text-sm text-[var(--text-muted)]">
-            @if ($legal->isNotEmpty() || $cookieManage)
-                <nav aria-label="{{ __('Policies') }}" class="grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+            @if ($visibleGroups->isNotEmpty())
+                <nav aria-label="{{ setting('site.footer_policies_label', __('Policies')) }}" class="grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
                     @foreach ($grouped as $key => $group)
-                        @if ($group['items']->isNotEmpty() || ($key === $cookieGroup && $cookieManage))
+                        @if ($visibleGroups->has($key))
                             <div>
                                 <h2 class="font-heading mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-primary)]">{{ $group['label'] }}</h2>
                                 <ul class="flex flex-wrap gap-x-4 gap-y-1">
@@ -236,8 +245,12 @@
                                         <li><x-site.menu-link :item="$item" class="!px-0 !py-0.5 !font-normal !text-[var(--text-muted)] hover:!text-[var(--brand-primary)] hover:underline" /></li>
                                     @endforeach
                                     @if ($key === $cookieGroup && $cookieManage)
-                                        {{-- Opens the preferences dialog; without script it is a link to the policy. --}}
-                                        <li><a href="{{ $cookiePolicyUrl }}" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ __('Cookie preferences') }}</a></li>
+                                        @if ($cookiePolicyUrl)
+                                            {{-- Opens the preferences dialog; without script it is a link to the policy. --}}
+                                            <li><a href="{{ $cookiePolicyUrl }}" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ setting('site.footer_cookie_label', __('Cookie preferences')) }}</a></li>
+                                        @else
+                                            <li><button type="button" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ setting('site.footer_cookie_label', __('Cookie preferences')) }}</button></li>
+                                        @endif
                                     @endif
                                 </ul>
                             </div>
@@ -247,9 +260,9 @@
             @endif
 
             {{-- Who we are, and the small controls, on one line where there is room. --}}
-            <div class="mt-6 flex flex-col gap-4 border-t border-[var(--border)] pt-5 lg:flex-row lg:items-center lg:justify-between">
+            <div @class(['flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between', 'mt-6 border-t border-[var(--border)] pt-5' => $visibleGroups->isNotEmpty()])>
                 <p class="leading-relaxed">
-                    &copy; {{ now()->year }}
+                    {{ setting('site.footer_copyright_prefix', '©') }} {{ now()->year }}
                     {{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}
                     @if ($registration->isNotEmpty())
                         <span class="block sm:inline sm:before:mx-2 sm:before:content-['·']">{{ $registration->implode(' · ') }}</span>
@@ -267,7 +280,7 @@
                         stranded at the bottom of the page they just left.
                     --}}
                     @if (setting('site.show_back_to_top', true))
-                        <a href="#main-content" class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ __('Back to top') }}</a>
+                        <a href="#main-content" class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ setting('site.footer_back_to_top_label', __('Back to top')) }}</a>
                     @endif
 
                     {{--
@@ -278,7 +291,7 @@
                         available.
                     --}}
                     @if (app(App\Support\Pwa::class)->enabled())
-                        <a href="{{ route('pwa.offline') }}" hidden data-pwa-install class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ __('Add to your phone') }}</a>
+                        <a href="{{ route('pwa.offline') }}" hidden data-pwa-install class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ setting('site.footer_install_label', __('Add to your phone')) }}</a>
                     @endif
                 </div>
             </div>

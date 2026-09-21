@@ -24,19 +24,21 @@
 --}}
 @php
     $current = app(App\Support\ThemePreference::class)->resolve(request());
+    // Every name from Settings → Header (the third palette's from Site).
     $themes = [
-        'light' => ['label' => __('Light'), 'icon' => 'sun'],
-        'dark' => ['label' => __('Dark'), 'icon' => 'moon'],
-        'system' => ['label' => __('Match my device'), 'icon' => 'computer-desktop'],
+        'light' => ['label' => setting('header.theme_light_label', __('Light')), 'icon' => 'sun'],
+        'dark' => ['label' => setting('header.theme_dark_label', __('Dark')), 'icon' => 'moon'],
+        'system' => ['label' => setting('header.theme_system_label', __('Match my device')), 'icon' => 'computer-desktop'],
         'vibrant' => ['label' => setting('site.vibrant_theme_label', __('Vibrant')), 'icon' => 'swatch'],
     ];
+    $themeLabel = setting('header.theme_label', __('Colour theme'));
 @endphp
 
 <details data-nav-dropdown data-no-hover data-theme-menu class="group relative">
     <summary
         class="flex size-10 cursor-pointer list-none items-center justify-center rounded-full text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
-        aria-label="{{ __('Colour theme') }}"
-        title="{{ __('Colour theme') }}"
+        aria-label="{{ $themeLabel }}"
+        title="{{ $themeLabel }}"
     >
         @foreach ($themes as $key => $theme)
             <span data-theme-icon="{{ $key }}" class="theme-icon">
@@ -47,7 +49,7 @@
 
     <ul
         role="menu"
-        aria-label="{{ __('Colour theme') }}"
+        aria-label="{{ $themeLabel }}"
         class="absolute right-0 top-full z-40 mt-1 min-w-56 whitespace-nowrap rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg)] p-1 shadow-[var(--shadow-lg)]"
     >
         @foreach ($themes as $key => $theme)

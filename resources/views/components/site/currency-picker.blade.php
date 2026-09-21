@@ -18,7 +18,7 @@
     <form method="POST" action="{{ route('currency.set') }}" class="flex flex-wrap items-center gap-x-2 gap-y-1" data-currency-picker>
         @csrf
         <input type="hidden" name="return" value="{{ url()->current() }}">
-        <label for="currency-picker" class="whitespace-nowrap text-sm text-[var(--text-muted)]">{{ __('Amounts also in') }}</label>
+        <label for="currency-picker" class="whitespace-nowrap text-sm text-[var(--text-muted)]">{{ setting('site.footer_currency_label', __('Amounts also in')) }}</label>
         <select
             id="currency-picker"
             name="currency"
@@ -28,9 +28,9 @@
                 <option value="{{ $code === '' ? 'none' : $code }}" @selected(($active ?? '') === $code)>{{ $label }}</option>
             @endforeach
         </select>
-        <button type="submit" class="rounded-md border border-[var(--border)] px-2 py-1.5 text-sm text-[var(--text-primary)]" data-currency-apply>{{ __('Apply') }}</button>
+        <button type="submit" class="rounded-md border border-[var(--border)] px-2 py-1.5 text-sm text-[var(--text-primary)]" data-currency-apply>{{ setting('site.footer_currency_apply_label', __('Apply')) }}</button>
         @if ($active)
-            <span class="basis-full text-xs text-[var(--text-muted)] sm:basis-auto">{{ __('Approximate; gifts are taken in cedis.') }}</span>
+            <span class="basis-full text-xs text-[var(--text-muted)] sm:basis-auto">{{ setting('site.footer_currency_note', __('Approximate; gifts are taken in cedis.')) }}</span>
         @endif
     </form>
 @endif

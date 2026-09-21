@@ -32,20 +32,24 @@
 
 @php
     $itemClass = 'flex w-full items-center gap-3 rounded px-3 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] aria-[current=page]:text-[var(--brand-primary)]';
-    $links = auth()->check() ? collect([
-        ['route' => 'account.dashboard', 'label' => __('Overview')],
-        ['route' => 'account.impact', 'label' => __('Your impact')],
-        ['route' => 'account.receipts', 'label' => __('Receipts')],
-        ['route' => 'account.giving', 'label' => __('Regular giving')],
-        ['route' => 'account.profile', 'label' => __('Profile')],
-        ['route' => 'account.security', 'label' => __('Security')],
-    ])->filter(fn (array $link) => Route::has($link['route'])) : collect();
+    // The items come from Settings → Header → "Account menu items"; a route
+    // that does not exist (a typo, a feature switched off) is skipped rather
+    // than rendered as a dead link.
+    $links = auth()->check()
+        ? collect((array) setting('header.account_menu', []))
+            ->filter(fn ($link): bool => is_array($link) && is_string($link['route'] ?? null) && filled($link['label'] ?? null))
+            ->filter(fn (array $link): bool => str_starts_with($link['route'], 'account.') && Route::has($link['route']))
+            ->values()
+        : collect();
+    $accountLabel = setting('header.account_label', __('Account'));
+    $signOutLabel = setting('header.sign_out_label', __('Sign out'));
+    $signedInAs = str_replace(':name', (string) auth()->user()?->name, (string) setting('header.signed_in_as_label', __('Signed in as :name')));
 @endphp
 
 @auth
     @if ($layout === 'list')
         <div>
-            <p class="px-3 pb-1 text-xs text-[var(--text-muted)]">{{ __('Signed in as :name', ['name' => auth()->user()->name]) }}</p>
+            <p class="px-3 pb-1 text-xs text-[var(--text-muted)]">{{ $signedInAs }}</p>
             <ul>
                 @foreach ($links as $link)
                     <li><a href="{{ route($link['route']) }}" @if (request()->routeIs($link['route'])) aria-current="page" @endif class="{{ $itemClass }}">{{ $link['label'] }}</a></li>
@@ -55,7 +59,7 @@
                         @csrf
                         <button type="submit" class="{{ $itemClass }} text-[var(--text-muted)]">
                             <x-ui.icon name="arrow-right-start-on-rectangle" class="size-4" />
-                            {{ __('Sign out') }}
+                            {{ $signOutLabel }}
                         </button>
                     </form>
                 </li>
@@ -67,7 +71,7 @@
                 class="flex cursor-pointer list-none items-center gap-1.5 whitespace-nowrap rounded px-2 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >
                 <x-ui.icon name="user-circle" class="size-5" />
-                {{ __('Your account') }}
+                {{ $accountLabel }}
                 <span class="sr-only">— {{ auth()->user()->name }}</span>
                 <svg data-chevron class="size-4 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -75,7 +79,7 @@
             </summary>
 
             <div class="absolute right-0 top-full z-40 mt-1 min-w-56 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg)] p-1 shadow-[var(--shadow-lg)]">
-                <p class="truncate px-3 py-2 text-xs text-[var(--text-muted)]">{{ __('Signed in as :name', ['name' => auth()->user()->name]) }}</p>
+                <p class="truncate px-3 py-2 text-xs text-[var(--text-muted)]">{{ $signedInAs }}</p>
                 <ul>
                     @foreach ($links as $link)
                         <li><a href="{{ route($link['route']) }}" @if (request()->routeIs($link['route'])) aria-current="page" @endif class="{{ $itemClass }}">{{ $link['label'] }}</a></li>
@@ -86,7 +90,7 @@
                     @csrf
                     <button type="submit" class="{{ $itemClass }} text-[var(--text-muted)]">
                         <x-ui.icon name="arrow-right-start-on-rectangle" class="size-4" />
-                        {{ __('Sign out') }}
+                        {{ $signOutLabel }}
                     </button>
                 </form>
             </div>
@@ -96,5 +100,5 @@
     <a
         href="{{ route('login') }}"
         class="{{ $layout === 'list' ? $itemClass : 'whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]' }}"
-    >{{ __('Sign in') }}</a>
+    >{{ setting('header.sign_in_label', __('Sign in')) }}</a>
 @endauth
