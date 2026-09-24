@@ -21,7 +21,10 @@ class CreateUser extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['type'] = UserType::Staff;
+        // A courier and nothing else is a public account, not staff: they sign
+        // in at the site's own form (no admin, so no admin MFA to bypass) and
+        // their world is /courier. Any other role makes the account staff.
+        $data['type'] = UserResource::courierOnly($data['roles'] ?? []) ? UserType::Donor : UserType::Staff;
         $data['password'] = Str::random(64);
         $data['is_active'] = $data['is_active'] ?? true;
 

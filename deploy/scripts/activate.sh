@@ -130,6 +130,9 @@ else
   # up in the panel with its default rather than not at all.
   "$PHP_BIN" artisan db:seed --class=SettingsSeeder --force --no-interaction || die "Settings seeding failed. Nothing was flipped."
   "$PHP_BIN" artisan db:seed --class=ThemeSettingsSeeder --force --no-interaction || die "Theme token seeding failed. Nothing was flipped."
+  # Message templates: wording only on first creation, so a template a
+  # release introduces exists before the code that sends it runs.
+  "$PHP_BIN" artisan db:seed --class=MessageTemplateSeeder --force --no-interaction || die "Template seeding failed. Nothing was flipped."
   "$PHP_BIN" artisan scghf:encrypt-at-rest --execute --no-interaction || die "Encryption sweep failed. Nothing was flipped."
   ok "Permissions current, encrypted columns swept"
 

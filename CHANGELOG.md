@@ -8,6 +8,73 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Live chat, courier deliveries, and the chrome as settings — 2026-09-21
+
+#### Added — live chat
+
+- **A live chat between visitors and the office**, held on this server —
+  no chat vendor sees a word. `chat_conversations` and `chat_messages`; the
+  visitor's conversation is guarded by a token stored hashed like a
+  password (`X-Chat-Token`, a wrong one is a 404). The widget
+  (`resources/views/components/site/chat-widget.blade.php`, `chat.js`) is
+  plain script — the public site's CSP has no `unsafe-eval` — and polls
+  every four seconds while open, twenty while closed; four JSON endpoints
+  under `/chat`, rate-limited. **Inbox → Live chat** in the admin: the
+  list (oldest unanswered first, a bell and a badge for waiting chats) and
+  a live thread page with Enter-to-send, *Take this chat*, *Close*,
+  *Reopen*. Being on either page is what makes the site say "We are
+  online"; otherwise "We are away" and the away message, honestly. The
+  office is emailed when a chat starts (`chat.new_conversation`), the
+  visitor gets the transcript when it ends (`chat.transcript`, a setting).
+  `chat.view` / `chat.reply` / `chat.manage`; Support, Admin and Super
+  Admin. `FEATURE_LIVE_CHAT` plus **Settings → Live chat**, where every
+  word of the widget lives. Retained twelve months from the last line
+  (`chat_conversation` in `config/compliance.php`), then deleted with its
+  messages. Manual chapter 12. `LiveChatTest`
+
+#### Added — courier deliveries
+
+- **Deliveries by the foundation's own riders and agents.** `deliveries`:
+  one row per order in a courier's hands — assigned, picked up, out for
+  delivery, delivered (to whom, a note, a photograph, where the phone was)
+  or failed (why, how many attempts). `CourierService` moves the order
+  through `Order::transitionTo()` at each step, so the tracking page,
+  emails and texts are the ones the office already sends. **Assign a
+  courier** on the order page (emails the rider, `delivery.assigned`);
+  **Shop → Deliveries** for the overview, reassigning and cancelling, with
+  a badge for failed attempts (`delivery.failed` goes to the shop address).
+  The rider's portal at **/courier** — plain pages and big buttons, no
+  script needed; the phone's position and camera when it allows — shows
+  only their own deliveries; anybody else's is a 404. A **Courier** is a
+  public account holding the Courier role (created under Staff accounts;
+  Courier alone makes it public), signs in at the site's own form, lands
+  on their deliveries, and cannot open the admin. The proof photograph is
+  on the private disk behind `deliveries/{delivery}/proof`, for the rider
+  and staff with `deliveries.view`. `deliveries.view` / `.assign` /
+  `.courier`; Shop Manager assigns. **Settings → Courier portal** holds
+  every word, the failure reasons and whether a photograph is required.
+  Manual chapter 13. `CourierDeliveriesTest`
+- The Staff accounts list shows couriers beside staff
+
+#### Added — the header and footer as settings
+
+- **Every word in the header and footer chrome is a setting**: the account
+  control (now "Account") and the items in its menu (`header.account_menu`,
+  a list of {route, label}), sign in/out, the icon labels, the theme
+  names, back to top, add to your phone, the currency picker, the
+  newsletter button and placeholder, the registration labels, the
+  copyright prefix, a heading for the social links
+
+#### Fixed
+
+- **The footer's policy strip drew an empty band** between two rules
+  wherever the policy pages were still drafts (staging). It draws only
+  groups with links in them, and the cookie-preferences control is a
+  button when the policy page has nowhere to link to — never a link to `#`
+- `activate.sh` seeds the message templates on every deploy (wording only
+  on first creation), so a template a release introduces exists before the
+  code that sends it runs
+
 ### The visual template and the logo — 2026-09-20
 
 The site was built on its own layout while the foundation's chosen

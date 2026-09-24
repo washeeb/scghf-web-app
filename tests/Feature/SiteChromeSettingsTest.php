@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Page;
+use App\Models\User;
 use App\Support\Settings;
 use App\Support\ThemePreference;
 use Database\Seeders\DatabaseSeeder;
@@ -111,7 +112,6 @@ it('takes every word in the header and footer chrome from the settings', functio
         ->assertSee('Log in')->assertSee('>Auto<', false)->assertSee('aria-label="Find"', false)
         ->assertSee('>Up<', false)->assertSee('Subscribe me')->assertSee('Copyright '.now()->year);
 
-    $this->actingAs(\App\Models\User::factory()->create())->get('/')->assertOk()
+    $this->actingAs(User::factory()->create())->get('/')->assertOk()
         ->assertSee('My space')->assertSee('My receipts')->assertDontSee('Broken')->assertSee('Sign out');
 });
-

@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Spatie\Permission\Models\Role;
 use UnitEnum;
 
 /**
@@ -22,6 +23,27 @@ Staff accounts. The `users.*` permissions were seeded in Phase 3 and, until Phas
  */
 class UserResource extends Resource
 {
+    /**
+     * Whether a set of roles (ids or names, as the form gives them) is the
+     * Courier role alone — the one role that makes a public account rather
+     * than a member of staff. See CreateUser / EditUser.
+     *
+     * @param  array<int, int|string>  $roles
+     */
+    public static function courierOnly(array $roles): bool
+    {
+        if ($roles === []) {
+            return false;
+        }
+
+        $names = Role::query()->whereIn('id', array_filter($roles, 'is_numeric'))->pluck('name')
+            ->merge(array_filter($roles, 'is_string'))
+            ->unique()
+            ->values();
+
+        return $names->count() === 1 && $names->first() === 'Courier';
+    }
+
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;

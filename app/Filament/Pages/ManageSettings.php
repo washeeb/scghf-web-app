@@ -110,6 +110,7 @@ class ManageSettings extends Page
         'header' => 'Header',
         'site' => 'Site & footer',
         'chat' => 'Live chat',
+        'courier' => 'Courier portal',
         'seo' => 'Search engines',
         'compliance' => 'Consent wording',
     ];

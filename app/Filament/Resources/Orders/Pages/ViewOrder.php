@@ -8,12 +8,15 @@ use App\Enums\OrderStatus;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Support\MoneyField;
 use App\Models\Order;
+use App\Models\User;
 use App\Payments\RefundService;
+use App\Shop\CourierService;
 use App\Shop\OrderDocuments;
 use App\Shop\OrderNotifier;
 use App\Support\AuditLogger;
 use App\ValueObjects\Money;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -43,6 +46,7 @@ class ViewOrder extends ViewRecord
         return [
             $this->statusAction('processing', __('Being prepared'), OrderStatus::Processing, [OrderStatus::Paid], 'heroicon-o-cube'),
             $this->statusAction('packed', __('Packed'), OrderStatus::Packed, [OrderStatus::Paid, OrderStatus::Processing], 'heroicon-o-archive-box'),
+            $this->assignCourierAction(),
             $this->dispatchedAction(),
             $this->statusAction('out_for_delivery', __('Out for delivery'), OrderStatus::OutForDelivery, [OrderStatus::Shipped], 'heroicon-o-map-pin', collectionOnly: false),
             $this->statusAction('delivered', __('Delivered'), OrderStatus::Delivered, [OrderStatus::OutForDelivery, OrderStatus::Shipped, OrderStatus::Packed, OrderStatus::Processing, OrderStatus::Paid], 'heroicon-o-check-circle', collectionOnly: false),
@@ -77,6 +81,62 @@ class ViewOrder extends ViewRecord
                 $this->getRecord()->transitionTo($to, auth()->user());
 
                 Notification::make()->title(__('Marked as :status.', ['status' => $to->label()]))->success()->send();
+
+                $this->getRecord()->refresh();
+                $this->fillForm();
+            });
+    }
+
+    /**
+     * Hand the order to a courier, who confirms each step from their phone.
+     * The Dispatched button stays for a courier company that is not on the
+     * system; this is for the foundation's own riders and agents.
+     */
+    private function assignCourierAction(): Action
+    {
+        return Action::make('assignCourier')
+            ->label(function (): string {
+                /** @var Order $order */
+                $order = $this->getRecord();
+
+                return $order->delivery ? __('Reassign courier') : __('Assign a courier');
+            })
+            ->icon('heroicon-o-truck')
+            ->visible(function (): bool {
+                /** @var Order $order */
+                $order = $this->getRecord();
+
+                return (auth()->user()?->can('deliveries.assign') ?? false)
+                    && ! $order->is_pickup
+                    && $order->status->isPaid()
+                    && ! in_array($order->status, [OrderStatus::Delivered, OrderStatus::Collected, OrderStatus::Completed, OrderStatus::Refunded], true);
+            })
+            ->schema([
+                Select::make('courier_id')
+                    ->label(__('Courier'))
+                    ->options(fn (): array => User::query()->permission('deliveries.courier')->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()
+                    ->required()
+                    ->helperText(__('Anybody with the Courier role. Add one under Staff accounts.')),
+                Textarea::make('notes')
+                    ->label(__('Note for the courier'))
+                    ->rows(2)
+                    ->maxLength(500),
+            ])
+            ->action(function (array $data): void {
+                /** @var Order $order */
+                $order = $this->getRecord();
+                $courier = User::query()->findOrFail($data['courier_id']);
+
+                try {
+                    app(CourierService::class)->assign($order, $courier, auth()->user(), $data['notes'] ?? null);
+                } catch (RuntimeException $e) {
+                    Notification::make()->title($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                Notification::make()->title(__('Assigned to :name. They have been emailed.', ['name' => $courier->name]))->success()->send();
 
                 $this->getRecord()->refresh();
                 $this->fillForm();

@@ -2116,6 +2116,32 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `created_at` | timestamp | yes |  |  |
 | `updated_at` | timestamp | yes |  |  |
 
+#### `deliveries`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `ulid` | char(26) |  | U |  |
+| `order_id` | bigint unsigned |  | U FK → `orders.id` |  |
+| `courier_id` | bigint unsigned | yes | I FK → `users.id` |  |
+| `assigned_by` | bigint unsigned | yes | I FK → `users.id` |  |
+| `status` | varchar(24) |  | I | `assigned` |
+| `attempts` | smallint unsigned |  |  | `0` |
+| `assigned_at` | timestamp | yes |  |  |
+| `picked_up_at` | timestamp | yes |  |  |
+| `out_for_delivery_at` | timestamp | yes |  |  |
+| `delivered_at` | timestamp | yes |  |  |
+| `failed_at` | timestamp | yes |  |  |
+| `recipient_name` | varchar(120) | yes |  |  |
+| `proof_note` | text | yes |  |  |
+| `proof_photo_path` | varchar(255) | yes |  |  |
+| `proof_lat` | decimal(10,7) | yes |  |  |
+| `proof_lng` | decimal(10,7) | yes |  |  |
+| `failure_reason` | text | yes |  |  |
+| `office_notes` | text | yes |  |  |
+| `created_at` | timestamp | yes |  |  |
+| `updated_at` | timestamp | yes |  |  |
+
 ### Engagement
 
 #### `events`
@@ -2470,6 +2496,41 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `created_at` | timestamp | yes |  |  |
 | `updated_at` | timestamp | yes |  |  |
 | `deleted_at` | timestamp | yes |  |  |
+
+#### `chat_conversations`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `ulid` | char(26) |  | U |  |
+| `visitor_token_hash` | varchar(64) |  | U |  |
+| `visitor_name` | varchar(120) |  |  |  |
+| `visitor_email` | varchar(191) | yes |  |  |
+| `user_id` | bigint unsigned | yes | I FK → `users.id` |  |
+| `assigned_to` | bigint unsigned | yes | I FK → `users.id` |  |
+| `status` | varchar(16) |  | I | `open` |
+| `page_url` | varchar(500) | yes |  |  |
+| `visitor_ip` | varchar(45) | yes |  |  |
+| `last_message_at` | timestamp | yes | I |  |
+| `last_visitor_message_at` | timestamp | yes |  |  |
+| `last_staff_message_at` | timestamp | yes |  |  |
+| `staff_seen_at` | timestamp | yes |  |  |
+| `visitor_seen_at` | timestamp | yes |  |  |
+| `closed_at` | timestamp | yes |  |  |
+| `closed_by` | bigint unsigned | yes | I FK → `users.id` |  |
+| `created_at` | timestamp | yes |  |  |
+| `updated_at` | timestamp | yes |  |  |
+
+#### `chat_messages`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `chat_conversation_id` | bigint unsigned |  | I FK → `chat_conversations.id` |  |
+| `sender` | varchar(16) |  |  |  |
+| `user_id` | bigint unsigned | yes | I FK → `users.id` |  |
+| `body` | text |  |  |  |
+| `created_at` | timestamp |  |  | `CURRENT_TIMESTAMP` |
 
 ### Communications
 

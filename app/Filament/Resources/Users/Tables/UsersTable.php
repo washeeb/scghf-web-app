@@ -18,7 +18,11 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->where('type', UserType::Staff)->with('roles'))
+            // Staff, and couriers — public accounts that hold the Courier role,
+            // managed from here because the office creates them here.
+            ->modifyQueryUsing(fn (Builder $query) => $query
+                ->where(fn (Builder $q) => $q->where('type', UserType::Staff)->orWhereHas('roles', fn (Builder $r) => $r->where('name', 'Courier')))
+                ->with('roles'))
             ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')->label(__('Name'))->searchable()->sortable()->description(fn (User $record): string => (string) $record->email),

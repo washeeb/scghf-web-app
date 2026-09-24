@@ -728,6 +728,49 @@ class MessageTemplateSeeder extends Seeder
                     TEXT,
             ],
             [
+                'key' => 'delivery.assigned',
+                'name' => 'Delivery assigned — to the courier',
+                'description' => 'Sent to a courier when the office hands them an order, with the address '
+                    .'and a link to the delivery in their portal.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['courier_name', 'order_reference', 'delivery_name', 'delivery_address', 'delivery_phone', 'portal_url'],
+                'required' => ['order_reference', 'portal_url'],
+                'subject' => 'Delivery for you: {{order_reference}}',
+                'html' => <<<'HTML'
+                    <p>Hello {{courier_name}},</p>
+                    <p>Order <strong>{{order_reference}}</strong> is yours to deliver to {{delivery_name}}, {{delivery_address}} ({{delivery_phone}}).</p>
+                    <p>Open it on your phone: {{portal_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    Hello {{courier_name}},
+
+                    Order {{order_reference}} is yours to deliver to {{delivery_name}}, {{delivery_address}} ({{delivery_phone}}).
+
+                    Open it on your phone: {{portal_url}}
+                    TEXT,
+            ],
+            [
+                'key' => 'delivery.failed',
+                'name' => 'Delivery could not be made — to the shop email',
+                'description' => 'Sent to the shop address when a courier records that a delivery could not be made, so the office can call the customer or reassign it.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['order_reference', 'courier_name', 'reason', 'attempts', 'delivery_name', 'delivery_phone', 'admin_url'],
+                'required' => ['order_reference', 'reason'],
+                'subject' => 'Could not deliver {{order_reference}}: {{reason}}',
+                'html' => <<<'HTML'
+                    <p>{{courier_name}} could not deliver <strong>{{order_reference}}</strong> to {{delivery_name}} ({{delivery_phone}}).</p>
+                    <p><strong>Reason:</strong> {{reason}} — attempt {{attempts}}.</p>
+                    <p>Reassign or retry from the order: {{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    {{courier_name}} could not deliver {{order_reference}} to {{delivery_name}} ({{delivery_phone}}).
+
+                    Reason: {{reason}} — attempt {{attempts}}.
+
+                    Reassign or retry from the order: {{admin_url}}
+                    TEXT,
+            ],
+            [
                 'key' => 'stock.low',
                 'name' => 'Low stock — to the shop email',
                 'description' => 'One digest a morning, to the shop email, listing what has fallen to '

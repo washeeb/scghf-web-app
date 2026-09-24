@@ -116,7 +116,8 @@ class LoginController extends Controller
             'last_login_ip' => $request->ip(),
         ])->saveQuietly();
 
-        return redirect()->intended(route('account.dashboard'));
+        // A courier's home is their deliveries, not a donor's dashboard.
+        return redirect()->intended($user?->can('deliveries.courier') ? route('courier.index') : route('account.dashboard'));
     }
 
     /**

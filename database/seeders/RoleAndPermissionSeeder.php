@@ -111,6 +111,9 @@ class RoleAndPermissionSeeder extends Seeder
             'orders.view', 'orders.fulfil', 'orders.refund_request',
             'coupons.manage', 'shipping.manage',
             'reviews.moderate',
+            // Deliveries: seeing them, handing an order to a courier, and —
+            // for the rider's own portal — confirming each step of one's own.
+            'deliveries.view', 'deliveries.assign', 'deliveries.courier',
         ],
         'engagement' => [
             'volunteers.view', 'volunteers.manage', 'volunteers.view_pii', 'volunteers.log_hours',
@@ -280,6 +283,7 @@ class RoleAndPermissionSeeder extends Seeder
             'admin.access',
             'products.*', 'inventory.manage',
             'orders.view', 'orders.fulfil', 'orders.refund_request',
+            'deliveries.view', 'deliveries.assign',
             'coupons.manage', 'shipping.manage', 'reviews.moderate',
             'media.view', 'media.upload',
             'contact.view', 'contact.reply',
@@ -369,6 +373,11 @@ class RoleAndPermissionSeeder extends Seeder
             'volunteers.view',
             // Front desk. Enough to answer a donor; not enough to move money.
         ],
+
+        // A rider or courier agent. No admin access at all: they sign in at
+        // the ordinary /login and work from /courier on their phone, where the
+        // only records they can reach are the deliveries assigned to them.
+        'Courier' => ['deliveries.courier'],
 
         // Public account. Holds no admin permissions at all — donor capability
         // is enforced by policies scoped to owned records, not by permissions.

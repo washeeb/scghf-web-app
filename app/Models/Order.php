@@ -162,6 +162,12 @@ class Order extends Model implements Payable
 
     // ── Relationships ────────────────────────────────────────────────────────
 
+    /** @return HasOne<Delivery, $this> */
+    public function delivery(): HasOne
+    {
+        return $this->hasOne(Delivery::class);
+    }
+
     /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
     {

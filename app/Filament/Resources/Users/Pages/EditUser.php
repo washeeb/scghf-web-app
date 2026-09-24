@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Users\Pages;
 
+use App\Enums\UserType;
 use App\Filament\Resources\Users\UserResource;
 use App\Support\AuditLogger;
 use App\Support\Sessions;
@@ -21,6 +22,16 @@ use Filament\Resources\Pages\EditRecord;
  */
 class EditUser extends EditRecord
 {
+    /** A courier-only account is public; anything else is staff. See CreateUser. */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if (array_key_exists('roles', $data)) {
+            $data['type'] = UserResource::courierOnly((array) $data['roles']) ? UserType::Donor : UserType::Staff;
+        }
+
+        return $data;
+    }
+
     protected static string $resource = UserResource::class;
 
     protected function afterSave(): void

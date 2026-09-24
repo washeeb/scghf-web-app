@@ -22,7 +22,8 @@
     $chat = app(App\Chat\LiveChat::class);
 @endphp
 
-@if ($chat->enabled())
+{{-- Not on the courier's pages: a rider at a door has no use for it, and it sits on the button they need. --}}
+@if ($chat->enabled() && ! request()->routeIs('courier.*'))
     @php
         $position = setting('chat.position', 'right') === 'left' ? 'left-4 sm:left-6' : 'right-4 sm:right-6';
         $user = auth()->user();

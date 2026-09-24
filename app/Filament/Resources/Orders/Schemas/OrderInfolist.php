@@ -65,6 +65,29 @@ class OrderInfolist
                 ]),
             ]),
 
+            Section::make(__('Courier'))
+                ->visible(fn (Order $record): bool => $record->delivery !== null)
+                ->columns(3)
+                ->schema([
+                    TextEntry::make('delivery.courier.name')->label(__('With'))->placeholder('—'),
+                    TextEntry::make('delivery.status')->label(__('Delivery'))->badge()->state(fn (Order $record): string => (string) $record->delivery?->label()),
+                    TextEntry::make('delivery.attempts')->label(__('Attempts')),
+                    TextEntry::make('delivery.assigned_at')->label(__('Assigned'))->dateTime('j M, H:i')->placeholder('—'),
+                    TextEntry::make('delivery.picked_up_at')->label(__('Picked up'))->dateTime('j M, H:i')->placeholder('—'),
+                    TextEntry::make('delivery.delivered_at')->label(__('Delivered'))->dateTime('j M, H:i')->placeholder('—'),
+                    TextEntry::make('delivery.recipient_name')->label(__('Received by'))->placeholder('—'),
+                    TextEntry::make('delivery.proof_note')->label(__('Courier\'s note'))->placeholder('—')->columnSpan(2),
+                    TextEntry::make('delivery.failure_reason')->label(__('Could not deliver'))->placeholder('—')->columnSpan(3)->visible(fn (Order $record): bool => filled($record->delivery?->failure_reason)),
+                    TextEntry::make('proof')
+                        ->label(__('Proof'))
+                        ->visible(fn (Order $record): bool => (bool) ($record->delivery?->hasProofPhoto() || $record->delivery?->proofMapUrl()))
+                        ->state(fn (Order $record): HtmlString => new HtmlString(collect([
+                            $record->delivery?->hasProofPhoto() ? '<a class="text-primary-600 underline" href="'.e(route('deliveries.proof', $record->delivery)).'" target="_blank" rel="noopener">'.e(__('Photograph')).'</a>' : null,
+                            $record->delivery?->proofMapUrl() ? '<a class="text-primary-600 underline" href="'.e($record->delivery->proofMapUrl()).'" target="_blank" rel="noopener">'.e(__('Where the phone was')).'</a>' : null,
+                        ])->filter()->implode(' · ')))
+                        ->columnSpan(3),
+                ]),
+
             Section::make(__('History'))->collapsible()->schema([
                 TextEntry::make('history')
                     ->hiddenLabel()

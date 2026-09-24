@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Chat\ChatController;
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailController;
 use App\Http\Controllers\Account\ImpactController as AccountImpactController;
@@ -20,7 +19,9 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\BeneficiaryDocumentController;
 use App\Http\Controllers\CauseController;
+use App\Http\Controllers\Chat\ChatController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Courier\CourierController;
 use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\DeliveryWebhookController;
@@ -398,6 +399,33 @@ Route::get('newsletter/preferences/{token}', [NewsletterController::class, 'pref
 Route::post('newsletter/preferences/{token}', [NewsletterController::class, 'updatePreferences'])
     ->middleware('throttle:10,1')
     ->name('newsletter.preferences.update');
+
+/*
+|--------------------------------------------------------------------------
+| The courier portal
+|--------------------------------------------------------------------------
+|
+| A rider or courier agent signs in at the ordinary /login and comes here:
+| the deliveries in their hands, and what they can do to each from the door.
+| `can:deliveries.courier` is the Courier role; the office's side is in the
+| admin (Shop → Deliveries, and the order page's "Assign a courier").
+*/
+Route::middleware(['auth', 'auth.session', 'can:deliveries.courier'])
+    ->prefix('courier')
+    ->name('courier.')
+    ->group(function (): void {
+        Route::get('/', [CourierController::class, 'index'])->name('index');
+        Route::get('{delivery}', [CourierController::class, 'show'])->name('show');
+        Route::post('{delivery}/picked-up', [CourierController::class, 'pickedUp'])->name('picked-up');
+        Route::post('{delivery}/out-for-delivery', [CourierController::class, 'outForDelivery'])->name('out-for-delivery');
+        Route::post('{delivery}/delivered', [CourierController::class, 'delivered'])->name('delivered');
+        Route::post('{delivery}/failed', [CourierController::class, 'failed'])->name('failed');
+    });
+
+// The proof photograph: the courier who took it, or staff who may see deliveries.
+Route::get('deliveries/{delivery}/proof', [CourierController::class, 'proof'])
+    ->middleware(['auth', 'auth.session'])
+    ->name('deliveries.proof');
 
 /*
 |--------------------------------------------------------------------------

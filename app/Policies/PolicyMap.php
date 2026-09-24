@@ -156,6 +156,7 @@ final class PolicyMap
 
             Models\ContactMessage::class => ContactPolicy::class,
             Models\ChatConversation::class => ChatPolicy::class,
+            Models\Delivery::class => DeliveryPolicy::class,
             Models\ChatMessage::class => ChatPolicy::class,
             Models\ContactDepartment::class => ContactPolicy::class,
 

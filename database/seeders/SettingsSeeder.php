@@ -389,6 +389,35 @@ class SettingsSeeder extends Seeder
         ['chat', 'closed_by_staff_line', 'This chat has been closed. Thank you for talking to us.', SettingType::String, 'Closing line — closed by the office', true],
         ['chat', 'closed_by_visitor_line', 'The visitor ended the chat.', SettingType::String, 'Closing line — closed by the visitor', true],
 
+        // ── The courier portal ───────────────────────────────────────────────
+        // What a rider reads on their phone at /courier, and the two rules
+        // the office sets for a confirmation.
+        ['courier', 'portal_title', 'Deliveries', SettingType::String, 'Portal name', true],
+        ['courier', 'list_title', 'Your deliveries', SettingType::String, 'List page title', true],
+        ['courier', 'instructions', '', SettingType::Text, 'Instructions to couriers', true,
+            'Shown at the top of the list. For example: "Call before you set off. Do not leave a parcel with a neighbour."'],
+        ['courier', 'active_heading', 'To deliver', SettingType::String, 'Heading — deliveries in hand', true],
+        ['courier', 'done_heading', 'Done', SettingType::String, 'Heading — finished', true],
+        ['courier', 'empty_message', 'Nothing to deliver right now.', SettingType::String, 'Message when there is nothing to deliver', true],
+        ['courier', 'back_label', 'All deliveries', SettingType::String, 'Back link', true],
+        ['courier', 'call_label', 'Call', SettingType::String, 'Call button', true],
+        ['courier', 'map_label', 'Map', SettingType::String, 'Map button', true],
+        ['courier', 'parcel_heading', 'In the parcel', SettingType::String, 'Parcel contents heading', true],
+        ['courier', 'picked_up_label', 'I have picked it up', SettingType::String, 'Picked-up button', true],
+        ['courier', 'out_for_delivery_label', 'On my way to the customer', SettingType::String, 'Out-for-delivery button', true],
+        ['courier', 'delivered_label', 'Delivered — confirm', SettingType::String, 'Delivered heading', true],
+        ['courier', 'recipient_label', 'Who received it?', SettingType::String, 'Recipient field label', true],
+        ['courier', 'photo_label', 'Photo of the parcel at the door', SettingType::String, 'Photo field label', true],
+        ['courier', 'note_label', 'Anything to note?', SettingType::String, 'Note field label', true],
+        ['courier', 'location_note', 'Your location is recorded with the confirmation when your phone allows it.', SettingType::String, 'Location note', true],
+        ['courier', 'confirm_label', 'Confirm delivery', SettingType::String, 'Confirm button', true],
+        ['courier', 'failed_label', 'I could not deliver', SettingType::String, 'Could-not-deliver heading', true],
+        ['courier', 'require_photo', '0', SettingType::Boolean, 'Require a photograph to confirm a delivery', false,
+            'On, a courier cannot confirm without a photo of the parcel at the door.'],
+        ['courier', 'photo_required_message', 'A photograph of the delivered parcel is required.', SettingType::String, 'Message when the photo is missing', true],
+        ['courier', 'failure_reasons', '["Nobody at the address","Could not find the address","Customer not reachable by phone","Customer asked for another day","Refused the parcel"]', SettingType::Json, 'Reasons a delivery could not be made', false,
+            'The list a courier picks from. A JSON list of short phrases.'],
+
         // ── Analytics (Phase 13) ─────────────────────────────────────────────
         // None by default. Whichever is chosen loads only after the visitor
         // allows the Analytics category in the cookie notice; until then the

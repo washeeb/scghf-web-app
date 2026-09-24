@@ -64,3 +64,7 @@ product allows it) are fulfilled when stock arrives.
 
 *Shop → Reports*: sales by product and by month, net proceeds after
 costs, what each product has raised for its appeal.
+
+## A rider of our own
+
+When the foundation's own rider or agent takes the parcel, use **Assign a courier** on the order instead of *Dispatched*: they confirm pick-up, out-for-delivery and the delivery itself from their phone, with proof, and the customer is told at each step. Chapter 13 has the whole of it.

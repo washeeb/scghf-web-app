@@ -22,6 +22,8 @@ shown inside the panel itself.
 | [9. What not to touch, and who to call](09-what-not-to-touch.md) | read this one first |
 | [10. Quick reference card](10-quick-reference.md) | one page to print |
 | [11. Beneficiary cases](11-beneficiary-cases.md) | a person the foundation is helping: who sees what, the case's life, documents, consent |
+| [12. Live chat](12-live-chat.md) | answering visitors who press Chat on the site; being "online"; what is kept |
+| [13. Deliveries and couriers](13-deliveries-and-couriers.md) | setting up a rider, handing them an order, what they confirm from their phone |
 
 **Two rules that cover most of the manual:**
 

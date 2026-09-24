@@ -21,6 +21,7 @@
 import { initAnalytics } from './analytics';
 import { initAnnouncement } from './announcement';
 import { initChat } from './chat';
+import { initCourier } from './courier';
 import { initCookieConsent } from './cookie-consent';
 import { initCurrencyPicker } from './currency';
 import { initNavigation } from './navigation';
@@ -39,3 +40,4 @@ initAnalytics();
 initPwa();
 initScreen();
 initChat();
+initCourier();

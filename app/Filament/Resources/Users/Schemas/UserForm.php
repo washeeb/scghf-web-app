@@ -40,7 +40,7 @@ class UserForm
                     ->multiple()
                     ->preload()
                     ->required()
-                    ->helperText(__('Roles are bundles of permissions. Super Admin holds every permission, including the ones that delete.')),
+                    ->helperText(__('Roles are bundles of permissions. Super Admin holds every permission, including the ones that delete. Courier on its own makes a public account: the rider signs in at the site\'s own Sign in and works from /courier on their phone, and cannot open this panel.')),
                 Toggle::make('is_active')->label(__('Active'))->default(true)
                     ->helperText(__('Off is a soft stop; Suspend (an action on the record) is the one that records why.')),
                 TextEntry::make('two_factor')
