@@ -175,6 +175,7 @@ class MenuSeeder extends Seeder
             ['slug' => 'donation-policy', 'label' => 'Donation Policy'],
             ['slug' => 'refund-policy', 'label' => 'Refunds'],
             ['slug' => 'cookie-policy', 'label' => 'Cookies'],
+            ['slug' => 'shipping-and-delivery', 'label' => 'Shipping & Delivery'],
             ['slug' => 'safeguarding', 'label' => 'Safeguarding'],
             ['slug' => 'accessibility', 'label' => 'Accessibility'],
             ['slug' => 'whistleblowing', 'label' => 'Raise a Concern'],

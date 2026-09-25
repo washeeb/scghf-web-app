@@ -74,6 +74,13 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 - `activate.sh` seeds the message templates on every deploy (wording only
   on first creation), so a template a release introduces exists before the
   code that sends it runs
+- **The shipping policy was published and linked from nowhere.** The
+  footer's Legal group has always listed `shipping-and-delivery` among its
+  slugs, but no menu item pointed at it. It is now in `MenuSeeder` for a
+  fresh install and backfilled into an existing one by a migration — once,
+  so that removing the link in *Site → Menus → Footer — Legal* makes it
+  stay removed. Label, order, target and audience are editable there like
+  any other item
 
 ### The visual template and the logo — 2026-09-20
 
