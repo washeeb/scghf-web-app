@@ -24,6 +24,7 @@ shown inside the panel itself.
 | [11. Beneficiary cases](11-beneficiary-cases.md) | a person the foundation is helping: who sees what, the case's life, documents, consent |
 | [12. Live chat](12-live-chat.md) | answering visitors who press Chat on the site; being "online"; what is kept |
 | [13. Deliveries and couriers](13-deliveries-and-couriers.md) | setting up a rider, handing them an order, what they confirm from their phone |
+| [14. The assistant, and chat on WhatsApp](14-the-assistant.md) | the automated first answer, what it must never handle, what it costs, WhatsApp in the same inbox |
 
 **Two rules that cover most of the manual:**
 

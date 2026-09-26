@@ -533,6 +533,22 @@ class LaunchContentSeeder extends Seeder
         $metricIds = array_map(fn (ImpactMetric $m): int => $m->id, $metrics);
         $path = fn (string $slug): string => (string) (Page::query()->where('slug', $slug)->value('path') ?? '/'.$slug);
 
+        /*
+         * The division pages are built from the division records rather than
+         * repeated here: the summary, the focus areas and the id all come
+         * from the row an editor maintains in the panel, so the page cannot
+         * drift from the division it is about.
+         */
+        $divisions = Division::query()->with(['focusAreas' => fn ($q) => $q->orderBy('sort_order')])->get()->keyBy('slug');
+
+        $divisionId = fn (string $slug): ?int => $divisions->get($slug)?->getKey();
+        $divisionSummary = fn (string $slug): string => (string) $divisions->get($slug)?->summary;
+        $divisionAreas = fn (string $slug): array => $divisions->get($slug)?->focusAreas
+            ->take(8)
+            ->map(fn (FocusArea $area): array => ['title' => $area->name, 'body' => (string) $area->description])
+            ->values()
+            ->all() ?? [];
+
         $content = [
             'home' => [
                 ['type' => 'hero', 'data' => [
@@ -546,6 +562,49 @@ class LaunchContentSeeder extends Seeder
                     'secondary_cta_label' => 'What we do',
                     'secondary_cta_url' => '/what-we-do',
                     'overlay_opacity' => 50,
+                    'height' => 'compact',
+                    'autoplay_seconds' => 7,
+                    /*
+                     * Three more slides, one per thing a first-time visitor
+                     * might have come for: a child in school, a clinic, a
+                     * widow's trade. The opening slide stays what it was —
+                     * it is the one the crawler and the LCP measurement see.
+                     */
+                    'slides' => [
+                        [
+                            'eyebrow' => 'Education',
+                            'heading' => 'A desk, a book, a chance',
+                            'subheading' => 'School fees, uniforms and materials for children whose families cannot carry the cost alone.',
+                            'image' => $this->image('education-header'),
+                            'image_mobile' => $this->image('education-header'),
+                            'primary_cta_label' => 'Send a child to school',
+                            'primary_cta_url' => '/donate',
+                            'secondary_cta_label' => 'Our education work',
+                            'secondary_cta_url' => $path('education'),
+                        ],
+                        [
+                            'eyebrow' => 'Health',
+                            'heading' => 'Care that reaches the village',
+                            'subheading' => 'Screening, medicines and outreach for mothers, newborns and the elderly, where the clinic is far and the fare is more than the visit.',
+                            'image' => $this->image('division-health'),
+                            'image_mobile' => $this->image('division-health'),
+                            'primary_cta_label' => 'Fund a clinic day',
+                            'primary_cta_url' => '/donate',
+                            'secondary_cta_label' => 'Our health work',
+                            'secondary_cta_url' => $path('health'),
+                        ],
+                        [
+                            'eyebrow' => 'Orphans, widows and widowers',
+                            'heading' => 'Dignity after a loss',
+                            'subheading' => 'A trade, a start-up grant and a community for those left to carry a household by themselves.',
+                            'image' => $this->image('legacy-header'),
+                            'image_mobile' => $this->image('legacy-header'),
+                            'primary_cta_label' => 'Stand with a family',
+                            'primary_cta_url' => '/donate',
+                            'secondary_cta_label' => 'Our legacy work',
+                            'secondary_cta_url' => $path('orphans-widows-and-widowers'),
+                        ],
+                    ],
                 ]],
                 ['type' => 'divisions', 'data' => [
                     'eyebrow' => 'How we help',
@@ -610,6 +669,146 @@ class LaunchContentSeeder extends Seeder
                 ]],
             ],
 
+            'health' => [
+                ['type' => 'page-header', 'data' => [
+                    'heading' => 'Life Spring Foundation',
+                    'subheading' => $divisionSummary('life-spring'),
+                    'image' => $this->image('health-header'),
+                ]],
+                ['type' => 'split-content', 'data' => [
+                    'eyebrow' => 'Health',
+                    'heading' => 'Care that reaches the village',
+                    'body' => '<p>In too many communities the nearest clinic is a taxi ride away, and the fare is more than the visit. Life Spring Foundation takes basic health care to those communities instead: screening days, medicines, and teaching that stops an illness before it starts.</p><p>We work with the clinics and health workers already serving an area rather than around them, and we follow up — a screening that finds something and does nothing about it is not care.</p>',
+                    'image' => $this->image('health-split'),
+                    'image_position' => 'right',
+                    'cta_label' => 'Fund a clinic day',
+                    'cta_url' => '/donate',
+                ]],
+                ['type' => 'feature-grid', 'data' => [
+                    'eyebrow' => 'What this covers',
+                    'heading' => 'The work, in parts',
+                    'items' => $divisionAreas('life-spring'),
+                ]],
+                ['type' => 'featured-projects', 'data' => [
+                    'eyebrow' => 'On the ground',
+                    'heading' => 'Projects in this division',
+                    'limit' => 3,
+                    'division_id' => $divisionId('life-spring'),
+                ]],
+                ['type' => 'cta-band', 'data' => [
+                    'eyebrow' => 'Give',
+                    'heading' => 'What a clinic day pays for',
+                    'body' => 'A day of screening in one community — the health workers, the transport, the medicines and the follow-up for the people it finds.',
+                    'cta_label' => 'Fund a clinic day',
+                    'cta_url' => '/donate',
+                    'background' => 'brand',
+                ]],
+            ],
+            'education' => [
+                ['type' => 'page-header', 'data' => [
+                    'heading' => 'BrightPath Fund Initiative',
+                    'subheading' => $divisionSummary('brightpath'),
+                    'image' => $this->image('education-header'),
+                ]],
+                ['type' => 'split-content', 'data' => [
+                    'eyebrow' => 'Education',
+                    'heading' => 'A desk, a book, a chance',
+                    'body' => '<p>A child out of school in Ghana is rarely a child who does not want to learn. It is fees, a uniform, a textbook, a sick parent. BrightPath pays for the thing that is actually in the way.</p><p>We support needy but promising students, orphans and vulnerable children — with fees and materials, and with the mentoring that makes the difference between enrolled and finishing.</p>',
+                    'image' => $this->image('education-split'),
+                    'image_position' => 'right',
+                    'cta_label' => 'Send a child to school',
+                    'cta_url' => '/donate',
+                ]],
+                ['type' => 'feature-grid', 'data' => [
+                    'eyebrow' => 'What this covers',
+                    'heading' => 'The work, in parts',
+                    'items' => $divisionAreas('brightpath'),
+                ]],
+                ['type' => 'featured-projects', 'data' => [
+                    'eyebrow' => 'On the ground',
+                    'heading' => 'Projects in this division',
+                    'limit' => 3,
+                    'division_id' => $divisionId('brightpath'),
+                ]],
+                ['type' => 'cta-band', 'data' => [
+                    'eyebrow' => 'Give',
+                    'heading' => 'What a school term pays for',
+                    'body' => 'Fees, a uniform, books and materials for one child for a term, and somebody who checks on how they are getting on.',
+                    'cta_label' => 'Send a child to school',
+                    'cta_url' => '/donate',
+                    'background' => 'brand',
+                ]],
+            ],
+            'orphans-widows-and-widowers' => [
+                ['type' => 'page-header', 'data' => [
+                    'heading' => 'Legacy of Love Initiative',
+                    'subheading' => $divisionSummary('legacy-of-love'),
+                    'image' => $this->image('legacy-header'),
+                ]],
+                ['type' => 'split-content', 'data' => [
+                    'eyebrow' => 'Orphans, widows and widowers',
+                    'heading' => 'Dignity after a loss',
+                    'body' => '<p>When a household loses the person who held it together, what follows is rarely only grief. It is school fees nobody can pay, a trade nobody was taught, and a family the community slowly stops asking after.</p><p>Legacy of Love stays. Food and clothing when it is needed, a trade and a start-up grant so it stops being needed, and the visits and prayer that say somebody is still counting.</p>',
+                    'image' => $this->image('legacy-split'),
+                    'image_position' => 'right',
+                    'cta_label' => 'Stand with a family',
+                    'cta_url' => '/donate',
+                ]],
+                ['type' => 'feature-grid', 'data' => [
+                    'eyebrow' => 'What this covers',
+                    'heading' => 'The work, in parts',
+                    'items' => $divisionAreas('legacy-of-love'),
+                ]],
+                ['type' => 'featured-projects', 'data' => [
+                    'eyebrow' => 'On the ground',
+                    'heading' => 'Projects in this division',
+                    'limit' => 3,
+                    'division_id' => $divisionId('legacy-of-love'),
+                ]],
+                ['type' => 'cta-band', 'data' => [
+                    'eyebrow' => 'Give',
+                    'heading' => 'What a start-up grant pays for',
+                    'body' => 'The tools, stock or training a widow or widower needs to begin trading, and the follow-up for the first year of it.',
+                    'cta_label' => 'Stand with a family',
+                    'cta_url' => '/donate',
+                    'background' => 'brand',
+                ]],
+            ],
+            'missions' => [
+                ['type' => 'page-header', 'data' => [
+                    'heading' => 'Every Soul Missions',
+                    'subheading' => $divisionSummary('every-soul-missions'),
+                    'image' => $this->image('missions-header'),
+                ]],
+                ['type' => 'split-content', 'data' => [
+                    'eyebrow' => 'Missions',
+                    'heading' => 'The gospel, and the people nobody visits',
+                    'body' => '<p>Every Soul Missions is the foundation\'s evangelism and discipleship work: community outreach, prayer and counselling, Bibles and Christian literature, and visits to hospitals and homes.</p><p>It goes where the visiting stops — the ward with no visitors, the prison, the household nobody calls on — and it goes back.</p>',
+                    'image' => $this->image('missions-split'),
+                    'image_position' => 'right',
+                    'cta_label' => 'Support the work',
+                    'cta_url' => '/donate',
+                ]],
+                ['type' => 'feature-grid', 'data' => [
+                    'eyebrow' => 'What this covers',
+                    'heading' => 'The work, in parts',
+                    'items' => $divisionAreas('every-soul-missions'),
+                ]],
+                ['type' => 'featured-projects', 'data' => [
+                    'eyebrow' => 'On the ground',
+                    'heading' => 'Projects in this division',
+                    'limit' => 3,
+                    'division_id' => $divisionId('every-soul-missions'),
+                ]],
+                ['type' => 'cta-band', 'data' => [
+                    'eyebrow' => 'Give',
+                    'heading' => 'What an outreach pays for',
+                    'body' => 'An outreach in one community: the team, the transport, the Bibles and literature, and the follow-up visits afterwards.',
+                    'cta_label' => 'Support the work',
+                    'cta_url' => '/donate',
+                    'background' => 'brand',
+                ]],
+            ],
             'about' => [
                 ['type' => 'page-header', 'data' => [
                     'heading' => 'About the Foundation',

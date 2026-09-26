@@ -92,9 +92,27 @@ class MenuSeeder extends Seeder
             ['slug' => 'transparency', 'label' => 'Transparency'],
         ]);
 
-        // Divisions is a code-backed section; its children are the four
-        // divisions, seeded in the Programmes module rather than here.
-        $this->route($menu, 'focus-areas.index', 'Our Divisions', $order++);
+        /*
+         * "Our Divisions" goes to /what-we-do, which lists the focus areas.
+         * Its children are the four division pages — a page each, because a
+         * visitor who wants to know what the foundation does about health
+         * should not have to read a list of twenty-nine focus areas first.
+         *
+         * A page link rather than a route, so renaming a slug moves the menu
+         * with it.
+         */
+        $divisions = $this->route($menu, 'focus-areas.index', 'Our Divisions', $order++);
+        $childOrder = 0;
+
+        foreach ([
+            ['slug' => 'health', 'label' => 'Health'],
+            ['slug' => 'education', 'label' => 'Education'],
+            ['slug' => 'orphans-widows-and-widowers', 'label' => 'Orphans, Widows & Widowers'],
+            ['slug' => 'missions', 'label' => 'Missions'],
+        ] as $child) {
+            $this->item($menu, $child, $childOrder++, $divisions->id);
+        }
+
         $this->route($menu, 'projects.index', 'Projects', $order++);
         $this->route($menu, 'impact', 'Impact', $order++);
 

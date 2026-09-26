@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Blocks;
 
+use App\Blocks\Options\HeroHeights;
 use App\Community\EnquiryKinds;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
@@ -67,7 +68,7 @@ class BlockRegistry
             new BlockDefinition(
                 key: 'hero',
                 name: 'Hero',
-                description: 'Full-width image with a headline and up to two calls to action.',
+                description: 'The band at the top of a page: a picture, a headline and up to two calls to action. Add slides to make it rotate.',
                 category: 'Headers',
                 icon: 'heroicon-o-photo',
                 fields: [
@@ -83,6 +84,29 @@ class BlockRegistry
                     'secondary_cta_label' => ['type' => 'string', 'max' => 40],
                     'secondary_cta_url' => ['type' => 'string', 'max' => 500],
                     'overlay_opacity' => ['type' => 'integer', 'default' => 55],
+
+                    /*
+                     * Extra slides.
+                     *
+                     * The fields above are slide one, always — which is what
+                     * makes this change nothing for the heroes that already
+                     * exist, and what keeps the *first* slide's wording and
+                     * picture where the LCP preload and the SEO crawler
+                     * already look for them. Add rows here and the band
+                     * rotates; leave it empty and it is the still hero it
+                     * has always been.
+                     */
+                    'slides' => ['type' => 'slides'],
+
+                    // How tall the band stands. `compact` is the default
+                    // because a hero that fills the viewport pushes the
+                    // reason the visitor came below the fold.
+                    'height' => ['type' => 'select', 'options' => HeroHeights::class, 'default' => 'compact'],
+
+                    // Seconds per slide; 0 (or one slide) never advances on
+                    // its own. Honoured only when the visitor has not asked
+                    // for reduced motion — see hero-slider.js.
+                    'autoplay_seconds' => ['type' => 'integer', 'default' => 7],
                 ],
                 maxPerPage: 1,
             ),

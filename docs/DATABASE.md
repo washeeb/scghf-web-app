@@ -2504,13 +2504,21 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `id` | bigint unsigned |  | PK | auto |
 | `ulid` | char(26) |  | U |  |
 | `visitor_token_hash` | varchar(64) |  | U |  |
+| `channel` | varchar(16) |  | I | `web` |
 | `visitor_name` | varchar(120) |  |  |  |
 | `visitor_email` | varchar(191) | yes |  |  |
 | `user_id` | bigint unsigned | yes | I FK → `users.id` |  |
 | `assigned_to` | bigint unsigned | yes | I FK → `users.id` |  |
 | `status` | varchar(16) |  | I | `open` |
+| `handled_by` | varchar(16) |  | I | `staff` |
+| `escalated_at` | timestamp | yes |  |  |
+| `escalation_reason` | varchar(191) | yes |  |  |
+| `contact_department_id` | bigint unsigned | yes | I FK → `contact_departments.id` |  |
+| `agent_replies` | smallint unsigned |  |  | `0` |
 | `page_url` | varchar(500) | yes |  |  |
 | `visitor_ip` | varchar(45) | yes |  |  |
+| `whatsapp_wa_id` | varchar(32) | yes | I |  |
+| `whatsapp_window_expires_at` | timestamp | yes |  |  |
 | `last_message_at` | timestamp | yes | I |  |
 | `last_visitor_message_at` | timestamp | yes |  |  |
 | `last_staff_message_at` | timestamp | yes |  |  |
@@ -2529,8 +2537,31 @@ Types are MySQL's. **PK** primary key, **U** unique, **I** indexed, **FK →** f
 | `chat_conversation_id` | bigint unsigned |  | I FK → `chat_conversations.id` |  |
 | `sender` | varchar(16) |  |  |  |
 | `user_id` | bigint unsigned | yes | I FK → `users.id` |  |
+| `ai_interaction_id` | bigint unsigned | yes | I FK → `ai_interactions.id` |  |
 | `body` | text |  |  |  |
 | `created_at` | timestamp |  |  | `CURRENT_TIMESTAMP` |
+
+#### `ai_interactions`
+
+| Column | Type | Null | Key | Default |
+|---|---|---|---|---|
+| `id` | bigint unsigned |  | PK | auto |
+| `ulid` | char(26) |  | U |  |
+| `chat_conversation_id` | bigint unsigned | yes | I FK → `chat_conversations.id` |  |
+| `driver` | varchar(32) |  |  |  |
+| `model` | varchar(64) | yes |  |  |
+| `outcome` | varchar(16) |  | I |  |
+| `reason` | varchar(191) | yes |  |  |
+| `input_tokens` | int unsigned |  |  | `0` |
+| `output_tokens` | int unsigned |  |  | `0` |
+| `latency_ms` | int unsigned |  |  | `0` |
+| `estimated_cost_minor` | int unsigned |  |  | `0` |
+| `flagged` | tinyint(1) |  | I | `0` |
+| `flag_note` | varchar(500) | yes |  |  |
+| `flagged_by` | bigint unsigned | yes | I FK → `users.id` |  |
+| `flagged_at` | timestamp | yes |  |  |
+| `created_at` | timestamp | yes | I |  |
+| `updated_at` | timestamp | yes |  |  |
 
 ### Communications
 

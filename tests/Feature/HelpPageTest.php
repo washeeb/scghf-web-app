@@ -92,5 +92,5 @@ it('has a chapter for every file in the manual and a picture for every image it 
     }
 
     expect($missing)->toBe([])
-        ->and(count((new HelpPage)->chapters()))->toBe(13);
+        ->and(count((new HelpPage)->chapters()))->toBe(14);
 });

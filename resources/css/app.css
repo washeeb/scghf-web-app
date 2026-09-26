@@ -5,6 +5,7 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+
 @theme {
     --font-sans: Inter, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
@@ -190,6 +191,110 @@ h4,
 
     .eyebrow-on-dark::before {
         background: currentColor;
+    }
+
+    /*
+     * ── The hero slider's controls ──────────────────────────────────────────
+     *
+     * They sit over a photograph, which could be any photograph, so they
+     * carry their own dark scrim and a hairline border rather than relying
+     * on the picture behind them for contrast — the failure mode of a
+     * translucent control over an editor-supplied image is that it is
+     * invisible over a light sky, on exactly one slide, and nobody notices.
+     *
+     * `backdrop-filter` is progressive: where it is unsupported the scrim
+     * alone is already AA against white text.
+     */
+    .hero-control {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: none;
+        border-radius: 9999px;
+        border: 1px solid rgb(255 255 255 / 0.35);
+        background: rgb(0 0 0 / 0.35);
+        color: #fff;
+        backdrop-filter: blur(4px);
+        transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .hero-control:hover {
+        background: rgb(0 0 0 / 0.55);
+        border-color: rgb(255 255 255 / 0.6);
+    }
+
+    .hero-control:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+    }
+
+    /*
+     * A dot is a track; the fill inside it is the slide's time running out.
+     * The whole button is 44px tall through a transparent hit area, because
+     * WCAG 2.2 2.5.8 asks for a target that a thumb can actually hit — the
+     * visible dot is 8px, which on its own would not be one.
+     */
+    .hero-dot {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        width: 1.75rem;
+        height: 2.75rem;
+        flex: none;
+    }
+
+    .hero-dot::before {
+        content: '';
+        position: absolute;
+        inset-inline: 0;
+        height: 0.375rem;
+        border-radius: 9999px;
+        border: 1px solid rgb(255 255 255 / 0.35);
+        background: rgb(0 0 0 / 0.35);
+    }
+
+    .hero-dot[aria-current='true']::before {
+        background: rgb(0 0 0 / 0.5);
+    }
+
+    .hero-dot:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+        border-radius: 0.25rem;
+    }
+
+    .hero-dot-fill {
+        position: absolute;
+        inset-inline: 1px;
+        height: calc(0.375rem - 2px);
+        border-radius: 9999px;
+        background: var(--brand-secondary);
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition-property: transform;
+        transition-timing-function: linear;
+    }
+
+    /* A dot that is not the current one shows filled, not draining. */
+    .hero-dot[aria-current='true'] .hero-dot-fill {
+        opacity: 1;
+    }
+
+    .hero-dot:not([aria-current='true']) .hero-dot-fill {
+        opacity: 0;
+    }
+
+    /*
+     * Nothing animates for somebody who asked for that. The script does not
+     * start the clock either, so this only covers the fade already in
+     * flight when the preference changes.
+     */
+    @media (prefers-reduced-motion: reduce) {
+        .hero-dot-fill {
+            transition: none;
+        }
     }
 
     /*

@@ -71,7 +71,8 @@ class BlockDataResolver
                 'faq' => ['faqs' => $this->faqs($section)] + $this->media($section),
                 'impact-stats' => ['metrics' => $this->metrics($section)],
                 'gallery' => ['gallery' => $this->gallery($section)],
-                'hero', 'page-header', 'split-content', 'cta-band', 'video' => $this->media($section),
+                'hero' => $this->media($section) + ['slideMedia' => $this->slideMedia($section)],
+                'page-header', 'split-content', 'cta-band', 'video' => $this->media($section),
                 default => [],
             };
         } catch (Throwable $e) {
@@ -218,6 +219,34 @@ class BlockDataResolver
      *
      * @return array<string, mixed>
      */
+    /**
+     * Every picture the hero's extra slides point at, in one query, keyed by
+     * id for the view to look up.
+     *
+     * A slide holds media *ids*, like the block's own image fields — so a
+     * hero of five slides would be ten queries if the view resolved them as
+     * it drew, which is exactly the N+1 the note at the top of this file is
+     * about, on the one section of the page that has to be fast.
+     *
+     * @return Collection<int, Media>
+     */
+    private function slideMedia(PageSection $section): Collection
+    {
+        $ids = collect((array) $section->field('slides', []))
+            ->filter(fn (mixed $row): bool => is_array($row))
+            ->flatMap(fn (array $slide): array => [$slide['image'] ?? null, $slide['image_mobile'] ?? null])
+            ->filter(fn (mixed $id): bool => is_numeric($id))
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return Media::query()->whereIn('id', $ids->all())->get()->keyBy('id');
+    }
+
     private function media(PageSection $section): array
     {
         $ids = array_filter([

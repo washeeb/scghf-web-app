@@ -118,6 +118,41 @@ class BlockFieldFactory
                 ->collapsible()
                 ->defaultItems(0),
 
+            /*
+             * The hero's extra slides.
+             *
+             * The generic `repeater` above is title/icon/text/link, which is
+             * a card — a slide is a picture, a headline, a line of prose and
+             * two buttons, and the note on that repeater says a block needing
+             * a different shape declares its own type rather than having that
+             * one guess. This is that.
+             *
+             * Slide one is the block's own fields, not a row here: see the
+             * `slides` entry in BlockRegistry for why.
+             */
+            'slides' => Repeater::make("data.{$name}")
+                ->schema([
+                    TextInput::make('eyebrow')->label(__('Small line above'))->maxLength(80),
+                    TextInput::make('heading')->label(__('Headline'))->required()->maxLength(160)
+                        ->helperText(__('The first word is underlined in the accent colour, as on the first slide.')),
+                    Textarea::make('subheading')->label(__('Sentence below'))->rows(2)->maxLength(400),
+                    $this->mediaPicker('image')->label(__('Picture')),
+                    $this->mediaPicker('image_mobile')->label(__('Picture for phones'))
+                        ->helperText(__('Optional, and worth doing: a crop crafted for a narrow screen loads faster and is better composed than the wide one squeezed down.')),
+                    TextInput::make('primary_cta_label')->label(__('Button'))->maxLength(40),
+                    TextInput::make('primary_cta_url')->label(__('Button link'))->maxLength(500),
+                    TextInput::make('secondary_cta_label')->label(__('Second button'))->maxLength(40),
+                    TextInput::make('secondary_cta_url')->label(__('Second button link'))->maxLength(500),
+                ])
+                ->itemLabel(fn (array $state): ?string => $state['heading'] ?? null)
+                ->addActionLabel(__('Add a slide'))
+                ->reorderable()
+                ->collapsible()
+                ->collapsed()
+                ->cloneable()
+                ->defaultItems(0)
+                ->helperText(__('Leave this empty and the band stands still. Add one row and it becomes a slider: the fields above are the first slide, these follow it.')),
+
             default => TextInput::make("data.{$name}"),
         };
 

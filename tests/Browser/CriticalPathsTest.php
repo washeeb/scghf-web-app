@@ -8,7 +8,9 @@ use App\Models\ContactMessage;
 use App\Models\Donation;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\Models\Media;
 use App\Models\Order;
+use App\Models\Page;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ShippingRate;
@@ -185,6 +187,63 @@ it('switches the theme from the toggle and keeps it across a reload', function (
         ->assertScript('document.documentElement.classList.contains("dark")', false)
         ->refresh()
         ->assertScript('document.documentElement.classList.contains("dark")', false);
+});
+
+it('lets a visitor use the buttons on a hero slide after it has been advanced', function () {
+    /*
+     * The regression this exists for: every slide but the first ships with
+     * `pointer-events-none`, and the script removed only the opacity — so
+     * slide two faded in looking perfectly ordinary with two dead buttons
+     * on it. Nothing the feature suite can see, because the markup is right;
+     * it is the computed style that is wrong.
+     */
+    $image = Media::factory()->create([
+        'name' => 'slider',
+        'alt_text' => 'A photograph',
+        'metadata_stripped_at' => now(),
+        'sanitisation_error' => null,
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    $page = Page::factory()->create(['slug' => 'slider-test', 'title' => 'Slider test']);
+    $page->publish();
+    $page->sections()->create([
+        'block_type' => 'hero',
+        'sort_order' => 0,
+        'data' => [
+            'heading' => 'The first slide',
+            'image' => $image->getKey(),
+            'slides' => [[
+                'heading' => 'The second slide',
+                'image' => $image->getKey(),
+                'primary_cta_label' => 'Give today',
+                'primary_cta_url' => '/donate',
+            ]],
+        ],
+    ]);
+
+    $browser = visit('/slider-test');
+
+    $browser->assertNoJavaScriptErrors()
+        ->click('[data-hero-next]')
+        // The control row is clear of the panel the next section rises into,
+        // rather than half behind it.
+        ->assertScript(
+            'Math.round(document.querySelector("[data-hero-slider] [aria-hidden=true].absolute.inset-x-3").getBoundingClientRect().top'
+            .' - document.querySelector("[data-hero-prev]").getBoundingClientRect().bottom) >= 0',
+            true,
+        )
+        // And a click at the middle of the visible slide's button reaches it.
+        ->assertScript(
+            '(() => { const s = [...document.querySelectorAll("[data-hero-slide]")].find(e => !e.hasAttribute("inert"));'
+            .' const a = s.querySelector("a"); const r = a.getBoundingClientRect();'
+            .' const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);'
+            .' return t === a || a.contains(t); })()',
+            true,
+        );
+
+    $browser->click('[data-hero-slide]:not([inert]) a')
+        ->assertPathIs('/donate');
 });
 
 it('can be driven from the keyboard alone: skip link, menu, donate', function () {

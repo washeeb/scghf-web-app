@@ -51,6 +51,29 @@ class PageSeeder extends Seeder
         ['partners', 'Partners & Supporters', 'about', false,
             'The churches, institutions and individuals standing with us.'],
 
+        /*
+         * ── The four divisions ───────────────────────────────────────────────
+         *
+         * One page each, at a slug a visitor might actually type. NOT under
+         * `/what-we-do`, which is a code route (`/what-we-do/{focusArea}`)
+         * and would swallow them: a page at `/what-we-do/health` would be
+         * matched by that route first and 404 on a focus area that does not
+         * exist.
+         *
+         * The division's own record carries its name, tagline, colour and
+         * focus areas; these pages are where it is explained at length, and
+         * where the hero's slides, the header menu and the division cards
+         * all point.
+         */
+        ['health', 'Health — Life Spring Foundation', null, true,
+            'Outreach, screening and medicines where the clinic is far and the fare is more than the visit.'],
+        ['education', 'Education — BrightPath Fund Initiative', null, true,
+            'Fees, uniforms, materials and mentorship for children whose families cannot carry the cost alone.'],
+        ['orphans-widows-and-widowers', 'Orphans, Widows & Widowers — Legacy of Love', null, true,
+            'Practical, emotional and spiritual support for families after a loss.'],
+        ['missions', 'Missions — Every Soul Missions', null, true,
+            'Evangelism, discipleship, prayer and counselling, and outreach to those nobody else reaches.'],
+
         // ── Get involved ─────────────────────────────────────────────────────
         ['get-involved', 'Get Involved', null, true,
             'Ways to give, serve and partner.'],

@@ -51,7 +51,7 @@ final readonly class BlockDefinition
             $parts[] = match ($spec['type'] ?? 'string') {
                 'integer', 'media' => 'integer',
                 'boolean' => 'boolean',
-                'repeater', 'list' => 'array',
+                'repeater', 'list', 'slides' => 'array',
                 'url' => 'url',
                 'colour' => 'string',
                 default => 'string',
@@ -77,7 +77,7 @@ final readonly class BlockDefinition
     {
         return collect($this->fields)
             ->map(fn (array $spec): mixed => $spec['default'] ?? match ($spec['type'] ?? 'string') {
-                'repeater', 'list' => [],
+                'repeater', 'list', 'slides' => [],
                 'boolean' => false,
                 'integer' => null,
                 default => null,

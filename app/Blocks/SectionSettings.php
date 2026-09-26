@@ -122,11 +122,18 @@ final class SectionSettings
     }
 
     /** The classes for the outer `<section>`. */
-    public function sectionClasses(): string
+    /**
+     * @param  bool  $withPadding  false for a band that sets its own height.
+     *                             The hero is the one: its picture fills the
+     *                             whole band, so the generic vertical padding
+     *                             would show as a strip of page background
+     *                             above and below the photograph.
+     */
+    public function sectionClasses(bool $withPadding = true): string
     {
         return trim(implode(' ', array_filter([
             $this->lookup(self::BACKGROUNDS, 'background', 'none'),
-            $this->lookup(self::PADDING, 'padding', 'medium'),
+            $withPadding ? $this->lookup(self::PADDING, 'padding', 'medium') : '',
             $this->lookup(self::VISIBILITY, 'visibility', 'all'),
             /*
              * A section that renders in its dark palette whatever the page is

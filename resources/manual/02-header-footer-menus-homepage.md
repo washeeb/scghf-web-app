@@ -94,6 +94,31 @@ the newsletter box, and so on. To change the homepage:
    deleting it if you might want it back.
 5. **Save**. Then look at the site.
 
+### The band at the top of the page
+
+The **hero** is the picture, headline and buttons at the top. Three things
+on it are worth knowing:
+
+- **How tall it stands.** *Compact* by default, which leaves the first real
+  section of the page visible without scrolling — usually what you want.
+  *Standard* and *Tall* are there for a page that earns the room.
+- **Picture for phones.** Optional, and worth doing. A crop made for a
+  narrow screen loads faster and is better composed than the wide picture
+  squeezed down, and on a slow connection that photograph is most of what
+  the visitor is waiting for.
+- **Slides.** Leave the slides list empty and the band stands still. Add a
+  row and it becomes a slideshow: the fields above the list are the first
+  slide, and each row after it is another, with its own headline, sentence,
+  picture and buttons. Three or four is plenty. Whoever is reading can stop
+  it with the pause button, and it never moves at all for somebody whose
+  phone is set to reduce motion.
+
+**The four division pages** — Health, Education, Orphans/Widows/Widowers
+and Missions — are ordinary pages you can edit like any other, but three
+parts of each are drawn from the division's own record (*Programmes →
+Divisions*): the sentence under the title, the cards, and the projects.
+Change the division and the page follows.
+
 Every save keeps a **revision**. *Revisions* (top right of the page
 editor) shows each one with who and when; **Restore** puts it back.
 

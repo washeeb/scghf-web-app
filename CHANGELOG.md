@@ -8,6 +8,148 @@ Versions are phase-based until launch, then [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### The hero as a slider, and an assistant on the chat — 2026-09-25
+
+#### Added — the hero rotates, and stands shorter
+
+- **Slides on the hero block.** The block's own fields are still slide
+  one — which is what keeps every hero built before this rendering
+  unchanged, and keeps the headline and picture that the preload hint, the
+  crawler and the LCP measurement care about where they already were. Extra
+  slides are rows beneath it (*Pages → the hero block → Add a slide*), each
+  with its own eyebrow, headline, sentence, picture, phone crop and two
+  buttons. One slide and the band stands still, exactly as before.
+- **A height an editor chooses** — compact, standard or tall. **Compact is
+  the new default**: roughly two-thirds of what the hero was, so the first
+  real section of the page is above the fold on a laptop. `tall` is the old
+  measurement, for a page that wants it.
+- `hero-slider.js`: plain script (the public CSP has no `unsafe-eval`),
+  fade between slides in one grid cell so a long sentence cannot clip or
+  make the band jump, arrows, dots that fill as the slide's time runs out,
+  a pause control, arrow keys, swipe. It does not start at all under
+  `prefers-reduced-motion`, and it stops for good the moment the visitor
+  touches any control — a slideshow that resumes under somebody who went
+  back a slide is worse than one that never moved. Off-screen slides are
+  `inert`, so a keyboard cannot reach a button nobody can see; one `h1` per
+  page, the rest prose at the same size. `HeroSliderTest`
+- The homepage is seeded with three further slides — education, health,
+  and orphans, widows and widowers — each pointing at its division.
+
+#### Added — a page for each division
+
+- **Health, Education, Orphans/Widows/Widowers and Missions each have their
+  own page**, built from the division record an editor already maintains:
+  its summary as the standfirst, its focus areas as the cards, its projects
+  underneath, and a band to give. They are at `/health`, `/education`,
+  `/orphans-widows-and-widowers` and `/missions` — deliberately **not**
+  under `/what-we-do`, which is the focus-area route and would swallow them.
+  They are listed under **Our Divisions** in the header, as page links, so
+  renaming a slug moves the menu with it. A migration adds those four menu
+  children to an install that already has a header, once; remove one and it
+  stays removed.
+
+#### Added — the assistant
+
+- **An automated assistant answers a live chat first, and fetches a person
+  when it should.** `config/ai.php` with a driver contract, a Claude driver
+  through Anthropic's Messages API, and a `null` driver that is not a stub:
+  it answers nothing and sends every chat to a person, which is exactly
+  what a chat should do with no assistant — so the module installs, tests
+  and demonstrates with no account anywhere, and an expired key degrades to
+  "a person will answer you" rather than to an error in a visitor's face.
+- **It answers only from the foundation's own published pages and FAQs**
+  (`KnowledgeBase`), chosen by keyword scoring in PHP — no vector database,
+  because shared hosting has none and a corpus this size does not need one.
+  Nothing from a draft, a beneficiary, a donation, an order or a case ever
+  enters that file, which is a stronger guarantee than a prompt asking
+  nicely.
+- **What it must never handle is decided in PHP, before the model is
+  called**, from lists the foundation controls (`EscalationRules`): a
+  disclosure about a child or somebody's safety, an emergency (which shows
+  the crisis line first), a question about a particular donation, receipt,
+  order or refund, a complaint or anything legal, and a visitor asking for
+  a person in any of nineteen ways. A good model would mostly do this
+  anyway; "mostly" is not a safeguarding policy. Each routes to the
+  **contact department** it belongs to — the inbox, addresses, target times
+  and confidentiality already exist there — and that department is emailed
+  with the transcript (`chat.handover`).
+- **The visitor is always told.** A line in the conversation before the
+  first answer says the replies are automatic; the assistant's bubbles are
+  drawn differently from a person's and carry its name; and **Talk to a
+  person** is a button on screen the whole time it is answering, not a
+  phrase somebody has to guess (`POST /chat/{conversation}/human`). A chat
+  handed to a person is never handed back.
+- **A ceiling on the month's spend**, in pesewas like every other amount
+  here (`AI_MONTHLY_BUDGET_MINOR`, GH¢200 by default). Past it the
+  assistant stops and every chat goes to a person; it does not try one
+  more. `ai_interactions` records one row per call — driver, outcome,
+  tokens, milliseconds, estimated cost — and **no words from any
+  conversation**: the transcript is in `chat_messages` where the retention
+  rule can reach it, and a second copy with a different lifetime is the
+  thing Act 843 asks us not to keep.
+- **Inbox → Assistant**: whether it is answering, the month's estimated
+  spend against the ceiling, what it answered and passed on, why people
+  were needed (read as a list of pages that need writing), and the answers
+  somebody in the office **marked wrong** — one press on any of its replies
+  in a thread. An assistant nobody reviews is an assistant nobody can
+  defend.
+- `FEATURE_CHAT_AGENT` plus an API key, plus **Settings → AI assistant**,
+  where the name, the persona, the disclosure, the crisis wording and every
+  escalation phrase live. Off by default: a genuine deferral on a real
+  dependency, since the key costs money the foundation has to decide to
+  spend. Manual chapter 14. `ChatAgentTest`
+
+#### Added — the chat, over WhatsApp
+
+- **A message to the foundation's WhatsApp number becomes a conversation in
+  the same inbox**, in front of the same assistant, under the same rules,
+  and a reply typed in the chat screen goes back to the phone. It arrives
+  through the Meta webhook that already verifies signatures and stores raw
+  payloads, on the queue rather than in the web request — Meta retries a
+  slow webhook, and a duplicated question would be worse than a minute's
+  wait.
+- **Meta's 24-hour window is honoured explicitly.** Inside it, free-form
+  text; outside it, the approved `chat.reply` template; and with no
+  approved template, the reply is recorded as **failed with the reason**
+  rather than silently not arriving, which is what the office would
+  otherwise assume had happened. `WhatsappChatTest`
+- Nothing can start a WhatsApp conversation with a number: a conversation
+  can only come into being from an inbound message.
+
+#### Fixed
+
+- **A strip of page background above and below the hero.** The picture used
+  to be absolute on the section, so it covered the section's own vertical
+  padding; as a slide's picture it no longer could, and the padding showed.
+  `sectionClasses()` now takes `withPadding: false`, and a hero carrying a
+  picture sets its own height — which is what the compact band was always
+  measuring.
+- **The slider's controls were drawn half behind the panel** the next
+  section rises into, and the slides below them had no room for both. The
+  band's padding now accounts for the control row, and the row clears the
+  panel — `HeroHeights::classes()` takes the slider into account and owns
+  the offset.
+- **A slide's buttons were dead once it had been advanced to.** Every slide
+  but the first ships with `pointer-events-none`; the script removed only
+  the opacity, so slide two faded in looking perfectly ordinary with two
+  buttons that did nothing. Nothing a feature test can see — the markup is
+  right and the computed style is wrong — so there is a browser test for it.
+- **Slides two and up were in the body sans**, not the display serif:
+  `font-[var(--font-display)]` is an arbitrary value Tailwind generates
+  nothing for. The class beside `h1`/`h2` in app.css is `.font-display`.
+- **The hero's slide buttons pointed at `/what-we-do/{division}`**, which is
+  the focus-area route with a division's slug in it — a 404 from the moment
+  it was written. They point at the new division pages, and a migration
+  repoints any that a site has already stored.
+- **The hero's art-directed phone crop had never once rendered.** The
+  resolver supplied it as `image_mobile`; the view read `$imageMobile`. It
+  was the single biggest item in the LCP budget on exactly the connections
+  this site is built for, and it was being silently dropped for the whole
+  life of the block.
+- The hero's slide pictures are resolved in one query rather than two per
+  slide as the view draws.
+
+
 ### Live chat, courier deliveries, and the chrome as settings — 2026-09-21
 
 #### Added — live chat
