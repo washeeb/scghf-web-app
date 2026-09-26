@@ -38,11 +38,46 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Paid digital goods. Not under `public`, where a file is one guessed
+         * path from free, and not the served `local` disk either: nothing
+         * hands these out but `DownloadController`, which counts and expires.
+         */
+        'downloads' => [
+            'driver' => 'local',
+            'root' => storage_path('app/downloads'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        /*
+         * Backup archives.
+         *
+         * A local disk, deliberately, and deliberately OUTSIDE public/. A
+         * backup reachable over the web is a complete copy of the donor
+         * database available to anybody who guesses the filename — which is the
+         * worst possible outcome of a control that exists to protect data.
+         *
+         * Local rather than S3 because there is no bucket in scope for this
+         * deployment. It protects against the two things that actually happen
+         * — a bad deploy and a bad migration — and NOT against losing the
+         * hosting account, which is why the runbook has a step for pulling a
+         * copy off the server.
+         */
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],

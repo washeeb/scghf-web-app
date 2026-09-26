@@ -1,0 +1,378 @@
+[
+  {
+    "slot": "home-hero",
+    "unsplash_id": "photo-1663919400231-d9d36115ddae",
+    "page": "https://unsplash.com/photos/a-boy-with-his-arms-out-4SJhZBBRfUw",
+    "photographer": "Charles William Adofo",
+    "username": "cw_adofo",
+    "alt": "A boy in a Ghanaian community spreads his arms wide, laughing"
+  },
+  {
+    "slot": "home-cta",
+    "unsplash_id": "photo-1735968665528-f980a422bad2",
+    "page": "https://unsplash.com/photos/a-small-village-on-the-shore-of-a-river-qa0vhzFnZ78",
+    "photographer": "Ato Aikins",
+    "username": "ato_aikins",
+    "alt": "A riverside village in Ghana under a clear sky"
+  },
+  {
+    "slot": "division-health",
+    "unsplash_id": "photo-1620829813947-ef4246827355",
+    "page": "https://unsplash.com/photos/woman-in-white-and-black-stripe-shirt-writing-on-white-paper-xl-x9IB6wxc",
+    "photographer": "Kojo Kwarteng",
+    "username": "cwojo",
+    "alt": "A health worker in a face mask at work in a clinic"
+  },
+  {
+    "slot": "division-education",
+    "unsplash_id": "photo-1632215861513-130b66fe97f4",
+    "page": "https://unsplash.com/photos/a-woman-standing-in-front-of-a-group-of-children-VC6MGt9ZoBA",
+    "photographer": "Emmanuel Ikwuegbu",
+    "username": "emmages",
+    "alt": "A pupil reads aloud to her class in a Ghanaian school"
+  },
+  {
+    "slot": "division-legacy",
+    "unsplash_id": "photo-1760777424459-54e3d63b2992",
+    "page": "https://unsplash.com/photos/woman-sewing-with-a-vintage-sewing-machine-2gXFPxAvrIw",
+    "photographer": "Wietse Jongsma",
+    "username": "wietsej",
+    "alt": "A woman sews on a vintage machine at her stall"
+  },
+  {
+    "slot": "division-missions",
+    "unsplash_id": "photo-1590668403505-bfba631a4071",
+    "page": "https://unsplash.com/photos/white-printer-paper-on-brown-folder-a2sOH5F51ms",
+    "photographer": "Sincerely Media",
+    "username": "sincerelymedia",
+    "alt": "An open Bible resting on a leather folder"
+  },
+  {
+    "slot": "about-header",
+    "unsplash_id": "photo-1663919402880-1b80b17a0270",
+    "page": "https://unsplash.com/photos/a-group-of-people-standing-outside-ub7JgpGt7v8",
+    "photographer": "Charles William Adofo",
+    "username": "cw_adofo",
+    "alt": "A community gathers outdoors as a dancer performs"
+  },
+  {
+    "slot": "about-legacy",
+    "unsplash_id": "photo-1744808317816-fdb0f4c025ab",
+    "page": "https://unsplash.com/photos/woman-walks-with-bowls-balanced-on-her-head-dUBemJ4YzUc",
+    "photographer": "David Geneugelijk",
+    "username": "davidgeneugelijk",
+    "alt": "A woman walks a Ghanaian street with bowls balanced on her head"
+  },
+  {
+    "slot": "health-header",
+    "unsplash_id": "photo-1649699664850-7535649ca588",
+    "page": "https://unsplash.com/photos/a-woman-holding-a-baby-in-her-hands-LHZfeCTlivA",
+    "photographer": "Creab ThePolymath",
+    "username": "cr_eab",
+    "alt": "A newborn is bathed by caring hands"
+  },
+  {
+    "slot": "health-split",
+    "unsplash_id": "photo-1735792339621-2846f164b78f",
+    "page": "https://unsplash.com/photos/a-woman-sitting-next-to-a-child-on-a-bed-AdWkBmVCB9Q",
+    "photographer": "Moses Sichach",
+    "username": "sichach",
+    "alt": "A mother smiles at her young child"
+  },
+  {
+    "slot": "health-project-1",
+    "unsplash_id": "photo-1672655412906-8e10ba6ee373",
+    "page": "https://unsplash.com/photos/a-man-in-a-lab-coat-and-tie-sitting-in-a-chair-ZmmZisZCom8",
+    "photographer": "Patrick Amofah",
+    "username": "zerben4all",
+    "alt": "A doctor in a white coat at his desk"
+  },
+  {
+    "slot": "health-project-2",
+    "unsplash_id": "photo-1741940365437-e55b919a89d3",
+    "page": "https://unsplash.com/photos/a-mother-holds-her-child-smiling-happily--nLMCrCZS_Q",
+    "photographer": "Lisa Marie Theck",
+    "username": "lisa_marie_theck",
+    "alt": "A mother holds her child, both smiling"
+  },
+  {
+    "slot": "education-header",
+    "unsplash_id": "photo-1627423896085-e3e694d88e40",
+    "page": "https://unsplash.com/photos/children-in-white-tank-top-sitting-on-brown-wooden-bench-M-4lFg1Xfag",
+    "photographer": "Emmanuel Ikwuegbu",
+    "username": "emmages",
+    "alt": "Pupils raise their hands eagerly in a classroom"
+  },
+  {
+    "slot": "education-split",
+    "unsplash_id": "photo-1523396140703-e5bdad4e5dea",
+    "page": "https://unsplash.com/photos/girl-holding-book-near-blue-motorcycle-AE2uBSYnCVM",
+    "photographer": "Victor Nnakwe",
+    "username": "victornnakwe",
+    "alt": "A girl holds a book beside a blue motorcycle"
+  },
+  {
+    "slot": "education-project-1",
+    "unsplash_id": "photo-1744809482817-9a9d4fc280af",
+    "page": "https://unsplash.com/photos/a-teacher-instructs-students-in-a-classroom-CXa6E3krENE",
+    "photographer": "David Geneugelijk",
+    "username": "davidgeneugelijk",
+    "alt": "A teacher instructs pupils in a classroom"
+  },
+  {
+    "slot": "education-project-2",
+    "unsplash_id": "photo-1627423893729-3a79f48ff473",
+    "page": "https://unsplash.com/photos/man-in-white-crew-neck-t-shirt-sitting-beside-man-in-white-t-shirt-MUyq5MiVE2w",
+    "photographer": "Emmanuel Ikwuegbu",
+    "username": "emmages",
+    "alt": "Students work together at computers"
+  },
+  {
+    "slot": "legacy-header",
+    "unsplash_id": "photo-1637997840862-9aafaf835eed",
+    "page": "https://unsplash.com/photos/a-group-of-women-working-on-sewing-machines-aH1uiH-Ht_w",
+    "photographer": "Kevin Menya",
+    "username": "kevmenya",
+    "alt": "Women at work on sewing machines in a training workshop"
+  },
+  {
+    "slot": "legacy-split",
+    "unsplash_id": "photo-1762945274836-4c2cbb75e20e",
+    "page": "https://unsplash.com/photos/woman-selling-a-pyramid-of-eggs-on-a-stool--V97fx72wd4",
+    "photographer": "Barnabas Lartey-Odoi Tetteh",
+    "username": "owurieku",
+    "alt": "A trader sells eggs from a neatly stacked tray"
+  },
+  {
+    "slot": "legacy-project-1",
+    "unsplash_id": "photo-1625191824427-fe884c7ab3cd",
+    "page": "https://unsplash.com/photos/person-holding-ice-cream-cone-LuHYbT4mur0",
+    "photographer": "Kojo Kwarteng",
+    "username": "cwojo",
+    "alt": "Hands hold a bowl of cooking oil and provisions"
+  },
+  {
+    "slot": "legacy-project-2",
+    "unsplash_id": "photo-1741863175755-a7fa458af0f6",
+    "page": "https://unsplash.com/photos/a-man-is-attending-a-somber-event-aOXPLx4EzZw",
+    "photographer": "WyteShot",
+    "username": "wyteshot",
+    "alt": "A man attends a solemn community gathering"
+  },
+  {
+    "slot": "missions-header",
+    "unsplash_id": "photo-1622294891694-07a7ebbd9f37",
+    "page": "https://unsplash.com/photos/man-in-blue-and-white-plaid-button-up-shirt-reading-book-RS3Rj5QvVgQ",
+    "photographer": "Emmanuel Ikwuegbu",
+    "username": "emmages",
+    "alt": "A young man reads quietly from a book"
+  },
+  {
+    "slot": "missions-split",
+    "unsplash_id": "photo-1730050248793-b084bd9922f3",
+    "page": "https://unsplash.com/photos/a-black-and-white-photo-of-a-group-of-people-KwElnQEb34c",
+    "photographer": "Charles Robertson",
+    "username": "abeiku_mills_gh",
+    "alt": "A group in worship, seen in black and white"
+  },
+  {
+    "slot": "missions-project-1",
+    "unsplash_id": "photo-1535361251-cbe9d0d2357d",
+    "page": "https://unsplash.com/photos/people-on-open-field-at-daytime-FtEOLEdIMa8",
+    "photographer": "Dugba Cauley-Hushie",
+    "username": "du_hushie",
+    "alt": "A crowd gathers in an open field for a procession"
+  },
+  {
+    "slot": "missions-project-2",
+    "unsplash_id": "photo-1622294763041-40e2e4932eda",
+    "page": "https://unsplash.com/photos/man-in-black-and-white-plaid-dress-shirt-sitting-on-black-office-rolling-chair-ULBCBfn0sDI",
+    "photographer": "Emmanuel Ikwuegbu",
+    "username": "emmages",
+    "alt": "A man reads at a desk"
+  },
+  {
+    "slot": "appeal-general",
+    "unsplash_id": "photo-1620608929452-ccc05381b0f7",
+    "page": "https://unsplash.com/photos/children-sitting-on-green-chair-eating-P0OJbBJ1ZTM",
+    "photographer": "bill wegener",
+    "username": "wegenerb",
+    "alt": "Children share a meal at a long table"
+  },
+  {
+    "slot": "appeal-health",
+    "unsplash_id": "photo-1639761189479-9b81abcc5d50",
+    "page": "https://unsplash.com/photos/a-woman-with-braids-smiling-at-the-camera-3SSfYQ4v7fI",
+    "photographer": "Barnabas Lartey-Odoi Tetteh",
+    "username": "owurieku",
+    "alt": "A young woman with braids smiles at the camera"
+  },
+  {
+    "slot": "appeal-education",
+    "unsplash_id": "photo-1632215863479-201029d93143",
+    "page": "https://unsplash.com/photos/a-group-of-young-men-standing-next-to-each-other-OP3DdAHRbCs",
+    "photographer": "Emmanuel Ikwuegbu",
+    "username": "emmages",
+    "alt": "Students in uniform cheer together outside their school"
+  },
+  {
+    "slot": "appeal-legacy",
+    "unsplash_id": "photo-1663919402819-afebaad0849a",
+    "page": "https://unsplash.com/photos/a-person-cooking-food-in-a-wok-ksQJitV8WaI",
+    "photographer": "Charles William Adofo",
+    "username": "cw_adofo",
+    "alt": "A woman stirs a large pot over a wood fire"
+  },
+  {
+    "slot": "appeal-missions",
+    "unsplash_id": "photo-1535361109-b8fa03822e9d",
+    "page": "https://unsplash.com/photos/man-in-yellow-shirt-mRhim8C5ReI",
+    "photographer": "Dugba Cauley-Hushie",
+    "username": "du_hushie",
+    "alt": "A man in a yellow shirt smiles at a community event"
+  },
+  {
+    "slot": "post-1",
+    "unsplash_id": "photo-1632215863153-0dae7657d0a9",
+    "page": "https://unsplash.com/photos/a-group-of-young-men-standing-next-to-each-other-Z-KCM4gK8C8",
+    "photographer": "Emmanuel Ikwuegbu",
+    "username": "emmages",
+    "alt": "Young men celebrate together outdoors"
+  },
+  {
+    "slot": "post-2",
+    "unsplash_id": "photo-1660675133530-05d912b16cb1",
+    "page": "https://unsplash.com/photos/a-group-of-people-wearing-masks-sAdedwa0h48",
+    "photographer": "Emmanuel Yeboah Okine",
+    "username": "emmanuel_okine",
+    "alt": "Volunteers serve food at a community event"
+  },
+  {
+    "slot": "post-3",
+    "unsplash_id": "photo-1669418989936-fae7f3cebd56",
+    "page": "https://unsplash.com/photos/a-busy-street-full-of-people-4c-k7vendbg",
+    "photographer": "Kofi Bhavnani",
+    "username": "kofi_bhavnani",
+    "alt": "A busy Accra street full of people and traffic"
+  },
+  {
+    "slot": "post-4",
+    "unsplash_id": "photo-1547496613-4e19af6736dc",
+    "page": "https://unsplash.com/photos/boy-wearing-white-top-tqwOJAvUIh4",
+    "photographer": "bennett tobias",
+    "username": "bwtobias",
+    "alt": "A boy grins at the camera"
+  },
+  {
+    "slot": "event-1",
+    "unsplash_id": "photo-1663919402965-79055f1c0255",
+    "page": "https://unsplash.com/photos/a-group-of-people-dancing-gpzmg9zUMew",
+    "photographer": "Charles William Adofo",
+    "username": "cw_adofo",
+    "alt": "A dancer performs before a gathered community"
+  },
+  {
+    "slot": "event-2",
+    "unsplash_id": "photo-1740000649300-c5d17f6a3cc4",
+    "page": "https://unsplash.com/photos/a-group-of-people-standing-around-a-market--phRhntbbhs",
+    "photographer": "Oswald Elsaboath",
+    "username": "ozzzyphotos",
+    "alt": "A crowded market street in the late afternoon"
+  },
+  {
+    "slot": "get-involved-header",
+    "unsplash_id": "photo-1686146711957-04aec031396b",
+    "page": "https://unsplash.com/photos/a-group-of-people-standing-next-to-each-other-dyIOiCjG2eo",
+    "photographer": "Ato Aikins",
+    "username": "ato_aikins",
+    "alt": "People stand together at a community gathering"
+  },
+  {
+    "slot": "volunteer-header",
+    "unsplash_id": "photo-1694336662029-4e5a83cdadb3",
+    "page": "https://unsplash.com/photos/a-group-of-people-standing-around-each-other-R8u33Csnxa0",
+    "photographer": "Oswald Elsaboath",
+    "username": "ozzzyphotos",
+    "alt": "People carry supplies together at an outdoor event"
+  },
+  {
+    "slot": "transparency-header",
+    "unsplash_id": "photo-1718766304636-cb9309953a55",
+    "page": "https://unsplash.com/photos/a-view-of-a-city-from-the-top-of-a-building-5YdLNHzwux4",
+    "photographer": "Barnabas Lartey-Odoi Tetteh",
+    "username": "owurieku",
+    "alt": "Accra seen from a rooftop"
+  },
+  {
+    "slot": "contact-header",
+    "unsplash_id": "photo-1594159667349-2b4b2b911824",
+    "page": "https://unsplash.com/photos/city-with-high-rise-buildings-under-gray-clouds-during-daytime-QRhsaFOAfSo",
+    "photographer": "Etornam Ahiator",
+    "username": "etornamahiator",
+    "alt": "The city skyline under a dramatic sky"
+  },
+  {
+    "slot": "gallery-1",
+    "unsplash_id": "photo-1742692815681-7503439ed574",
+    "page": "https://unsplash.com/photos/group-of-smiling-children-posing-for-a-picture-JgL7hfsDczw",
+    "photographer": "Oswald Elsaboath",
+    "username": "ozzzyphotos",
+    "alt": "A group of smiling children pose for a picture"
+  },
+  {
+    "slot": "gallery-2",
+    "unsplash_id": "photo-1680713660046-67b7350ed679",
+    "page": "https://unsplash.com/photos/a-woman-walking-down-a-street-with-a-bucket-on-her-head-xzM6dK7nxME",
+    "photographer": "Ato Aikins",
+    "username": "ato_aikins",
+    "alt": "A woman walks through a market with a child on her back"
+  },
+  {
+    "slot": "gallery-3",
+    "unsplash_id": "photo-1744807511668-d5baff5264f6",
+    "page": "https://unsplash.com/photos/a-woman-stands-at-a-small-outdoor-storefront-BnHblAX9sp8",
+    "photographer": "David Geneugelijk",
+    "username": "davidgeneugelijk",
+    "alt": "A woman stands at a small roadside store"
+  },
+  {
+    "slot": "gallery-4",
+    "unsplash_id": "photo-1508431640151-f2217ef26c31",
+    "page": "https://unsplash.com/photos/boy-holding-his-chin-standing-on-grass-field-p6r6Ea0N2_Q",
+    "photographer": "Santi Vedrí",
+    "username": "santivedri",
+    "alt": "A boy in a cap rests his chin on his hand"
+  },
+  {
+    "slot": "gallery-5",
+    "unsplash_id": "photo-1654533138847-b210d753eb26",
+    "page": "https://unsplash.com/photos/a-group-of-people-standing-outside-of-a-building-dABvwWlKwOE",
+    "photographer": "Emmanuel Appiah",
+    "username": "exappiah",
+    "alt": "People gather outside a community building"
+  },
+  {
+    "slot": "gallery-6",
+    "unsplash_id": "photo-1742485246818-603cb829b1e2",
+    "page": "https://unsplash.com/photos/a-woman-sews-cushions-at-a-manufacturing-facility-ov1h5VBpkUo",
+    "photographer": "EqualStock",
+    "username": "equalstock",
+    "alt": "A woman sews cushions at a workshop"
+  },
+  {
+    "slot": "testimonial-1",
+    "unsplash_id": "photo-1590670796065-5c2469672e18",
+    "page": "https://unsplash.com/photos/woman-in-green-and-gold-crown-gEVelFtUjfc",
+    "photographer": "Ato Aikins",
+    "username": "ato_aikins",
+    "alt": "Portrait of a woman in a green and gold head wrap"
+  },
+  {
+    "slot": "testimonial-2",
+    "unsplash_id": "photo-1687422809069-0fa3546b8471",
+    "page": "https://unsplash.com/photos/a-man-smiles-as-he-uses-a-sewing-machine-cU3xxfbB9Es",
+    "photographer": "Ali Mkumbwa",
+    "username": "mkumbwajr",
+    "alt": "A tailor smiles as he works at his machine"
+  }
+]

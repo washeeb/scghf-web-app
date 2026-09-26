@@ -1,0 +1,76 @@
+name: Bug report
+description: Something is wrong on the site or in the admin panel
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. The more of this you fill in, the sooner it is fixed. If it involves money — a gift missing, counted twice, the wrong amount, a receipt that is wrong — also message the developer today.
+        **Security problems are not issues.** See SECURITY.md.
+  - type: input
+    id: url
+    attributes:
+      label: Where
+      description: The address of the page, copied from the browser
+      placeholder: https://…/donate
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: Step by step, from the page you started on
+      placeholder: |
+        1. Opened the donate page on my phone
+        2. Chose GH₵ 50 and monthly
+        3. Pressed Continue to payment
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: How bad is it? (your first guess is fine)
+      options:
+        - S1 — money or trust is at risk, or nobody can give
+        - S2 — a journey cannot be completed by some people
+        - S3 — wrong, but there is a way round
+        - S4 — cosmetic
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: On what
+      description: Browser and device, and the theme if it matters
+      placeholder: Chrome on a Samsung A14, dark theme
+    validations:
+      required: true
+  - type: input
+    id: account
+    attributes:
+      label: Signed in as
+      description: Visitor, donor account, or which staff role — never the password
+      placeholder: Content Editor (demo.editor@example.test)
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot, reference numbers, the time it happened
+      description: Drag an image here. A donation or order reference, and the time, lets the logs be read.
+  - type: checkboxes
+    id: money
+    attributes:
+      label: Money
+      options:
+        - label: This involves a gift, an order, a refund or a receipt

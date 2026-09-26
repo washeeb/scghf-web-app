@@ -25,6 +25,7 @@ CURRENT_LINK="$DEPLOY_PATH/current"
 
 say()  { printf '\n\033[1;36m▸ %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[0;32m✓\033[0m %s\n' "$*"; }
+warn() { printf '  \033[0;33m!\033[0m %s\n' "$*"; }
 die()  { printf '\n\033[1;31m✗ FATAL: %s\033[0m\n' "$*" >&2; exit 1; }
 
 # ── Preconditions ────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ cd "$RELEASE_DIR"
 
 APP_ENV_VAL=$(grep -E '^APP_ENV=' "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' ' || true)
 APP_DEBUG_VAL=$(grep -E '^APP_DEBUG=' "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' ' || true)
+APP_URL_VAL=$(grep -E '^APP_URL=' "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' ' | sed 's:/*$::' || true)
 ok "APP_ENV=$APP_ENV_VAL"
 
 if [ "$APP_ENV_VAL" = "production" ]; then
@@ -70,7 +72,10 @@ if [ "$APP_ENV_VAL" = "production" ]; then
     die "Production .env holds a Paystack TEST key. Refusing to deploy."
   fi
   if grep -qE '^PAYMENT_DRIVER=fake' "$SHARED_DIR/.env"; then
-    printf '  \033[0;33m!\033[0m PAYMENT_DRIVER=fake in production — donations will NOT reach Paystack.\n'
+    # Not a warning: PaymentServiceProvider refuses to boot production on the
+    # fake driver, so the migrate step below would die with a stack trace.
+    # Say it plainly here instead.
+    die "PAYMENT_DRIVER=fake in production. The application refuses to boot like this — set PAYMENT_DRIVER=paystack and the live keys in shared/.env."
   fi
   ok "Production guards passed"
 fi
@@ -82,10 +87,87 @@ fi
 if [ "$SKIP_MIGRATIONS" = "1" ]; then
   say "Skipping migrations (requested)"
 else
+  # A dump of the database as it is BEFORE this release's migrations touch
+  # it. Migrations are expand-only by policy, but a rollback after a
+  # migration that turned out to be wrong needs the data from before it, and
+  # the nightly backup is up to a day old. Kept in shared/backups, the last
+  # five, outside every release directory. Read the credentials the way the
+  # application does, from shared/.env.
+  say "Dumping the database before migrating"
+  mkdir -p "$SHARED_DIR/backups"
+  envval() { grep -E "^$1=" "$SHARED_DIR/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"' '; }
+  DB_HOST_VAL=$(envval DB_HOST); DB_PORT_VAL=$(envval DB_PORT); DB_NAME_VAL=$(envval DB_DATABASE)
+  DB_USER_VAL=$(envval DB_USERNAME); DB_PASS_VAL=$(envval DB_PASSWORD)
+  DUMP="$SHARED_DIR/backups/pre-deploy-$REL.sql.gz"
+  if command -v mysqldump >/dev/null 2>&1 && [ -n "$DB_NAME_VAL" ]; then
+    if MYSQL_PWD="$DB_PASS_VAL" mysqldump --single-transaction --quick --no-tablespaces         -h "${DB_HOST_VAL:-127.0.0.1}" -P "${DB_PORT_VAL:-3306}" -u "$DB_USER_VAL" "$DB_NAME_VAL" 2>/dev/null | gzip -6 > "$DUMP"; then
+      chmod 600 "$DUMP"
+      ok "pre-deploy dump: $(du -h "$DUMP" | cut -f1) → shared/backups/$(basename "$DUMP")"
+      ls -1t "$SHARED_DIR"/backups/pre-deploy-*.sql.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+    else
+      rm -f "$DUMP"
+      printf '  [0;33m![0m mysqldump failed — continuing without a pre-deploy dump (the nightly backup still exists).
+'
+    fi
+  else
+    printf '  [0;33m![0m mysqldump not available — continuing without a pre-deploy dump.
+'
+  fi
+
   say "Running migrations"
   "$PHP_BIN" artisan migrate --force --no-interaction || die "Migration failed. Nothing was flipped — the live site is untouched."
   ok "Schema up to date"
+
+  # Permissions and roles are code (RoleAndPermissionSeeder) and the seeder
+  # is idempotent: it adds what a release introduced and removes nothing.
+  # Without this a new permission exists in a policy and in no role, which
+  # is a 403 on a screen the release shipped. Then the encryption sweep,
+  # also idempotent, for any column a release moved to an encrypted cast.
+  say "Seeding permissions and roles"
+  "$PHP_BIN" artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction || die "Permission seeding failed. Nothing was flipped."
+  # Settings and theme tokens a release introduces: both seeders create what
+  # is missing and never touch a value already there, so a new switch shows
+  # up in the panel with its default rather than not at all.
+  "$PHP_BIN" artisan db:seed --class=SettingsSeeder --force --no-interaction || die "Settings seeding failed. Nothing was flipped."
+  "$PHP_BIN" artisan db:seed --class=ThemeSettingsSeeder --force --no-interaction || die "Theme token seeding failed. Nothing was flipped."
+  # Message templates: wording only on first creation, so a template a
+  # release introduces exists before the code that sends it runs.
+  "$PHP_BIN" artisan db:seed --class=MessageTemplateSeeder --force --no-interaction || die "Template seeding failed. Nothing was flipped."
+  "$PHP_BIN" artisan scghf:encrypt-at-rest --execute --no-interaction || die "Encryption sweep failed. Nothing was flipped."
+  ok "Permissions current, encrypted columns swept"
+
+  # The launch photography: fetched into the library for any slot that has
+  # no picture yet (database/seeders/launch-images.json). Idempotent, and a
+  # network hiccup must not stop a release — the site renders without the
+  # pictures, so warn and carry on.
+  say "Launch photography"
+  if "$PHP_BIN" artisan scghf:launch-images --no-interaction; then
+    ok "launch photography present"
+  else
+    warn "scghf:launch-images could not fetch everything; run it again by hand."
+  fi
+
+  # The logo pack (resources/brand): into the library once, and into any
+  # header/PWA/social-image setting that is still empty. Never overwrites a
+  # logo the foundation has replaced in the panel.
+  say "Brand assets"
+  if "$PHP_BIN" artisan scghf:brand-assets --no-interaction; then
+    ok "logo files present and the settings point at them"
+  else
+    warn "scghf:brand-assets could not import everything; run it again by hand."
+  fi
 fi
+
+# ── Stamp the build ──────────────────────────────────────────────────────────
+# APP_RELEASE is the one .env value that changes per deploy, so it is written
+# into shared/.env here rather than by hand. Site Health → Environment shows it,
+# which is how anybody can tell which build is live without a shell.
+if grep -qE '^APP_RELEASE=' "$SHARED_DIR/.env"; then
+  sed -i -E "s|^APP_RELEASE=.*|APP_RELEASE=$REL|" "$SHARED_DIR/.env"
+else
+  printf '\nAPP_RELEASE=%s\n' "$REL" >> "$SHARED_DIR/.env"
+fi
+ok "APP_RELEASE=$REL"
 
 # ── Warm the caches on the new release, before it goes live ──────────────────
 say "Building caches"
@@ -98,13 +180,32 @@ say "Building caches"
 "$PHP_BIN" artisan icons:cache       --no-interaction 2>/dev/null && ok "icons"    || true
 "$PHP_BIN" artisan storage:link      --no-interaction 2>/dev/null || true
 
+# ── Preflight ────────────────────────────────────────────────────────────────
+# What is still a placeholder, which keys are missing, which flags are on
+# with nothing behind them, whether cron and the queue have run. Printed on
+# every deploy. It STOPS a production deploy only when PREFLIGHT_GATE=1 is set
+# in the environment — the very first deploy cannot pass it (cron points at
+# current/, which does not exist until the flip), and staging carries
+# placeholders by design. Once production is live, set PREFLIGHT_GATE=1 in
+# the GitHub environment so a site with {{PHONE_PRIMARY}} in its footer
+# cannot be put live again.
+say "Preflight"
+if "$PHP_BIN" artisan scghf:preflight --no-interaction; then
+  ok "preflight passed"
+elif [ "$APP_ENV_VAL" = "production" ] && [ "${PREFLIGHT_GATE:-0}" = "1" ]; then
+  die "Preflight failed. Nothing was flipped — fix the settings or the .env keys it named, then deploy again."
+else
+  printf '  [0;33m![0m Preflight reported problems (above). Not blocking this deploy; read them.
+'
+fi
+
 # ── robots.txt ───────────────────────────────────────────────────────────────
 # Generated at deploy time from APP_ENV rather than committed, so staging can
 # never inherit production's file. A static file is also served by Apache before
 # PHP boots, so this survives a 500 — which a route-based robots.txt would not.
 say "Writing robots.txt for APP_ENV=$APP_ENV_VAL"
 if [ "$APP_ENV_VAL" = "production" ]; then
-  cat > "$RELEASE_DIR/public/robots.txt" <<'ROBOTS'
+  cat > "$RELEASE_DIR/public/robots.txt" <<ROBOTS
 User-agent: *
 Allow: /
 
@@ -126,7 +227,7 @@ Disallow: /register
 Disallow: /password
 Disallow: /*?*utm_
 
-Sitemap: https://greaterhopefoundations.com/sitemap.xml
+Sitemap: ${APP_URL_VAL}/sitemap.xml
 ROBOTS
   ok "production robots.txt (indexable)"
 else
@@ -148,6 +249,99 @@ HT
   fi
   ok "staging robots.txt (disallow all) + X-Robots-Tag header"
 fi
+
+# ── Staging gate ─────────────────────────────────────────────────────────────
+# Staging is on a real domain with documented demo credentials, so it sits
+# behind HTTP Basic auth. cPanel's Directory Privacy would write the same
+# directives into the docroot's .htaccess — which is this release's
+# public/.htaccess and is replaced on every deploy — so the gate is applied
+# here, from a password file that lives in shared/ and survives releases:
+#
+#     htpasswd -c $DEPLOY_PATH/shared/htpasswd <username>
+#
+# Never on production, whatever is in shared/. Three paths stay open: the
+# health check (the deploy's smoke test and Site Health), the payment
+# webhooks (Paystack test events must reach staging), .well-known
+# (AutoSSL renewals validate over HTTP) and /deploy/ (the OPcache reset
+# the deploy itself calls, guarded by its own one-time token).
+# Both env names are needed: the rewrite to index.php is an internal
+# redirect, and Apache renames variables across it with a REDIRECT_ prefix.
+if [ "$APP_ENV_VAL" != "production" ] && [ -f "$SHARED_DIR/htpasswd" ]; then
+  # Apache — not PHP — reads this file, as its own user, and only when a
+  # browser presents credentials: unreadable means a 500 on every
+  # authenticated request while anonymous probes still get a tidy 401. It
+  # holds a password hash and nothing else; 644 is what cPanel uses.
+  chmod 644 "$SHARED_DIR/htpasswd"
+  if ! grep -q 'AuthUserFile' "$RELEASE_DIR/public/.htaccess" 2>/dev/null; then
+    cat >> "$RELEASE_DIR/public/.htaccess" <<HT
+
+# ── Added at deploy time: this environment is password-protected ────────────
+<IfModule mod_auth_basic.c>
+    AuthType Basic
+    AuthName "Staging — testers only"
+    AuthUserFile $SHARED_DIR/htpasswd
+    SetEnvIf Request_URI "^/up\$" scghf_open
+    SetEnvIf Request_URI "^/webhooks/" scghf_open
+    SetEnvIf Request_URI "^/\.well-known/" scghf_open
+    SetEnvIf Request_URI "^/deploy/" scghf_open
+    <RequireAny>
+        Require env scghf_open
+        Require env REDIRECT_scghf_open
+        Require valid-user
+    </RequireAny>
+</IfModule>
+HT
+  fi
+  ok "Basic auth gate from shared/htpasswd (/up, /webhooks, /.well-known open)"
+elif [ "$APP_ENV_VAL" != "production" ]; then
+  warn "No shared/htpasswd — this non-production environment is OPEN to the internet. Create one: htpasswd -c $SHARED_DIR/htpasswd <username>"
+fi
+
+# ── PHP handler ──────────────────────────────────────────────────────────────
+# cPanel pins a domain's PHP version by writing an AddHandler block into the
+# docroot's .htaccess — and our docroot is a symlink to THIS release's public/,
+# whose .htaccess arrives from the repository without it. Without this block
+# Apache serves the release with the server default (ea-php83 on InMotion),
+# which cannot run the application. PHP-FPM would make the version part of
+# the vhost instead, but it is not offered on this plan. Derived from
+# PHP_BIN, so a host that is not cPanel gets nothing written.
+case "$PHP_BIN" in
+  /opt/cpanel/ea-php*/root/usr/bin/php)
+    EA_PKG=$(printf '%s' "$PHP_BIN" | cut -d/ -f4)   # /opt/cpanel/ea-php84/... → ea-php84
+    if ! grep -q "x-httpd-$EA_PKG" "$RELEASE_DIR/public/.htaccess" 2>/dev/null; then
+      cat >> "$RELEASE_DIR/public/.htaccess" <<HT
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the "$EA_PKG" package as the default "PHP" programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-$EA_PKG .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
+HT
+    fi
+    ok "PHP handler: $EA_PKG"
+    ;;
+esac
+
+# ── OPcache and the symlink ──────────────────────────────────────────────────
+# PHP-FPM on this host runs OPcache with `revalidate_path=0`: a script is
+# cached under the path it was REQUESTED by (…/current/public/index.php),
+# resolved once, and the timestamp check re-reads that first resolution —
+# the previous release's file, unchanged. So moving `current` changed
+# nothing the workers could see, ever: staging served a release from the
+# morning all day, and the deploy's own reset route, which that release did
+# not have, answered 405. `.user.ini` in the docroot is read by FPM
+# (user_ini.filename) and `revalidate_path` is PHP_INI_ALL, so each
+# request resolves the symlink afresh and a new release is new files.
+# `.user.ini` is itself cached for user_ini.cache_ttl (300s), which is why
+# the reset below still runs.
+if [ ! -f "$RELEASE_DIR/public/.user.ini" ] || ! grep -q 'opcache.revalidate_path' "$RELEASE_DIR/public/.user.ini"; then
+  cat >> "$RELEASE_DIR/public/.user.ini" <<INI
+; Written by activate.sh. See deploy/scripts/activate.sh, "OPcache and the symlink".
+opcache.revalidate_path=1
+INI
+fi
+ok "OPcache revalidates the docroot symlink (.user.ini)"
 
 # ── Permissions ──────────────────────────────────────────────────────────────
 # cPanel runs PHP as the account user, so 755/644 is sufficient. Never 777 —
@@ -179,6 +373,36 @@ ok "current → releases/$REL"
 # ── Post-activation ──────────────────────────────────────────────────────────
 say "Post-activation"
 "$PHP_BIN" "$CURRENT_LINK/artisan" queue:restart --no-interaction 2>/dev/null && ok "queue workers signalled to restart" || true
+# Pages stored by the previous release must not be the first thing this one
+# serves. Empties the page cache and starts a new fragment generation.
+"$PHP_BIN" "$CURRENT_LINK/artisan" scghf:cache-clear --no-interaction 2>/dev/null && ok "page and fragment caches emptied" || true
+# PHP-FPM keeps compiled bytecode across deploys; nothing restarts the pool
+# when the symlink moves, so the web workers can go on serving the previous
+# release's code while every artisan command here sees the new one. The
+# first staging deploy of the launch content served pages without their
+# pictures for exactly this reason. Non-fatal: a stale cache clears itself
+# as files are revalidated; a rolled-back release would not.
+if "$PHP_BIN" "$CURRENT_LINK/artisan" scghf:opcache-reset --no-interaction; then
+  ok "web workers' OPcache emptied"
+else
+  # The route is in the NEW release; workers still running an old one that
+  # lacks it answer 404/405 for as long as their cache lives. A one-off
+  # file under public/deploy/ — the path the staging gate leaves open — is
+  # a script the workers have never seen, so it runs on the first request
+  # whatever they have cached. Removed the moment it has answered.
+  warn "the reset route was not reachable; resetting through a one-off file"
+  ONE_OFF="$CURRENT_LINK/public/deploy"
+  ONE_OFF_NAME="reset-$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n').php"
+  mkdir -p "$ONE_OFF"
+  printf '%s
+' '<?php header("Content-Type: text/plain"); echo function_exists("opcache_reset") && opcache_reset() ? "reset" : "no-opcache";' > "$ONE_OFF/$ONE_OFF_NAME"
+  ONE_OFF_ANSWER=$(curl -sS -A "Mozilla/5.0 (compatible; SCGHF-deploy-check)" --max-time 30 "${APP_URL_VAL}/deploy/$ONE_OFF_NAME" 2>/dev/null || true)
+  rm -rf "$ONE_OFF"
+  case "$ONE_OFF_ANSWER" in
+    reset) ok "web workers' OPcache emptied (one-off file)" ;;
+    *) warn "OPcache was not reset (answer: ${ONE_OFF_ANSWER:-none}) — the web workers may serve the previous release's code until it revalidates" ;;
+  esac
+fi
 "$PHP_BIN" "$CURRENT_LINK/artisan" up --no-interaction 2>/dev/null || true
 echo "$REL" > "$SHARED_DIR/current_release"
 

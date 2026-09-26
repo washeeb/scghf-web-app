@@ -1,0 +1,300 @@
+{{--
+    The site footer.
+
+    Three seeded menus — footer_primary, footer_support, footer_legal — plus the
+    contact and registration details from the settings layer.
+
+    ── The registration numbers are not decoration ─────────────────────────────
+
+    A Ghanaian non-profit asking the public for money is expected to show who it
+    is: the exact registered name, the registration number, and the body that
+    registered it. A donor deciding whether to trust a payment form looks for
+    exactly that, and its absence is what a scam site has in common with a real
+    one that forgot.
+
+    Every value comes from the CMS, and each is omitted when unfilled rather
+    than rendering an empty label or a raw {{PLACEHOLDER}} — the settings layer
+    treats an unfilled placeholder as absent for this reason.
+--}}
+@php
+    $columns = [
+        ['key' => 'footer_primary', 'heading' => setting('site.footer_primary_heading', __('Our work'))],
+        ['key' => 'footer_support', 'heading' => setting('site.footer_support_heading', __('Support us'))],
+    ];
+
+    $legal = App\Models\Menu::renderable('footer_legal', auth()->check());
+
+    $socials = collect([
+        'facebook' => setting('social.facebook'),
+        'instagram' => setting('social.instagram'),
+        'x' => setting('social.x'),
+        'linkedin' => setting('social.linkedin'),
+        'youtube' => setting('social.youtube'),
+        'tiktok' => setting('social.tiktok'),
+    ])->filter();
+@endphp
+
+<footer class="mt-16 border-t border-[var(--border)] bg-[var(--surface)]">
+    <div class="mx-auto max-w-6xl px-4 py-12">
+        <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+
+            {{-- Who we are, and how to reach us. --}}
+            <div class="space-y-3">
+                <p class="font-semibold text-[var(--text-primary)]">
+                    {{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}
+                </p>
+
+                @if ($motto = setting('general.motto'))
+                    <p class="text-sm text-[var(--text-muted)]">{{ $motto }}</p>
+                @endif
+
+                <address class="space-y-1 text-sm not-italic text-[var(--text-muted)]">
+                    @if ($address = setting('contact.address'))
+                        <p>{{ $address }}</p>
+                    @endif
+
+                    {{-- The Ghana Post digital address. Frequently the only way
+                         to find a Ghanaian address, and useless if omitted. --}}
+                    @if ($gps = setting('contact.gps_address'))
+                        <p>{{ setting('site.footer_gps_label', __('GPS')) }}: {{ $gps }}</p>
+                    @endif
+
+                    @if ($phone = setting('contact.phone_primary'))
+                        <p><a class="hover:underline" href="tel:{{ preg_replace('/\s+/', '', $phone) }}">{{ $phone }}</a></p>
+                    @endif
+
+                    @if ($email = setting('contact.email_general'))
+                        <p><a class="hover:underline" href="mailto:{{ $email }}">{{ $email }}</a></p>
+                    @endif
+                </address>
+            </div>
+
+            {{-- The two content columns, from their menus. --}}
+            @foreach ($columns as $column)
+                @php $items = App\Models\Menu::renderable($column['key'], auth()->check()); @endphp
+
+                @if ($items->isNotEmpty())
+                    <nav aria-label="{{ $column['heading'] }}">
+                        <h2 class="font-heading mb-3 text-sm font-semibold text-[var(--text-primary)]">{{ $column['heading'] }}</h2>
+                        <ul class="space-y-1">
+                            @foreach ($items as $item)
+                                <li><x-site.menu-link :item="$item" /></li>
+                            @endforeach
+                        </ul>
+                    </nav>
+                @endif
+            @endforeach
+
+            {{-- Newsletter and social. --}}
+            <div class="space-y-4">
+                <h2 class="font-heading text-sm font-semibold text-[var(--text-primary)]">
+                    {{ setting('site.footer_newsletter_heading', __('Stay in touch')) }}
+                </h2>
+
+                {{--
+                    ⚠ This form has rendered NOTHING on every page of the site
+                    since Phase 4. The guard below is correct and was doing its
+                    job: `newsletter.subscribe` did not exist, so a form that
+                    would have posted to a 404 was correctly not drawn. What was
+                    missing was the route — and the whole double opt-in flow
+                    behind it, which had been written in Phase 3 and called by
+                    nobody.
+
+                    The guard stays, because it is still the right answer if the
+                    route is ever removed.
+                --}}
+                @if (Route::has('newsletter.subscribe'))
+                    @if (session('status'))
+                        {{-- The confirmation lands wherever the form was
+                             submitted from, which is any page on the site.
+                             `role="status"` announces it politely rather than
+                             interrupting whatever is being read. --}}
+                        <p role="status" class="text-sm text-[var(--success)]">{{ session('status') }}</p>
+                    @endif
+
+                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="space-y-2">
+                        @csrf
+                        <x-honeypot />
+                        <input type="hidden" name="source" value="footer">
+
+                        <div class="flex gap-2">
+                            <label for="footer-email" class="sr-only">{{ __('Email address') }}</label>
+                            <input
+                                id="footer-email"
+                                type="email"
+                                name="email"
+                                required
+                                autocomplete="email"
+                                placeholder="{{ setting('site.footer_email_placeholder', __('you@example.com')) }}"
+                                @error('email') aria-invalid="true" aria-describedby="footer-email-error" @enderror
+                                class="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                            >
+                            <button
+                                type="submit"
+                                class="rounded-md bg-[var(--brand-primary)] px-3 py-2 text-sm font-semibold text-[var(--text-on-brand)]"
+                            >{{ setting('site.footer_join_label', __('Join')) }}</button>
+                        </div>
+
+                        @error('email')
+                            <p id="footer-email-error" role="alert" class="text-sm text-[var(--danger)]">{{ $message }}</p>
+                        @enderror
+
+                        {{-- The consent sentence, from the settings layer, and
+                             the same one snapshotted onto the subscriber's
+                             record. Signing up IS the consent here — the
+                             confirmation email is the second half of it. --}}
+                        <p class="text-xs text-[var(--text-muted)]">
+                            {{ setting('compliance.newsletter_consent_text') }}
+                        </p>
+                    </form>
+                @endif
+
+                @if ($socials->isNotEmpty())
+                    @if ($socialHeading = setting('site.footer_social_heading'))
+                        <h2 class="font-heading text-sm font-semibold text-[var(--text-primary)]">{{ $socialHeading }}</h2>
+                    @endif
+                    <ul class="flex flex-wrap gap-3 text-sm">
+                        @foreach ($socials as $network => $url)
+                            <li>
+                                <a
+                                    href="{{ $url }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer me"
+                                    class="text-[var(--text-muted)] hover:text-[var(--brand-primary)]"
+                                >{{ Str::title($network) }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+
+        {{--
+            The strip below the columns: the policies, then the line that says
+            who we are and the small controls.
+
+            ── Grouped, not listed ─────────────────────────────────────────────
+
+            Ten policy links in one row wrap into a ragged pair of lines at most
+            widths, and a reader looking for "how do I get a refund" scans all
+            ten. Grouped by what they govern — the site, giving, conduct — each
+            group is three or four links under a label, and the row reads. The
+            groups are decided by the page each item points at, so an editor
+            adding a policy to the footer menu lands it in the right group
+            without a code change; anything unrecognised goes under "Policies".
+        --}}
+        @php
+            // Settings → Site → "Footer policy groups": a list of {label, slugs}.
+            // The seeded default is the three groups below; a malformed edit
+            // falls back to them rather than to an empty footer.
+            $configured = collect((array) setting('site.footer_policy_groups', []))
+                ->filter(fn ($g): bool => is_array($g) && filled($g['label'] ?? null) && is_array($g['slugs'] ?? null))
+                ->values();
+
+            $groups = $configured->isNotEmpty()
+                ? $configured->mapWithKeys(fn (array $g, int $i): array => ['g'.$i => ['label' => (string) $g['label'], 'slugs' => array_values(array_map('strval', $g['slugs']))]])->all()
+                : [
+                    'legal' => ['label' => __('Legal'), 'slugs' => ['privacy-policy', 'terms', 'cookie-policy', 'shipping-and-delivery']],
+                    'giving' => ['label' => __('Giving'), 'slugs' => ['donation-policy', 'refund-policy']],
+                    'conduct' => ['label' => __('Conduct'), 'slugs' => ['safeguarding', 'accessibility', 'whistleblowing', 'anti-fraud']],
+                ];
+            $groups['other'] = ['label' => setting('site.footer_policies_label', __('Policies')), 'slugs' => []];
+
+            // The cookie-preferences link sits with whichever group holds the cookie policy.
+            $cookieGroup = collect($groups)->search(fn (array $g): bool => in_array('cookie-policy', $g['slugs'], true)) ?: array_key_first($groups);
+
+            $grouped = collect($groups)->map(fn (array $g): array => ['label' => $g['label'], 'items' => collect()])->all();
+
+            foreach ($legal as $item) {
+                // The cached item carries the page's path, not its slug; the
+                // legal pages are top-level, so the last segment is the slug.
+                $slug = basename(trim((string) parse_url((string) $item->resolveUrl(), PHP_URL_PATH), '/')) ?: null;
+                $key = collect($groups)->search(fn (array $g): bool => $slug !== null && in_array($slug, $g['slugs'], true)) ?: 'other';
+                $grouped[$key]['items']->push($item);
+            }
+
+            // The cookie-preferences control. With the cookie policy published it
+            // is a link there that the script upgrades to open the dialog; with
+            // the policy still a draft it is a button that opens the dialog and
+            // nothing else — never a link to '#', which is a trap.
+            $cookieManage = (bool) setting('site.cookie_banner_enabled', true);
+            $cookiePolicyUrl = $cookieManage ? App\Models\Page::liveUrl('cookie-policy') : null;
+            $registration = collect([
+                setting('general.registration_number')
+                    ? setting('site.footer_registration_label', __('Registration')).' '.setting('general.registration_number')
+                    : null,
+                setting('general.registering_authority'),
+                setting('general.tin') ? setting('site.footer_tin_label', __('TIN')).' '.setting('general.tin') : null,
+            ])->filter();
+
+            // Only groups with something in them are drawn — and only the strip
+            // when at least one group is. On staging every policy page was still
+            // a draft, so the strip rendered as an empty band between two rules.
+            $visibleGroups = collect($grouped)->filter(fn (array $g, string $key): bool => $g['items']->isNotEmpty() || ($key === $cookieGroup && $cookieManage));
+        @endphp
+
+        <div class="mt-10 border-t border-[var(--border)] pt-6 text-sm text-[var(--text-muted)]">
+            @if ($visibleGroups->isNotEmpty())
+                <nav aria-label="{{ setting('site.footer_policies_label', __('Policies')) }}" class="grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach ($grouped as $key => $group)
+                        @if ($visibleGroups->has($key))
+                            <div>
+                                <h2 class="font-heading mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-primary)]">{{ $group['label'] }}</h2>
+                                <ul class="flex flex-wrap gap-x-4 gap-y-1">
+                                    @foreach ($group['items'] as $item)
+                                        <li><x-site.menu-link :item="$item" class="!px-0 !py-0.5 !font-normal !text-[var(--text-muted)] hover:!text-[var(--brand-primary)] hover:underline" /></li>
+                                    @endforeach
+                                    @if ($key === $cookieGroup && $cookieManage)
+                                        @if ($cookiePolicyUrl)
+                                            {{-- Opens the preferences dialog; without script it is a link to the policy. --}}
+                                            <li><a href="{{ $cookiePolicyUrl }}" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ setting('site.footer_cookie_label', __('Cookie preferences')) }}</a></li>
+                                        @else
+                                            <li><button type="button" data-cookie-consent-manage class="inline-block py-0.5 text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">{{ setting('site.footer_cookie_label', __('Cookie preferences')) }}</button></li>
+                                        @endif
+                                    @endif
+                                </ul>
+                            </div>
+                        @endif
+                    @endforeach
+                </nav>
+            @endif
+
+            {{-- Who we are, and the small controls, on one line where there is room. --}}
+            <div @class(['flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between', 'mt-6 border-t border-[var(--border)] pt-5' => $visibleGroups->isNotEmpty()])>
+                <p class="leading-relaxed">
+                    {{ setting('site.footer_copyright_prefix', '©') }} {{ now()->year }}
+                    {{ setting('general.legal_name', setting('general.short_name', config('app.name'))) }}
+                    @if ($registration->isNotEmpty())
+                        <span class="block sm:inline sm:before:mx-2 sm:before:content-['·']">{{ $registration->implode(' · ') }}</span>
+                    @endif
+                </p>
+
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <x-site.currency-picker />
+
+                    {{--
+                        Back to top: a plain in-page link to the skip-link's own
+                        target, not a floating button and not a script. Pointing
+                        it at `#main-content` MOVES FOCUS as well as scrolling —
+                        a JavaScript scroll leaves a keyboard user's focus
+                        stranded at the bottom of the page they just left.
+                    --}}
+                    @if (setting('site.show_back_to_top', true))
+                        <a href="#main-content" class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ setting('site.footer_back_to_top_label', __('Back to top')) }}</a>
+                    @endif
+
+                    {{--
+                        Add to home screen. Hidden until the browser says the
+                        site is installable (`beforeinstallprompt`, in pwa.js);
+                        most browsers never fire it, so most visitors never see
+                        this. Nothing on the page asks — the link just becomes
+                        available.
+                    --}}
+                    @if (app(App\Support\Pwa::class)->enabled())
+                        <a href="{{ route('pwa.offline') }}" hidden data-pwa-install class="shrink-0 hover:text-[var(--brand-primary)] hover:underline">{{ setting('site.footer_install_label', __('Add to your phone')) }}</a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

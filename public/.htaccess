@@ -95,33 +95,45 @@ Options -Indexes
 # ═══════════════════════════════════════════════════════════════════════════════
 <IfModule mod_headers.c>
     # Stop MIME sniffing.
-    Header always set X-Content-Type-Options "nosniff"
+    Header always setifempty X-Content-Type-Options "nosniff"
 
     # Clickjacking. SAMEORIGIN rather than DENY so the admin can preview pages.
-    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always setifempty X-Frame-Options "SAMEORIGIN"
 
     # Do not leak the full URL (which may contain a donation reference) to
     # third-party sites the donor clicks through to.
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always setifempty Referrer-Policy "strict-origin-when-cross-origin"
 
     # Nothing on this site needs a camera, microphone, or the user's location.
-    Header always set Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(self), usb=()"
+    Header always setifempty Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(self), usb=()"
 
     # Cross-origin isolation — safe defaults for a content site.
-    Header always set Cross-Origin-Opener-Policy "same-origin"
-    Header always set Cross-Origin-Resource-Policy "same-origin"
+    Header always setifempty Cross-Origin-Opener-Policy "same-origin"
+    Header always setifempty Cross-Origin-Resource-Policy "same-origin"
 
     # ── HSTS ─────────────────────────────────────────────────────────────────
     # ⚠️  Commented out deliberately. Enable ONLY once HTTPS is confirmed working
     #     on the apex AND every subdomain, because browsers cache this for a year
     #     and there is no way to retract it early. Start without 'preload'.
-    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    # The application sends it from HSTS_MAX_AGE once that is set; this line is
+    # for files Apache serves without PHP. Uncomment both together.
+    # Header always setifempty Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
-    # ── Content Security Policy ──────────────────────────────────────────────
-    # Report-Only first. Watch the reports for a week, then switch the header
-    # name to Content-Security-Policy. Paystack's hosted checkout is a full-page
-    # redirect, so it needs no frame-src; the inline popup would.
-    Header always set Content-Security-Policy-Report-Only "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://checkout.paystack.com; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.paystack.co; connect-src 'self' https://api.paystack.co; frame-src 'self' https://checkout.paystack.com https://www.youtube-nocookie.com; upgrade-insecure-requests"
+    # ── Content Security Policy ───────────────────────────────────────────
+    # Deliberately NOT set here. The application sets the policy on every
+    # page it renders (App\Http\Middleware\SecurityHeaders, origins in
+    # config/security.php), with a per-request nonce and, on the admin
+    # panel, the `unsafe-eval` Livewire needs.
+    #
+    # A `setifempty` fallback used to live here for files Apache serves on
+    # its own. Under cPanel's suPHP the headers PHP sets are not in the
+    # table `Header always` inspects, so the fallback went out on EVERY
+    # page beside the real one — and browsers enforce the intersection,
+    # which has no nonce and no `unsafe-eval`. Inline scripts failed on the
+    # public site and nobody could sign in to the admin panel. Found on the
+    # first staging deploy (2026-09-19). What the fallback covered — static
+    # assets and Apache's own error pages — runs no script, so it protected
+    # nothing.
 
     # ── Search engine indexing ───────────────────────────────────────────────
     # Handled automatically: deploy/scripts/activate.sh appends an
@@ -220,9 +232,16 @@ LimitRequestBody 33554432
 
 # Block a handful of noisy, always-hostile probe paths outright, so they never
 # reach PHP and never fill the log. This site is not WordPress.
+#
+# NOT `storage`: this file sits in public/, and public/storage is the link
+# to the media library — every uploaded picture is served from under it.
+# The rule listed it from the first commit, meaning to cover the Laravel
+# root's storage/ (which the docroot cannot reach anyway), and no uploaded
+# image was ever visible on a real server until staging was looked at on
+# 2026-09-20. `tests/Feature/PublicHtaccessTest` guards it now.
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^(wp-admin|wp-login\.php|wp-content|wp-includes|xmlrpc\.php) - [F,L]
     RewriteRule ^(\.git|\.svn|\.hg)(/|$) - [F,L]
-    RewriteRule ^(vendor|node_modules|storage|bootstrap)(/|$) - [F,L]
+    RewriteRule ^(vendor|node_modules|bootstrap)(/|$) - [F,L]
 </IfModule>

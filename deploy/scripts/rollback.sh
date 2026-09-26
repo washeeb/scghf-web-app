@@ -5,8 +5,8 @@
 #  Runs automatically when the post-deploy smoke test fails, and can be run by
 #  hand over SSH at any time:
 #
-#      ssh -p 2222 presti98@HOST \
-#        "DEPLOY_PATH=/home/presti98/scghf PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php bash -s" \
+#      ssh -p 2222 n789825@HOST \
+#        "DEPLOY_PATH=/home/n789825/scghf PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php bash -s" \
 #        < deploy/scripts/rollback.sh
 #
 #  ⚠️  Code rolls back. DATABASE MIGRATIONS DO NOT. This is why migrations must be
@@ -47,9 +47,12 @@ elif [ -f "$SHARED_DIR/previous_release" ]; then
   ROLLBACK_TO=$(basename "$(cat "$SHARED_DIR/previous_release")")
   echo "  target: $ROLLBACK_TO (recorded previous)"
 else
-  # Fall back to the newest release that is not the live one.
-  ROLLBACK_TO=$(ls -1t "$RELEASES_DIR" 2>/dev/null | grep -v "^${NOW}$" | head -1 || true)
-  echo "  target: ${ROLLBACK_TO:-<none>} (newest non-live)"
+  # No recorded previous release means nothing was ever live before the
+  # release that just failed. Guessing "the newest other directory" is how
+  # the first staging deploy rolled back onto a release whose migrations
+  # had FAILED — a directory is not a record of having been live. Refuse;
+  # the failed release stays current, and a person decides.
+  die "No previous release is recorded (shared/previous_release). This was the first activation, so there is nothing known-good to go back to. Fix forward, or name a release explicitly."
 fi
 
 [ -n "$ROLLBACK_TO" ] || die "No release to roll back to. Deploy a known-good commit instead."

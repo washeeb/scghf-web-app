@@ -5,7 +5,529 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: Inter, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/*
+ * The brand typefaces, self-hosted.
+ *
+ * ── Why self-hosted, and why these files ────────────────────────────────────
+ *
+ * Inter for text and Plus Jakarta Sans for headings are what the theme tokens
+ * have named since Phase 4 — and until Phase 6 no file was shipped, so the
+ * site rendered in whatever the phone had. A Google Fonts <link> would fix
+ * that at the cost of a third-party request on every page and a DNS lookup on
+ * a 3G connection; these are the same variable-weight WOFF2 files Google
+ * serves, downloaded once (SIL Open Font License — see public/fonts/README.md)
+ * and served from here.
+ *
+ * ── Two subsets each, and only one is usually fetched ───────────────────────
+ *
+ * `unicode-range` means the browser fetches the latin-ext file only for a page
+ * that actually contains a character outside basic Latin — which on this site
+ * is a name with an ɛ or an ɔ in it, so it is not rare, but it is not every
+ * page either. `font-display: swap` shows text in the fallback immediately and
+ * swaps when the file lands; on a slow connection the words come first.
+ */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/fonts/Inter-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+        U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/fonts/Inter-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/PlusJakartaSans-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+        U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/PlusJakartaSans-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Fraunces, the display serif for page and section titles (the chosen
+ * template's headline face). One variable file per subset covering 500–700;
+ * the optical-size axis is left to the browser, which picks by font-size.
+ */
+@font-face {
+    font-family: 'Fraunces';
+    font-style: normal;
+    font-weight: 500 700;
+    font-display: swap;
+    src: url('/fonts/Fraunces-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+        U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Fraunces';
+    font-style: normal;
+    font-weight: 500 700;
+    font-display: swap;
+    src: url('/fonts/Fraunces-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * The typefaces are applied through the theme tokens, so the foundation can
+ * change them in the theme editor. `--font-body` and `--font-heading` have been
+ * seeded since Phase 4 and read by nothing; this is where they are read.
+ */
+body {
+    font-family: var(--font-body, Inter, system-ui, sans-serif);
+}
+
+/*
+ * ── The template's typography: serif display, sans everything else ──────────
+ *
+ * The visual template the foundation chose (KidHope) sets its page and
+ * section titles in a high-contrast serif and everything else in a sans.
+ * That is what the `font-display` token carries. Only h1 and h2 take it —
+ * card titles, form labels and navigation stay in the heading sans, which
+ * is what keeps the serif a headline face rather than the whole site's.
+ *
+ * Fraunces is self-hosted like the other two (public/fonts/README.md); the
+ * stack ends in the system serif for the moment before it lands.
+ */
+h1,
+h2,
+.font-display {
+    font-family: var(--font-display, Fraunces, 'Source Serif 4', Georgia, 'Times New Roman', serif);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+}
+
+h3,
+h4,
+.font-heading {
+    font-family: var(--font-heading, 'Plus Jakarta Sans', system-ui, sans-serif);
+}
+
+@layer components {
+    /*
+     * The theme button shows the icon of the theme in force. `data-theme` on
+     * <html> is set by the server before paint and by theme.js after a
+     * choice, so the icon is right without a script and follows a change.
+     * No attribute (or an unknown one) reads as "match my device".
+     */
+    .theme-icon {
+        display: none;
+    }
+
+    html[data-theme='light'] .theme-icon[data-theme-icon='light'],
+    html[data-theme='dark'] .theme-icon[data-theme-icon='dark'],
+    html[data-theme='vibrant'] .theme-icon[data-theme-icon='vibrant'],
+    html:not([data-theme='light']):not([data-theme='dark']):not([data-theme='vibrant']) .theme-icon[data-theme-icon='system'] {
+        display: block;
+    }
+
+    /* The tick beside the chosen theme in the menu. */
+    .theme-check {
+        visibility: hidden;
+    }
+
+    [aria-checked='true'] > .theme-check {
+        visibility: visible;
+    }
+
+    /*
+     * The small uppercase line above a heading — "HOW WE HELP", "OUR
+     * STORY" — with the short orange rule the template draws before it. On
+     * a brand-coloured band the text inherits the band's ink and the rule
+     * follows, so the same class works on every background.
+     */
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--brand-primary);
+    }
+
+    .eyebrow::before {
+        content: '';
+        width: 1.25rem;
+        height: 2px;
+        border-radius: 9999px;
+        background: var(--brand-secondary);
+    }
+
+    .eyebrow-on-dark {
+        color: inherit;
+        opacity: 0.9;
+    }
+
+    .eyebrow-on-dark::before {
+        background: currentColor;
+    }
+
+    /*
+     * ── The hero slider's controls ──────────────────────────────────────────
+     *
+     * They sit over a photograph, which could be any photograph, so they
+     * carry their own dark scrim and a hairline border rather than relying
+     * on the picture behind them for contrast — the failure mode of a
+     * translucent control over an editor-supplied image is that it is
+     * invisible over a light sky, on exactly one slide, and nobody notices.
+     *
+     * `backdrop-filter` is progressive: where it is unsupported the scrim
+     * alone is already AA against white text.
+     */
+    .hero-control {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: none;
+        border-radius: 9999px;
+        border: 1px solid rgb(255 255 255 / 0.35);
+        background: rgb(0 0 0 / 0.35);
+        color: #fff;
+        backdrop-filter: blur(4px);
+        transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .hero-control:hover {
+        background: rgb(0 0 0 / 0.55);
+        border-color: rgb(255 255 255 / 0.6);
+    }
+
+    .hero-control:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+    }
+
+    /*
+     * A dot is a track; the fill inside it is the slide's time running out.
+     * The whole button is 44px tall through a transparent hit area, because
+     * WCAG 2.2 2.5.8 asks for a target that a thumb can actually hit — the
+     * visible dot is 8px, which on its own would not be one.
+     */
+    .hero-dot {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        width: 1.75rem;
+        height: 2.75rem;
+        flex: none;
+    }
+
+    .hero-dot::before {
+        content: '';
+        position: absolute;
+        inset-inline: 0;
+        height: 0.375rem;
+        border-radius: 9999px;
+        border: 1px solid rgb(255 255 255 / 0.35);
+        background: rgb(0 0 0 / 0.35);
+    }
+
+    .hero-dot[aria-current='true']::before {
+        background: rgb(0 0 0 / 0.5);
+    }
+
+    .hero-dot:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+        border-radius: 0.25rem;
+    }
+
+    .hero-dot-fill {
+        position: absolute;
+        inset-inline: 1px;
+        height: calc(0.375rem - 2px);
+        border-radius: 9999px;
+        background: var(--brand-secondary);
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition-property: transform;
+        transition-timing-function: linear;
+    }
+
+    /* A dot that is not the current one shows filled, not draining. */
+    .hero-dot[aria-current='true'] .hero-dot-fill {
+        opacity: 1;
+    }
+
+    .hero-dot:not([aria-current='true']) .hero-dot-fill {
+        opacity: 0;
+    }
+
+    /*
+     * Nothing animates for somebody who asked for that. The script does not
+     * start the clock either, so this only covers the fade already in
+     * flight when the preference changes.
+     */
+    @media (prefers-reduced-motion: reduce) {
+        .hero-dot-fill {
+            transition: none;
+        }
+    }
+
+    /*
+     * Pill buttons. One shape for every call to action, so the donate
+     * button in the header, the hero and a campaign card are recognisably
+     * the same control. Colour is the caller's: `.btn-brand` (green, white
+     * ink), `.btn-accent` (orange, dark ink — white on this orange fails
+     * AA, see the theme seeder), `.btn-outline` (the current text colour).
+     */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: var(--radius-full, 9999px);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        line-height: 1.25;
+        text-decoration: none;
+        transition: background-color var(--duration-base, 200ms), color var(--duration-base, 200ms), box-shadow var(--duration-base, 200ms);
+    }
+
+    .btn:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+    }
+
+    .btn-sm {
+        padding: 0.5rem 1.125rem;
+        font-size: 0.875rem;
+    }
+
+    .btn-brand {
+        background: var(--brand-primary);
+        color: var(--text-on-brand);
+    }
+
+    .btn-brand:hover {
+        background: var(--brand-primary-hover);
+    }
+
+    .btn-accent {
+        background: var(--brand-secondary);
+        color: var(--text-on-secondary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-accent:hover {
+        box-shadow: var(--shadow-md);
+        filter: brightness(1.05);
+    }
+
+    .btn-outline {
+        border: 1.5px solid currentColor;
+        background: transparent;
+        color: inherit;
+    }
+
+    .btn-outline:hover {
+        background: color-mix(in srgb, currentColor 10%, transparent);
+    }
+}
+
+/*
+ * Class-based dark mode.
+ *
+ * Tailwind v4 defaults `dark:` to the `prefers-color-scheme` media query, which
+ * cannot be overridden by a toggle — a visitor on a dark laptop would have no
+ * way to choose light. Redefining the variant against the `.dark` class puts
+ * the decision back in the application's hands, where the three-state toggle
+ * needs it.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * The colour tokens are NOT defined here.
+ *
+ * They come from `theme_settings` and are inlined in the document head by
+ * App\Support\ThemeTokens, because the palette is CMS content and must be
+ * changeable without a deploy. Referencing them as `var(--brand-primary)` in a
+ * utility works because they resolve at paint time.
+ */
+
+/*
+ * Respect a request for less motion.
+ *
+ * Vestibular disorders are not rare, and a site that ignores this setting can
+ * make somebody physically unwell. Left as a blanket rule rather than
+ * per-animation, because the failure mode of forgetting one animation is worse
+ * than the cost of disabling a flourish.
+ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/*
+ * The navigation disclosures.
+ *
+ * `<details>` is the whole mobile menu and every dropdown, chosen because the
+ * browser implements the disclosure pattern correctly — announced state,
+ * keyboard operation, and no JavaScript required. What it also brings is a
+ * default triangle marker, which has to go before the element can look like a
+ * navigation control rather than a file tree.
+ *
+ * Two selectors because they are not the same thing: `list-style` covers
+ * Firefox and modern Chrome, and the `::-webkit-details-marker` pseudo-element
+ * is still what older WebKit — which is Safari on the iOS versions this
+ * foundation's donors are actually running — reads.
+ */
+summary {
+    list-style: none;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}
+
+/*
+ * Rich text from the editor.
+ *
+ * ⚠ `prose-scghf` was referenced by seven views from Phase 6 Module 1 onward
+ * and defined nowhere, and the `prose` class the rich-text block used belongs
+ * to a Tailwind plugin that is not installed. Tailwind's preflight strips list
+ * bullets, heading sizes and paragraph margins from everything — so every news
+ * post, project description, appeal description and policy page rendered as a
+ * run of same-sized text with no bullets. Nothing failed; it just read like a
+ * telegram.
+ *
+ * Plain CSS rather than the typography plugin: the plugin is 40KB of rules for
+ * a site whose editor offers bold, italic, links, two heading levels, lists,
+ * a quote and — on a policy page — a table. Colours are the theme tokens, so
+ * the dark palette applies without a second set of rules. Line length is
+ * capped by the containers that use it, not here.
+ */
+@layer components {
+    .prose-scghf {
+        color: var(--text-primary);
+        line-height: 1.65;
+    }
+
+    .prose-scghf > * + * {
+        margin-top: 1em;
+    }
+
+    .prose-scghf h2 {
+        margin-top: 1.75em;
+        font-size: 1.375rem;
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+    }
+
+    .prose-scghf h3 {
+        margin-top: 1.5em;
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .prose-scghf h2 + *,
+    .prose-scghf h3 + * {
+        margin-top: 0.5em;
+    }
+
+    .prose-scghf a {
+        color: var(--brand-primary);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .prose-scghf a:hover {
+        color: var(--brand-primary-hover);
+    }
+
+    .prose-scghf ul,
+    .prose-scghf ol {
+        padding-left: 1.5em;
+    }
+
+    .prose-scghf ul {
+        list-style: disc;
+    }
+
+    .prose-scghf ol {
+        list-style: decimal;
+    }
+
+    .prose-scghf li + li {
+        margin-top: 0.375em;
+    }
+
+    .prose-scghf blockquote {
+        border-left: 3px solid var(--brand-primary);
+        padding-left: 1em;
+        color: var(--text-secondary);
+        font-style: italic;
+    }
+
+    .prose-scghf strong {
+        font-weight: 600;
+    }
+
+    /* A policy page's table — the cookie list — on a phone: it scrolls
+       inside its own box rather than forcing the page wider. */
+    .prose-scghf table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        border-collapse: collapse;
+        font-size: 0.9375rem;
+    }
+
+    .prose-scghf th,
+    .prose-scghf td {
+        padding: 0.5em 0.75em;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .prose-scghf th {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .prose-scghf img {
+        border-radius: var(--radius-md);
+    }
 }

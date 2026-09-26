@@ -4,32 +4,59 @@
 
 | | |
 |---|---|
-| Account | cPanel `presti98` on InMotion Hosting · cPanel 134.0.53 |
-| Home | `/home/presti98` |
-| Production | `greaterhopefoundations.com` → docroot `/home/presti98/greaterhopefoundations.com` |
-| Staging | `staging.greaterhopefoundations.com` → docroot `/home/presti98/staging.greaterhopefoundations.com` |
-| PHP | **8.4 (`ea-php84`)** — the project target. 8.3 is the server system default and is overridden per-domain |
-| SSH | enabled, **port 2222** |
+| Account | cPanel `n789825` on InMotion Hosting (`secure381.inmotionhosting.com`, dedicated IP `192.145.232.80`) · cPanel 134.0.56 · theme Jupiter |
+| Home | `/home/n789825` |
+| Production | `greaterhopefoundations.org` — the account's **primary domain**, so its docroot is `/home/n789825/public_html` |
+| Staging | `staging.greaterhopefoundations.org` → docroot `/home/n789825/staging.greaterhopefoundations.org` |
+| Registrar | **Namecheap** — as of 2026-09-19 the domain still resolves to Namecheap's parking page (`162.255.119.88`), so step 7.0 (DNS) comes before anything the domain has to answer for |
+| PHP | **8.4 (`ea-php84`)** — the project target; pin it per-domain in MultiPHP Manager |
+| SSH | enabled, **port 2222** (22 is closed). Host key is identical for the hostname and the IP |
 | Strategy | GitHub Actions → build on runner → rsync → atomic symlink flip |
 
-> ## ⚠️ Hosting decision — 2026-09-02
+> ## ✅ Hosting decision — resolved 2026-09-19
 >
-> **New hosting will be procured, running PHP 8.4. The `presti98` account is no longer the deployment target.**
+> On 2026-09-02 the project left the shared `presti98` account (it hosted an
+> unrelated business; risks SH-18, OPS-9, OPS-11, OPS-12 in
+> `PHASE-1-BLUEPRINT.md`) and steps 7–11 were parked until a host in the
+> foundation's own name existed. **It now does**: cPanel account `n789825`
+> on InMotion, with `greaterhopefoundations.org` as its primary domain. Every
+> value in this runbook — user, host, paths, database names, domain — was
+> re-pointed on 2026-09-19; the pipeline itself did not change, which was the
+> point of the portability rules.
 >
-> That splits this runbook in two:
+> Two things differ from the old account and are easy to trip on:
 >
-> | Steps | Status | Why |
-> |---|---|---|
-> | **0–6** — local toolchain, Laravel skeleton, packages, Git, GitHub repo, deploy key | ✅ **Do now.** Host-independent. | Nothing here depends on which server we end up on. |
-> | **7–11** — cPanel config, server bootstrap, cron, SSL, first deploy | ⏸ **Deferred** until the new host exists. | Doing these on `presti98` would be thrown away, and it would put donor-facing infrastructure on an account we are leaving. |
+> 1. **The docroot is `public_html`**, not a directory named after the domain.
+>    On `presti98` the `.com` was an addon domain; here the `.org` is the
+>    primary domain. `bootstrap-server.sh` knows this.
+> 2. **DNS is not at InMotion yet.** The domain was bought at Namecheap and
+>    still points at its parking page. Until step 7.0 is done, AutoSSL cannot
+>    issue a certificate (cPanel shows *Self-signed — your domain is at risk*),
+>    the smoke test in the deploy workflow cannot reach the site, and mail
+>    records cannot be verified.
+
+> ### Where the server stands — 2026-09-19
 >
-> **What survives the host change unchanged:** the whole pipeline design — build on the runner, rsync over SSH, atomic release symlink, rollback script. That was the point of the portability rules in `PHASE-1-BLUEPRINT.md` §11.6.1, and they are now being cashed in rather than theorised about.
+> Done over SSH with the deploy key (most cPanel screens have a `uapi`
+> equivalent, which is what was used; the commands are noted in each step):
 >
-> **What changes:** values, not architecture. `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `DEPLOY_PATH`, `PHP_BIN`, `APP_URL`, the docroot path, and the cron syntax if the new host is not cPanel. All are GitHub secrets or one-line edits.
->
-> **What this resolves:** risks **SH-18** (shared cPanel account with an unrelated business), **OPS-9** (infrastructure in the wrong entity's name), **OPS-11** (donor data on a third party's account) and **OPS-12** (the move never happening). All four were accepted-with-mitigation; a clean host in the foundation's name closes them properly.
->
-> **Tell me when you have picked the host** — specifically whether it is cPanel or a VPS, and whether it runs MySQL or MariaDB. Those two answers are all I need to re-point steps 7–11.
+> | Step | State |
+> |---|---|
+> | 5 — deploy key | ✅ authorised in cPanel, passphrase stripped, verified |
+> | 6 — GitHub secrets & `APP_URL` | ✅ both environments |
+> | 7.0 — DNS | ⏳ nameservers changed at Namecheap; InMotion's servers answer `192.145.232.80`, public resolvers still see the parking page while the delegation propagates |
+> | 7.1 — PHP 8.4 pinned | ✅ both vhosts (`uapi LangPHP php_set_vhost_versions`). cPanel applies it as an `AddHandler` block in the docroot's `.htaccess`, which our symlinked docroot loses on every release — so **`activate.sh` writes the block into each release** from `PHP_BIN` |
+> | 7.2 — PHP-FPM | ✖ not offered on this plan: the API accepts `php_fpm=1` and leaves it 0. Nothing to do |
+> | 7.3 — INI values | ✅ nothing to set: InMotion's `99-inmotion.ini` already gives `memory_limit=768M`, uploads `512M`, `max_input_vars=6200`, OPcache on — above the runbook's values. Per-directory `php.ini`/`.user.ini` are ignored under suPHP here |
+> | 7.4 — databases | ✅ `n789825_scghf_prod`, `_stage`, `_restore` created (`uapi Mysql create_database`). **Users, passwords and grants: yours** — a password must not pass through the assistant |
+> | 7.5 — staging subdomain | ✅ created (`uapi SubDomain addsubdomain`). Password gate: `shared/htpasswd` + `activate.sh` (see 7.5) — **create the file** |
+> | 7.6 — SSL | ✅ Let's Encrypt issued for the domain, `www` and `staging` (`uapi SSL start_autossl_check`), once the docroot resolved — a dangling docroot fails HTTP validation, hence the holding release in `bootstrap-server.sh` |
+> | 7.7 — mail, 7.8 — cPanel 2FA | ⬜ |
+> | 8 — bootstrap | ✅ both. `shared/.env` **pre-filled** from `.env.example` with `APP_ENV`, `APP_URL`, `DB_CONNECTION=mariadb` (the server is **MariaDB 10.6.28**), database names, `FORCE_HTTPS`, `SESSION_SECURE_COOKIE`, `LOG_LEVEL=warning`; `APP_KEY` and `BACKUP_ARCHIVE_PASSWORD` generated on the server into the file. Production's Paystack keys blanked (the activate guard refuses `sk_test_` there). **Empty and yours: `DB_PASSWORD`** now, mail and Paystack later |
+> | 9 — cron | ✅ four project lines installed with `crontab`, per-minute test run |
+> | ModSecurity | ⚠️ InMotion's rules answer 406 to curl's default User-Agent (the smoke test sends a browser-shaped one) and to `POST /csp-report` (CSP violation reports are lost — ask support to exempt the path). Hits are not shown in cPanel → ModSecurity for this account |
+> | Launch content | ✅ on each environment, once, after the first deploy: `php artisan db:seed --class=LaunchContentSeeder` (the photographs are fetched by the deploy itself). Then the placeholders are the editors' to replace — launch check row X6c counts them |
+> | 10 — first deploy | ✅ staging live on 2026-09-19 after seven pipeline/host fixes (see `CHANGELOG.md`): 140 tables migrated on InnoDB, caches built, Let's Encrypt, `/up` 200 |
 
 ---
 
@@ -203,9 +230,14 @@ composer require --dev pestphp/pest pestphp/pest-plugin-laravel laravel/pint --n
 
 ```powershell
 npm install
-npm install -D tailwindcss @tailwindcss/vite autoprefixer
-npm install alpinejs
 ```
+
+That is all that is needed. **Do not add Tailwind or Alpine separately:**
+
+- Laravel 13 already ships `tailwindcss` ^4 and `@tailwindcss/vite` ^4. Tailwind 4 is CSS-first — there is no `tailwind.config.js` and no `autoprefixer` to add.
+- **Livewire 4 bundles Alpine.** Installing `alpinejs` as well gives you two Alpine instances on the page, which breaks `x-data` in ways that are genuinely hard to diagnose.
+
+**`package-lock.json` must be committed.** Both workflows use `npm ci`, and `actions/setup-node` with `cache: npm` fails outright without a lockfile — which is exactly how the first CI run failed.
 
 **Expected:** each completes without a dependency conflict.
 
@@ -332,16 +364,39 @@ git push -u origin develop
 
 **Expected:** both branches appear on GitHub. Actions will run and **the deploy will fail at "Verify the server is reachable"** — correct, because the server is not bootstrapped yet. Steps 7–9 fix that.
 
-### Branch protection
+### ⚠️ Branch protection — blocked on the current plan
 
-GitHub → Settings → Branches → Add rule, for **`main`**:
+**Attempted 2026-09-02 and refused.** On **GitHub Free with a private repository**, all three mechanisms return 403/422:
 
-- ✅ Require a pull request before merging
-- ✅ Require status checks to pass → select **`Lint, analyse, test`**
-- ✅ Require branches to be up to date before merging
-- ✅ Do not allow bypassing the above settings
+| Attempted | Result |
+|---|---|
+| Classic branch protection (`/branches/main/protection`) | `403 — Upgrade to GitHub Pro or make this repository public` |
+| Rulesets (`/rulesets`) | `403 — same` |
+| Environment required reviewers | `422 — billing plan does not support the required reviewers protection rule` |
 
-Repeat for `develop` with only the status check requirement.
+Environments themselves **do** work, so per-environment secret scoping is fine.
+
+**Making the repo public is not an option** — it holds the foundation's configuration and will hold seeded content and the donor data model.
+
+**What still protects you without it.** This matters more than it first looks, because the strongest guard is not branch protection at all:
+
+- `deploy.yml` declares `needs: test`. **A failing quality gate makes the deploy job unreachable** — Pint, the full test suite, and the secret scan must all pass before anything is built or shipped. That holds regardless of branch protection, and it is the guard that actually stands between a bad commit and a donor.
+- `ci.yml` runs on every pull request, so the signal is there even if merging is not mechanically blocked.
+- Branch protection would add: no direct pushes to `main`, no force-push, no branch deletion, and a mandatory PR. Those are real, and their absence is a discipline problem rather than a safety one.
+
+**Recommendation: GitHub Pro, ~US$4/month.** For a project that will process donations, mechanically preventing a force-push to `main` and an unreviewed merge is worth the cost of about one small donation a month. It also unlocks the production approval gate the workflow is already written to use.
+
+**Until then, by convention rather than enforcement:**
+
+- Never push to `main` directly — always `develop` → PR → merge
+- Never `git push --force` to either branch
+- Do not merge a PR whose checks are red
+
+Once you upgrade, apply protection and the approval gate:
+
+```bash
+gh api -X PUT repos/washeeb/scghf-web-app/branches/main/protection --input .github/branch-protection.json
+```
 
 **Branch strategy**
 
@@ -358,13 +413,34 @@ Repeat for `develop` with only the status check requirement.
 
 **Do this on your machine, not the server.** A dedicated key, never your personal one — so it can be revoked without locking you out.
 
-```powershell
-ssh-keygen -t ed25519 -C "github-actions-deploy-scghf" -f "$env:USERPROFILE\.ssh\scghf_deploy" -N '""'
+Run it in **Git Bash**, not PowerShell:
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy-scghf" -f ~/.ssh/scghf_deploy -N ''
 ```
 
 **Expected:** two files — `scghf_deploy` (private) and `scghf_deploy.pub` (public).
 
-> ✅ **Done 2026-09-02.** Ed25519 keypair generated at `~\.ssh\scghf_deploy`. The keypair is host-independent, so it carries over to whatever hosting is chosen. **The rest of this step — importing and authorising the public key — waits for the new host.**
+Then **prove the key has no passphrase** — CI cannot type one:
+
+```bash
+ssh-keygen -y -P '' -f ~/.ssh/scghf_deploy
+```
+
+**Expected:** the public key printed. **If "incorrect passphrase":** the key is
+protected. Strip it with `ssh-keygen -p -P '<passphrase>' -N '' -f ~/.ssh/scghf_deploy`;
+the public half does not change, so nothing needs re-importing.
+
+> ⚠️ **What went wrong the first time (found 2026-09-19).** The original
+> PowerShell form, `-N '""'`, does not pass an empty passphrase — PowerShell
+> hands `ssh-keygen` the two characters `""` and the key was silently
+> protected with that as its passphrase. The symptom is the confusing one:
+> `ssh -v` shows **"Server accepts key"** (cPanel authorisation was fine) and
+> then **"Permission denied (publickey)"**, because the client could not sign
+> without the passphrase and `BatchMode` never asks. Fixed with the strip
+> command above; the GitHub secret was re-uploaded.
+
+> ✅ **Done 2026-09-02.** Ed25519 keypair generated at `~\.ssh\scghf_deploy`. The keypair is host-independent, so it carries over to whatever hosting is chosen. ~~The rest of this step — importing and authorising the public key — waits for the new host.~~ **The host exists (2026-09-19): import and authorise it now.**
 >
 > ⚠️ The private key has no passphrase, which is what CI needs. It is therefore a credential in its own right: it lives only at `~\.ssh\scghf_deploy` and in the GitHub `SSH_PRIVATE_KEY` secret, and it goes nowhere else. If it is ever exposed, delete the public key from the host's authorised list and generate a new pair — that is the whole remediation, which is exactly why it is a dedicated key.
 
@@ -382,7 +458,7 @@ Get-Content "$env:USERPROFILE\.ssh\scghf_deploy.pub"
 Test it:
 
 ```powershell
-ssh -i "$env:USERPROFILE\.ssh\scghf_deploy" -p 2222 presti98@23.235.219.254
+ssh -i "$env:USERPROFILE\.ssh\scghf_deploy" -p 2222 n789825@secure381.inmotionhosting.com
 ```
 
 **Expected:** a shell prompt, with no password requested.
@@ -390,6 +466,7 @@ ssh -i "$env:USERPROFILE\.ssh\scghf_deploy" -p 2222 presti98@23.235.219.254
 **If it asks for a password:** the key is not authorized. Go back and press Authorize.
 **If "Connection refused":** wrong port — it is 2222, not 22.
 **If "Permission denied (publickey)":** the public key was pasted with a line break, or you pasted the private key by mistake. Re-copy it as one line.
+**If `ssh -v` says "Server accepts key" and then denies:** the private key has a passphrase (see the warning above). cPanel is fine; fix the key.
 
 ---
 
@@ -400,7 +477,7 @@ GitHub → Settings → Environments → **New environment** → `production`. R
 Generate the host fingerprint first:
 
 ```powershell
-ssh-keyscan -p 2222 23.235.219.254
+ssh-keyscan -p 2222 secure381.inmotionhosting.com
 ```
 
 **Set now — host-independent:**
@@ -409,16 +486,24 @@ ssh-keyscan -p 2222 23.235.219.254
 |---|---|
 | `SSH_PRIVATE_KEY` | full contents of `~\.ssh\scghf_deploy`, **including** the `-----BEGIN`/`-----END` lines |
 
-**Wait for the new host — every value below is host-specific:**
+**Host-specific — the values for `n789825` (set 2026-09-19 with `gh secret set`):**
 
-| Secret | What it will be |
-|---|---|
-| `SSH_HOST` | the new server's IP or hostname |
-| `SSH_PORT` | `22` on most hosts; the old cPanel account used `2222`. **Do not assume — check.** |
-| `SSH_USER` | the new account username |
-| `SSH_KNOWN_HOSTS` | `ssh-keyscan -p <port> <host>`. **Must be regenerated for the new host** — a stale fingerprint fails the deploy at "Configure SSH", which is confusing if you have forgotten it was pinned. |
-| `DEPLOY_PATH` | `/home/<user>/scghf` on cPanel, or something like `/var/www/scghf` on a VPS |
-| `PHP_BIN` | `/opt/cpanel/ea-php84/root/usr/bin/php` on cPanel, or plain `php` on a VPS |
+| Secret | production | staging |
+|---|---|---|
+| `SSH_HOST` | `secure381.inmotionhosting.com` | same |
+| `SSH_PORT` | `2222` (22 is closed on this server) | same |
+| `SSH_USER` | `n789825` | same |
+| `SSH_KNOWN_HOSTS` | `ssh-keyscan -p 2222 secure381.inmotionhosting.com` — the host key is the same as for `192.145.232.80`. Regenerate if InMotion ever moves the account to another server: a stale fingerprint fails the deploy at "Configure SSH" | same |
+| `DEPLOY_PATH` | `/home/n789825/scghf` | `/home/n789825/scghf-staging` |
+| `PHP_BIN` | `/opt/cpanel/ea-php84/root/usr/bin/php` | same |
+
+> ⚠️ **Setting a path secret from Git Bash mangles it.** MSYS rewrites any
+> argument that looks like a POSIX path before a Windows executable sees it,
+> so `gh secret set DEPLOY_PATH --body /home/n789825/scghf` stores
+> `C:/Program Files/Git/home/n789825/scghf` — and the deploy then reports
+> *shared/.env is missing* against a path that looks right in the log
+> (secrets are masked). Found 2026-09-19. Either run `gh` from PowerShell, or
+> pipe the value: `printf '%s' "/home/n789825/scghf" | gh secret set DEPLOY_PATH --env production`.
 
 > Create both **Environments** now even though most secrets are still empty. The workflow references them by name, and the environment is where the production approval gate lives.
 
@@ -426,7 +511,7 @@ ssh-keyscan -p 2222 23.235.219.254
 
 | Variable | production | staging |
 |---|---|---|
-| `APP_URL` | `https://greaterhopefoundations.com` | `https://staging.greaterhopefoundations.com` |
+| `APP_URL` | `https://greaterhopefoundations.org` | `https://staging.greaterhopefoundations.org` |
 
 On the `production` environment, also tick **Required reviewers** and add yourself. Production deploys then wait for a one-click approval — a cheap guard against an accidental merge going straight to a live donation site.
 
@@ -436,15 +521,46 @@ On the `production` environment, also tick **Required reviewers** and add yourse
 
 ## Step 7 — cPanel setup
 
+### 7.0 Point the domain at InMotion (Namecheap)
+
+The domain resolves to Namecheap's parking page until this is done, and
+7.6 (SSL), 7.7 (mail) and step 10 (the smoke test) all depend on it.
+
+**Preferred — hand the zone to InMotion.** Namecheap → Domain List →
+*Manage* → *Nameservers* → **Custom DNS**:
+
+```
+ns.inmotionhosting.com
+ns2.inmotionhosting.com
+```
+
+cPanel then owns the zone: the `www` record, the staging subdomain, the
+mail records and the DMARC TXT in 7.7 are all edited in **Domains → Zone
+Editor**, and AutoSSL can prove ownership on its own.
+
+**Alternative — keep DNS at Namecheap** and add A records pointing at the
+dedicated IP, `192.145.232.80`: `@`, `www`, `staging`, plus `mail` if 7.7
+uses a sending subdomain. Every later DNS change then happens at Namecheap,
+not in cPanel.
+
+**Verify** (propagation takes minutes to a few hours):
+
+```powershell
+nslookup greaterhopefoundations.org
+```
+
+**Expected:** `Address: 192.145.232.80`. Then in cPanel → **SSL/TLS Status**
+run AutoSSL; the *Self-signed* warning on the home page should clear.
+
 ### 7.1 Pin the PHP version
 
-**Software → MultiPHP Manager.** `greaterhopefoundations.com` currently shows `PHP 8.3 (ea-php83)` with an **Inherited** badge — it follows the system default, so InMotion could move your production PHP without warning. **The project targets 8.4**, so this both changes the version and pins it.
+**Software → MultiPHP Manager.** If `greaterhopefoundations.org` shows an **Inherited** badge it follows the system default, and InMotion could move your production PHP without warning. **The project targets 8.4**, so this both sets the version and pins it.
 
-1. Tick the checkbox for `greaterhopefoundations.com` **only**
+1. Tick the checkbox for `greaterhopefoundations.org` **only**
 2. Confirm "Selected: 1"
 3. Set the PHP Version dropdown to **`PHP 8.4 (ea-php84)`**
 4. Apply
-5. Repeat for `staging.greaterhopefoundations.com` once it exists (step 7.5)
+5. Repeat for `staging.greaterhopefoundations.org` once it exists (step 7.5)
 
 **Expected:** the Inherited badge disappears and the row reads `PHP 8.4 (ea-php84)`.
 
@@ -466,13 +582,13 @@ Then confirm the runtime is actually what we need — this is the verification t
 
 ### 7.2 Enable PHP-FPM
 
-Same page, PHP-FPM column, toggle it on for `greaterhopefoundations.com`. This keeps PHP workers warm between requests and makes OPcache genuinely effective — the cheapest performance win available on this account.
+Same page, PHP-FPM column, toggle it on for `greaterhopefoundations.org`. This keeps PHP workers warm between requests and makes OPcache genuinely effective — the cheapest performance win available on this account.
 
 **If it fails with a memory error:** the FPM pool exceeds the plan's allowance. Ask InMotion to set `pm.max_children` against the 2 GB PMEM ceiling rather than leaving FPM off.
 
 ### 7.3 PHP INI values
 
-**Software → MultiPHP INI Editor** → select `greaterhopefoundations.com`:
+**Software → MultiPHP INI Editor** → select `greaterhopefoundations.org`:
 
 | Directive | Value |
 |---|---|
@@ -491,23 +607,58 @@ Same page, PHP-FPM column, toggle it on for `greaterhopefoundations.com`. This k
 
 | | Production | Staging |
 |---|---|---|
-| Database | `presti98_scghf_prod` | `presti98_scghf_stage` |
-| User | `presti98_scghf` | `presti98_scghfstg` |
+| Database | `n789825_scghf_prod` | `n789825_scghf_stage` |
+| User | `n789825_scghf` | `n789825_scghfstg` |
 | Privileges | ALL PRIVILEGES | ALL PRIVILEGES |
 
 **Save both passwords into your password manager now.** They are shown once.
+
+> **2026-09-19:** the three databases already exist. In **Databases → MySQL
+> Databases** create the users `n789825_scghf` and `n789825_scghfstg`, then
+> under *Add User To Database* grant `n789825_scghf` **ALL PRIVILEGES** on
+> `n789825_scghf_prod` **and** `n789825_scghf_restore`, and `n789825_scghfstg`
+> on `n789825_scghf_stage`. Then put each password on its `DB_PASSWORD=` line:
+>
+> ```bash
+> nano /home/n789825/scghf/shared/.env          # production
+> nano /home/n789825/scghf-staging/shared/.env  # staging
+> ```
+>
+> (cPanel → Advanced → Terminal, or `ssh -p 2222 n789825@secure381.inmotionhosting.com`.)
 
 While in phpMyAdmin, note the **Server version** from the home page — it is the last unknown from Phase 1 §4.3.
 
 ### 7.5 Staging subdomain
 
-**Domains → Create A Domain**: `staging.greaterhopefoundations.com`, document root `/home/presti98/staging.greaterhopefoundations.com`.
+**Domains → Create A Domain**: `staging.greaterhopefoundations.org`, document root `/home/n789825/staging.greaterhopefoundations.org`.
 
-Then **Files → Directory Privacy** on that folder: enable protection, create a user. Staging is now behind a password as well as noindexed.
+~~Then **Files → Directory Privacy** on that folder.~~ **Not that way (2026-09-20):** cPanel writes the auth directives into the docroot's `.htaccess`, which on this layout is the release's `public/.htaccess` and is replaced on every deploy — and its folder picker offers the old `.bak` directory rather than the symlinked docroot. Instead, create the password file once, in `shared/`, from cPanel → Terminal:
+
+```bash
+htpasswd -c /home/n789825/scghf-staging/shared/htpasswd tester
+```
+
+`activate.sh` then writes the Basic-auth block into every staging release, leaving `/up`, `/webhooks/*` and `/.well-known/*` open (health check, Paystack test events, AutoSSL renewals). Never on production. Optionally give the deploy's smoke test the credentials so it checks the homepage through the gate — from PowerShell, not Git Bash:
+
+```powershell
+gh secret set SMOKE_BASIC_AUTH --env staging --body "tester:<password>"
+```
+
+Without the secret, a 401 on the homepage counts as alive and `/up` decides.
+
+> ⚠️ **Two doors, and browsers confuse them.** The grey browser dialog is the
+> gate (`tester` + the htpasswd password); the dark page with the foundation's
+> name is the application (`demo.superadmin@example.test` etc.). Chrome and
+> Edge save the application's credentials for the site and then **pre-fill
+> them into the gate dialog**, which fails silently and re-prompts forever —
+> the first tester lost an hour to it (2026-09-20). Clear both fields and
+> type the gate credentials by hand, or use a private window once; after
+> that the browser remembers the gate for the session. The same server-side
+> check that proves the password is right: `htpasswd -v <file> tester`.
 
 ### 7.6 SSL
 
-**Security → SSL/TLS Status.** Confirm `greaterhopefoundations.com`, `www.greaterhopefoundations.com` and the staging subdomain all show a valid AutoSSL certificate. Run AutoSSL if any is missing.
+**Security → SSL/TLS Status.** Confirm `greaterhopefoundations.org`, `www.greaterhopefoundations.org` and the staging subdomain all show a valid AutoSSL certificate. Run AutoSSL if any is missing.
 
 **Expected:** three green entries.
 
@@ -517,13 +668,13 @@ Then **Files → Directory Privacy** on that folder: enable protection, create a
 
 **Email → Email Accounts** — create: `info@`, `donations@`, `volunteer@`, `shop@`, `media@`, `safeguarding@`, `noreply@`, `dmarc@`.
 
-**Email → Email Deliverability** — confirm SPF and DKIM are valid **for `greaterhopefoundations.com`**, not just the primary domain. Click Repair if either is amber.
+**Email → Email Deliverability** — confirm SPF and DKIM are valid **for `greaterhopefoundations.org`**, not just the primary domain. Click Repair if either is amber.
 
 **Domains → Zone Editor** — add a TXT record:
 
 | Name | Value |
 |---|---|
-| `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@greaterhopefoundations.com; fo=1` |
+| `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@greaterhopefoundations.org; fo=1` |
 
 `p=none` is monitor-only. Move to `quarantine` then `reject` after a few weeks of clean reports.
 
@@ -538,7 +689,7 @@ Then **Files → Directory Privacy** on that folder: enable protection, create a
 **cPanel → Advanced → Terminal**, or over SSH. Upload the script first:
 
 ```powershell
-scp -P 2222 -i "$env:USERPROFILE\.ssh\scghf_deploy" deploy\scripts\bootstrap-server.sh presti98@23.235.219.254:~/
+scp -P 2222 -i "$env:USERPROFILE\.ssh\scghf_deploy" deploy\scripts\bootstrap-server.sh n789825@secure381.inmotionhosting.com:~/
 ```
 
 Then in Terminal:
@@ -547,7 +698,7 @@ Then in Terminal:
 bash ~/bootstrap-server.sh production
 ```
 
-**Expected:** it creates `/home/presti98/scghf/{releases,shared,backups}`, reports the PHP binary and version, lists any missing PHP extensions, writes a deny-all `.htaccess` in the app root, and converts the docroot into a symlink — moving any existing content to a timestamped `.bak` first. It finishes by printing your GitHub secrets and cron lines.
+**Expected:** it creates `/home/n789825/scghf/{releases,shared,backups}`, reports the PHP binary and version, lists any missing PHP extensions, writes a deny-all `.htaccess` in the app root, and converts the docroot into a symlink — moving any existing content to a timestamped `.bak` first. It finishes by printing your GitHub secrets and cron lines.
 
 **Copy the "MISSING PHP extensions" line if there is one** — that goes straight into an InMotion ticket.
 
@@ -560,7 +711,7 @@ bash ~/bootstrap-server.sh staging
 ### Fill in the real `.env`
 
 ```bash
-nano /home/presti98/scghf/shared/.env
+nano /home/n789825/scghf/shared/.env
 ```
 
 Paste the contents of `.env.example`, then change:
@@ -568,19 +719,21 @@ Paste the contents of `.env.example`, then change:
 ```ini
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://greaterhopefoundations.com
+APP_URL=https://greaterhopefoundations.org
 FORCE_HTTPS=true
 SESSION_SECURE_COOKIE=true
 LOG_LEVEL=warning
-ALLOW_SEARCH_INDEXING=true
+MAIL_MAILER=resend
+RESEND_API_KEY=re_...                 # see docs/PHASE-10-EMAIL-DELIVERABILITY.md
+RESEND_WEBHOOK_SECRET=whsec_...
 
 DB_HOST=localhost
-DB_DATABASE=presti98_scghf_prod
-DB_USERNAME=presti98_scghf
+DB_DATABASE=n789825_scghf_prod
+DB_USERNAME=n789825_scghf
 DB_PASSWORD=<from step 7.4>
 
 MAIL_MAILER=smtp
-MAIL_USERNAME=noreply@greaterhopefoundations.com
+MAIL_USERNAME=noreply@greaterhopefoundations.org
 MAIL_PASSWORD=<mailbox password>
 
 PAYMENT_DRIVER=fake        # until the Paystack account exists
@@ -597,10 +750,10 @@ Paste that into `APP_KEY=`. Save with `Ctrl+O`, `Enter`, `Ctrl+X`.
 
 > ⛔ **`APP_KEY` must never change once real data exists.** It encrypts sessions and any encrypted column. Changing it makes that data unreadable — permanently. Back it up in your password manager the moment you set it.
 
-For **staging**, the same but `APP_ENV=staging`, `ALLOW_SEARCH_INDEXING=false`, the staging database, and a **different** `APP_KEY`.
+For **staging**, the same but `APP_ENV=staging`, the staging database, and a **different** `APP_KEY`. Whether search engines may index is the `seo.allow_indexing` setting (Settings → SEO), seeded false — switch it on for production only, and leave it off on staging.
 
 ```bash
-chmod 600 /home/presti98/scghf/shared/.env
+chmod 600 /home/n789825/scghf/shared/.env
 ```
 
 ---
@@ -614,13 +767,13 @@ chmod 600 /home/presti98/scghf/shared/.env
 Add a temporary job, Once Per Minute:
 
 ```
-* * * * * /bin/date >> /home/presti98/cron-test.log 2>&1
+* * * * * /bin/date >> /home/n789825/cron-test.log 2>&1
 ```
 
 Wait five minutes, then:
 
 ```bash
-wc -l /home/presti98/cron-test.log
+wc -l /home/n789825/cron-test.log
 ```
 
 **Expected:** `5`.
@@ -651,7 +804,7 @@ Watch GitHub → Actions. The pipeline runs: quality gate → build → deploy t
 | Activate the release | migrations run, caches build, `robots.txt` written, symlink flips, old releases pruned |
 | Smoke test | `/` and `/up` return 200; `/.env`, `/vendor/autoload.php`, `/.git/config` all return 403/404 |
 
-Then visit `https://staging.greaterhopefoundations.com` (it will prompt for the Directory Privacy password) — **the Laravel welcome page, over HTTPS.**
+Then visit `https://staging.greaterhopefoundations.org` (it will prompt for the Directory Privacy password) — **the Laravel welcome page, over HTTPS.**
 
 When staging is confirmed:
 
@@ -661,7 +814,7 @@ git merge develop
 git push origin main
 ```
 
-Approve the production deploy when GitHub prompts, then check `https://greaterhopefoundations.com`.
+Approve the production deploy when GitHub prompts, then check `https://greaterhopefoundations.org`.
 
 ### When the deploy fails
 
@@ -673,35 +826,35 @@ Approve the production deploy when GitHub prompts, then check `https://greaterho
 | `shared/.env is missing` | bootstrap not run | Step 8 |
 | `vendor/ missing` | build job failed | check the build job log |
 | Migration fails | DB credentials or DB missing | Step 7.4; test with `php artisan db:show` over SSH |
-| Homepage 500 | almost always `.env` | `tail -50 /home/presti98/scghf/shared/storage/logs/laravel.log` |
+| Homepage 500 | almost always `.env` | `tail -50 /home/n789825/scghf/shared/storage/logs/laravel.log` |
 | Homepage 403 | symlinked docroot refused, or perms | see below |
 | `/.env` returns 200 | `.htaccess` not applied | **security incident** — see below |
 
 **403 on the homepage.** Apache may have `FollowSymLinks` disabled for addon domains. Test:
 
 ```bash
-ls -la /home/presti98/greaterhopefoundations.com
+ls -la /home/n789825/greaterhopefoundations.org
 ```
 
 If it is a valid symlink and you still get 403, use the thin front controller instead of a symlinked docroot:
 
 ```bash
-rm /home/presti98/greaterhopefoundations.com
-mkdir -p /home/presti98/greaterhopefoundations.com
-cp /home/presti98/scghf/current/public/.htaccess /home/presti98/greaterhopefoundations.com/
-cat > /home/presti98/greaterhopefoundations.com/index.php <<'PHP'
+rm /home/n789825/greaterhopefoundations.org
+mkdir -p /home/n789825/greaterhopefoundations.org
+cp /home/n789825/scghf/current/public/.htaccess /home/n789825/greaterhopefoundations.org/
+cat > /home/n789825/greaterhopefoundations.org/index.php <<'PHP'
 <?php
 // Thin front controller. The application lives outside the web root; only this
 // file and .htaccess are inside it.
 define('LARAVEL_START', microtime(true));
-$app = '/home/presti98/scghf/current';
+$app = '/home/n789825/scghf/current';
 if (file_exists($m = $app.'/storage/framework/maintenance.php')) require $m;
 require $app.'/vendor/autoload.php';
 $kernel = require_once $app.'/bootstrap/app.php';
 $kernel->handleRequest(Illuminate\Http\Request::capture());
 PHP
-ln -sfn /home/presti98/scghf/current/public/build /home/presti98/greaterhopefoundations.com/build
-ln -sfn /home/presti98/scghf/shared/storage/app/public /home/presti98/greaterhopefoundations.com/storage
+ln -sfn /home/n789825/scghf/current/public/build /home/n789825/greaterhopefoundations.org/build
+ln -sfn /home/n789825/scghf/shared/storage/app/public /home/n789825/greaterhopefoundations.org/storage
 ```
 
 Trade-off: you no longer get the docroot for free on each deploy, so `build/` and `storage/` are symlinked separately. The symlinked docroot is cleaner — try it first.
@@ -716,18 +869,18 @@ Run all of these. Every one should pass before Phase 2 is closed.
 
 ```bash
 # On the server
-ls -la /home/presti98/scghf/current                 # symlink → releases/<name>
-ls -1 /home/presti98/scghf/releases | wc -l         # ≤ 5
-cat /home/presti98/scghf/shared/current_release
-/opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf/current/artisan about
-/opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf/current/artisan db:show
+ls -la /home/n789825/scghf/current                 # symlink → releases/<name>
+ls -1 /home/n789825/scghf/releases | wc -l         # ≤ 5
+cat /home/n789825/scghf/shared/current_release
+/opt/cpanel/ea-php84/root/usr/bin/php /home/n789825/scghf/current/artisan about
+/opt/cpanel/ea-php84/root/usr/bin/php /home/n789825/scghf/current/artisan db:show
 ```
 
 ```powershell
 # From your machine
-curl.exe -I https://greaterhopefoundations.com
-curl.exe -o NUL -w "%{http_code}`n" -s https://greaterhopefoundations.com/.env
-curl.exe -o NUL -w "%{http_code}`n" -s http://greaterhopefoundations.com    # expect 301
+curl.exe -I https://greaterhopefoundations.org
+curl.exe -o NUL -w "%{http_code}`n" -s https://greaterhopefoundations.org/.env
+curl.exe -o NUL -w "%{http_code}`n" -s http://greaterhopefoundations.org    # expect 301
 ```
 
 **Expected:** `HTTP/2 200` with `x-content-type-options: nosniff` and `referrer-policy` present; `403` or `404` for `.env`; `301` for plain HTTP.
@@ -735,8 +888,8 @@ curl.exe -o NUL -w "%{http_code}`n" -s http://greaterhopefoundations.com    # ex
 **Rollback drill — do this once now, while nothing is at stake:**
 
 ```bash
-ssh -p 2222 presti98@23.235.219.254 \
-  "DEPLOY_PATH=/home/presti98/scghf PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php bash -s" \
+ssh -p 2222 n789825@secure381.inmotionhosting.com \
+  "DEPLOY_PATH=/home/n789825/scghf PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php bash -s" \
   < deploy/scripts/rollback.sh
 ```
 
@@ -753,9 +906,9 @@ Confirm the site still loads, then deploy again to move forward. **A rollback pa
 **To change a value:**
 
 ```bash
-cp /home/presti98/scghf/shared/.env /home/presti98/scghf/shared/.env.bak.$(date +%F)
-nano /home/presti98/scghf/shared/.env
-/opt/cpanel/ea-php84/root/usr/bin/php /home/presti98/scghf/current/artisan config:cache
+cp /home/n789825/scghf/shared/.env /home/n789825/scghf/shared/.env.bak.$(date +%F)
+nano /home/n789825/scghf/shared/.env
+/opt/cpanel/ea-php84/root/usr/bin/php /home/n789825/scghf/current/artisan config:cache
 ```
 
 > The `config:cache` step is **not optional**. With a cached config, editing `.env` alone changes nothing — Laravel reads the cache, and you will chase a phantom bug for an hour.

@@ -23,6 +23,7 @@ auth.json
 /public/storage
 /public/css/
 /public/js/
+/public/fonts/filament/
 /public/mix-manifest.json
 
 # ─── Laravel runtime ─────────────────────────────────────────────────────────
@@ -42,6 +43,15 @@ auth.json
 !/storage/framework/views/.gitignore
 /storage/logs/*
 !/storage/logs/.gitignore
+
+# spatie/laravel-medialibrary's scratch space. It writes the original and each
+# conversion here before moving them onto the disk, and a crashed run leaves
+# them behind — so without this, a developer's `git add -A` commits somebody's
+# photograph into the repository. On the server they are also pure inode cost
+# with nothing referencing them.
+/storage/media-library/*
+!/storage/media-library/.gitignore
+
 /storage/debugbar/
 /storage/clockwork/
 /bootstrap/cache/*
@@ -107,3 +117,6 @@ known_hosts.generated
 # ─── Project working files (kept locally, not in the repo) ───────────────────
 /_scratch/
 /.laravel-tmp/
+
+# ─── Browser test output ─────────────────────────────────────────────────────
+/tests/Browser/Screenshots/

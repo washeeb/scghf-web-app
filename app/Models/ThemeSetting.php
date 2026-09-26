@@ -1,0 +1,142 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Support\ContrastChecker;
+use App\Support\ThemeTokens;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property string $theme
+ * @property string $token
+ * @property string $category
+ * @property string $value
+ */
+class ThemeSetting extends Model
+{
+    protected $fillable = [
+        'theme', 'token', 'category', 'value', 'label', 'description',
+        'contrast_against', 'min_contrast', 'is_locked', 'sort_order', 'updated_by',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_locked' => 'boolean',
+            'min_contrast' => 'float',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        /*
+         * The rendered CSS is cached for ever and busted here, rather than
+         * being given a TTL.
+         *
+         * A TTL would mean an editor changing the brand colour sees nothing
+         * happen, refreshes, still sees nothing, and concludes the admin panel
+         * is broken — then the change appears ten minutes later while they are
+         * looking at something else. Busting on save makes the panel behave the
+         * way somebody using it expects.
+         */
+        static::saved(fn () => ThemeTokens::flush());
+        static::deleted(fn () => ThemeTokens::flush());
+
+        /*
+         * Who last changed this colour.
+         *
+         * `updated_by` has been on the table since the migration and was
+         * written by nothing, so `updatedBy()` resolved to null for every token
+         * and the panel could have shown "changed by nobody" as though it were
+         * a fact. A palette is a shared document — nine people can touch it and
+         * only one remembers why.
+         *
+         * Only for a real person: the seeder runs without one, and attributing
+         * its defaults to whoever last logged in would be a lie.
+         */
+        static::saving(function (self $token): void {
+            if ($token->isDirty('value') && auth()->hasUser()) {
+                $token->updated_by = auth()->id();
+            }
+        });
+    }
+
+    public function isColour(): bool
+    {
+        return $this->category === 'colour';
+    }
+
+    /** The token this one is checked against, in the same theme. */
+    public function contrastPartner(): ?self
+    {
+        if ($this->contrast_against === null) {
+            return null;
+        }
+
+        return static::query()
+            ->where('theme', $this->theme)
+            ->where('token', $this->contrast_against)
+            ->first();
+    }
+
+    /** Null when this token has no contrast obligation or its partner is missing. */
+    public function contrastRatio(): ?float
+    {
+        $partner = $this->contrastPartner();
+
+        if ($partner === null || ! $this->isColour()) {
+            return null;
+        }
+
+        return app(ContrastChecker::class)->ratioRounded($this->value, $partner->value);
+    }
+
+    /**
+     * Whether this token still meets the contrast it declares it needs.
+     *
+     * True when there is no obligation — a token that never had to be legible
+     * against anything cannot fail.
+     */
+    public function meetsContrast(): bool
+    {
+        $ratio = $this->contrastRatio();
+
+        if ($ratio === null || $this->min_contrast === null) {
+            return true;
+        }
+
+        return $ratio >= $this->min_contrast;
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    #[Scope]
+    protected function forTheme(Builder $query, string $theme): void
+    {
+        $query->where('theme', $theme)->orderBy('category')->orderBy('sort_order');
+    }
+
+    #[Scope]
+    protected function colours(Builder $query): void
+    {
+        $query->where('category', 'colour');
+    }
+
+    /** Tokens carrying a contrast obligation — what the AA audit iterates. */
+    #[Scope]
+    protected function withContrastObligation(Builder $query): void
+    {
+        $query->where('category', 'colour')
+            ->whereNotNull('contrast_against')
+            ->whereNotNull('min_contrast');
+    }
+}

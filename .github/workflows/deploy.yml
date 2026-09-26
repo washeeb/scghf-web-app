@@ -1,8 +1,8 @@
 # Build on the runner, ship the finished tree to cPanel over SSH (port 2222),
 # swap an atomic release symlink. The server never needs Composer or Node.
 #
-#   push to main    → production  (greaterhopefoundations.com)
-#   push to develop → staging     (staging.greaterhopefoundations.com)
+#   push to main    → production  (greaterhopefoundations.org)
+#   push to develop → staging     (staging.greaterhopefoundations.org)
 #
 # Secrets live in GitHub → Settings → Environments → production / staging.
 # See docs/DEPLOYMENT.md for the full secret list and the first-run bootstrap.
@@ -38,7 +38,31 @@ jobs:
   test:
     name: Quality gate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The template .env names the cPanel database user; the runner's MySQL
+    # service is root with no password. Real environment variables win over
+    # .env, so this is all it takes.
+    env:
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+    # The suite is ~2,000 tests against a real database; 15 minutes was a
+    # guess made before it existed.
+    timeout-minutes: 45
+
+    # phpunit.xml points every test at MySQL `scghf_test` — the same service
+    # ci.yml runs. Without it every database-backed test fails with
+    # "Connection refused" and nothing reaches the server.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: scghf_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - uses: actions/checkout@v4
@@ -58,6 +82,15 @@ jobs:
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
           restore-keys: composer-${{ runner.os }}-
 
+      # Composer's post-autoload-dump hook runs `php artisan package:discover`,
+      # which boots the application. With no .env, APP_ENV defaults to
+      # `production`, and PaymentServiceProvider refuses to boot production on
+      # the fake payment driver — correctly. So the template .env (APP_ENV=local)
+      # must exist BEFORE Composer runs. It never reaches the server: the release
+      # tree excludes .env, and the server has its own in shared/.
+      - name: Create the template .env before Composer boots the app
+        run: cp .env.example .env
+
       - name: Install PHP dependencies (with dev — we need the test tooling)
         run: composer install --prefer-dist --no-interaction --no-progress
 
@@ -69,8 +102,21 @@ jobs:
       - name: Check formatting
         run: vendor/bin/pint --test
 
+      # Every layout calls @vite; without public/build/manifest.json every
+      # page is a 500 and the suite fails for the wrong reason.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
       - name: Run tests
-        run: php artisan test --stop-on-failure
+        run: php artisan test --stop-on-failure --exclude-testsuite Browser
 
       - name: Fail if a secret slipped into the repository
         run: |
@@ -115,6 +161,15 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      # Composer's post-autoload-dump hook runs `php artisan package:discover`,
+      # which boots the application. With no .env, APP_ENV defaults to
+      # `production`, and PaymentServiceProvider refuses to boot production on
+      # the fake payment driver — correctly. So the template .env (APP_ENV=local)
+      # must exist BEFORE Composer runs. It never reaches the server: the release
+      # tree excludes .env, and the server has its own in shared/.
+      - name: Create the template .env before Composer boots the app
+        run: cp .env.example .env
+
       - name: Install PHP dependencies (production)
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
 
@@ -133,7 +188,21 @@ jobs:
         run: |
           test -d public/build || { echo "::error::public/build is missing — the Vite build failed silently."; exit 1; }
           test -f public/build/manifest.json || { echo "::error::Vite manifest.json is missing."; exit 1; }
+          # The admin panel's theme (Tailwind utilities used by the custom
+          # pages) is compiled by Vite too; without it every custom admin page
+          # renders as unstyled text.
+          grep -q 'resources/css/filament/admin/theme.css' public/build/manifest.json || { echo "::error::The Filament theme is missing from the Vite manifest."; exit 1; }
           echo "Build size: $(du -sh public/build | cut -f1)"
+
+      # Filament's CSS and JS are published by `filament:assets`, not by Vite,
+      # and `public/css`, `public/js` and `public/fonts/filament` are ignored
+      # by git. Composer's post-autoload-dump runs `filament:upgrade`, which
+      # publishes them; this step is the proof, because an admin panel with
+      # no stylesheet and no script still returns 200.
+      - name: Verify the admin panel assets were published
+        run: |
+          test -f public/css/filament/filament/app.css || { echo "::error::Filament CSS is missing — run php artisan filament:assets."; exit 1; }
+          test -f public/js/filament/filament/app.js || { echo "::error::Filament JS is missing — run php artisan filament:assets."; exit 1; }
 
       # Assemble the release in ./release/ rather than pruning in place, so
       # deploy/scripts/*.sh stay available to this job afterwards.
@@ -156,6 +225,8 @@ jobs:
             --exclude '.gitmessage' \
             --exclude 'phpunit.xml' \
             --exclude 'pint.json' \
+            --include 'resources/manual/***' \
+            --include 'resources/brand/***' \
             --exclude '*.md' \
             --exclude '*.png' \
             --exclude '*.jpg' \
@@ -205,6 +276,7 @@ jobs:
             release/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/releases/$REL/"
 
       - name: Activate the release
+        id: activate
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -213,36 +285,67 @@ jobs:
           PHP_BIN: ${{ secrets.PHP_BIN }}
           REL: ${{ steps.rel.outputs.name }}
           SKIP_MIGRATIONS: ${{ inputs.skip_migrations && '1' || '0' }}
+          # Set the variable PREFLIGHT_GATE=1 on the production environment once
+          # it is live: a failing preflight then stops the deploy before the
+          # flip. docs/DEPLOYMENT.md section 2.
+          PREFLIGHT_GATE: ${{ vars.PREFLIGHT_GATE || '0' }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' REL='$REL' PHP_BIN='$PHP_BIN' SKIP_MIGRATIONS='$SKIP_MIGRATIONS' bash -s" \
+            "DEPLOY_PATH='$DEPLOY_PATH' REL='$REL' PHP_BIN='$PHP_BIN' SKIP_MIGRATIONS='$SKIP_MIGRATIONS' PREFLIGHT_GATE='$PREFLIGHT_GATE' bash -s" \
             < deploy/scripts/activate.sh
 
       - name: Smoke test
         env:
           APP_URL: ${{ vars.APP_URL }}
+          # Staging sits behind Basic auth (activate.sh, shared/htpasswd).
+          # Set this secret as "user:password" on the staging environment
+          # and the homepage is checked through the gate; without it, a 401
+          # on the homepage counts as alive (Apache, docroot and .htaccess
+          # all answered) and /up — which the gate leaves open — proves the
+          # application boots.
+          SMOKE_BASIC_AUTH: ${{ secrets.SMOKE_BASIC_AUTH }}
         run: |
           set -euo pipefail
+          # InMotion's edge answers 406 to curl's default User-Agent; a
+          # browser-shaped one goes through. Found on the first deploy.
+          UA="Mozilla/5.0 (compatible; SCGHF-deploy-check)"
+          AUTH=()
+          [ -n "${SMOKE_BASIC_AUTH:-}" ] && AUTH=(-u "$SMOKE_BASIC_AUTH")
           echo "Checking $APP_URL …"
-          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -L "$APP_URL/")
-          [ "$code" = "200" ] || { echo "::error::Homepage returned $code, expected 200"; exit 1; }
+          code=$(curl -sS -A "$UA" "${AUTH[@]}" -o /dev/null -w '%{http_code}' --max-time 30 -L "$APP_URL/")
+          if [ -n "${SMOKE_BASIC_AUTH:-}" ]; then
+            [ "$code" = "200" ] || { echo "::error::Homepage returned $code through the gate, expected 200"; exit 1; }
+          else
+            case "$code" in
+              200) echo "  OK   / → 200" ;;
+              401) echo "  OK   / → 401 (behind the staging gate; /up decides)" ;;
+              *)   echo "::error::Homepage returned $code, expected 200 (or 401 behind the gate)"; exit 1 ;;
+            esac
+          fi
 
-          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$APP_URL/up")
+          code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 30 "$APP_URL/up")
           [ "$code" = "200" ] || { echo "::error::Health check returned $code, expected 200"; exit 1; }
 
           # These must NOT be reachable. A 200 here is a security incident.
           for path in "/.env" "/storage/logs/laravel.log" "/vendor/autoload.php" "/.git/config" "/composer.json"; do
-            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$APP_URL$path")
+            code=$(curl -sS -A "$UA" -o /dev/null -w '%{http_code}' --max-time 20 "$APP_URL$path")
+            # 403/404 from Apache or the app; 406 is InMotion's ModSecurity
+            # refusing the request before Apache sees it — also "not served".
             case "$code" in
-              403|404) echo "  OK   $path → $code" ;;
-              *)       echo "::error::SECURITY: $path returned $code — it must be 403 or 404"; exit 1 ;;
+              401|403|404|406|410) echo "  OK   $path → $code" ;;
+              *)                   echo "::error::SECURITY: $path returned $code — it must be a denial (401/403/404/406/410)"; exit 1 ;;
             esac
           done
           echo "Smoke test passed."
 
+      # Only roll back if we actually flipped the symlink. A bare `if: failure()`
+      # also fires for failures BEFORE deployment — a bad build, an unreachable
+      # server — where there is nothing to roll back to and no SSH key on disk
+      # yet. That turns one clear error into two confusing ones, and on a live
+      # host it would attempt a rollback the deploy never earned.
       - name: Roll back if the smoke test failed
-        if: failure()
+        if: failure() && steps.activate.outcome == 'success'
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}

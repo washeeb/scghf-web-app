@@ -1,0 +1,38 @@
+# Static analysis — Larastan on top of PHPStan.
+#
+# Level 5 is the point where the checks are about real mistakes (a method
+# that does not exist, an argument of the wrong type, a property never
+# assigned) rather than about annotating everything. The baseline holds what
+# was true when analysis was switched on in Phase 14; nothing in it is fixed
+# by being there, and the count in it should only go down.
+#
+#   vendor/bin/phpstan analyse                  # what CI runs
+#   vendor/bin/phpstan analyse --generate-baseline phpstan-baseline.neon
+#
+# Raising the level or shrinking the baseline is a deliberate task, not a
+# side effect of another change.
+
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+
+    paths:
+        - app
+        - database/seeders
+        - routes
+
+    # Filament resources declare closures with loosely typed parameters and
+    # Livewire's magic makes a fair number of dynamic calls; the framework
+    # extensions know most of it, and the baseline holds the rest.
+    treatPhpDocTypesAsCertain: false
+
+    # Read the literal array each model's casts() returns, so a datetime
+    # cast is a Carbon and a MoneyCast is a Money to the analyser. Without
+    # this every cast attribute is its column type and every ->format() on
+    # a date is reported as a call on a string.
+    parseModelCastsMethod: true
+
+    tmpDir: storage/framework/cache/phpstan

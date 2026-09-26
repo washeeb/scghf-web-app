@@ -11,6 +11,15 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!--
+            Browser tests drive Chromium through Playwright and need Node on the
+            machine. They run in their own CI job; the main job excludes them
+            with the exclude-testsuite flag so a missing browser is never a
+            failed build for something unrelated.
+        -->
+        <testsuite name="Browser">
+            <directory>tests/Browser</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
@@ -18,13 +27,37 @@
         </include>
     </source>
     <php>
+        <!--
+            The whole suite runs in ONE process, so its memory profile is not
+            the application's: production handles one upload per request with a
+            fresh limit, while this accumulates twelve hundred tests' worth
+            before it reaches the image conversions.
+
+            Raised rather than worked around, because the alternative would be
+            to stop generating conversions under test — which would leave the
+            safeguarding rule (an unsanitised image gets no derivatives)
+            asserted by nothing.
+
+            The production ceiling is enforced elsewhere and deliberately:
+            App\Media\UploadPolicy refuses an image whose bitmap would need more
+            than 60% of the server's real memory_limit, which is the shared
+            hosting failure this masks in tests but must not mask on the host.
+        -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!--
+            Off for the suite: a test that moves time past a publish date
+            and fetches the page again must see the render, not a stored
+            copy. PageCacheTest switches it on for itself.
+        -->
+        <env name="PAGE_CACHE_ENABLED" value="false"/>
+        <env name="FRAGMENT_CACHE_STORE" value="array"/>
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_DATABASE" value="scghf_test"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
@@ -32,5 +65,12 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+
+        <!--
+            A test suite that makes a network call per registration is a test
+            suite that fails whenever the wifi does. The breach check is on in
+            every other environment; PasswordPolicy reads this key.
+        -->
+        <env name="PASSWORD_CHECK_COMPROMISED" value="false"/>
     </php>
 </phpunit>

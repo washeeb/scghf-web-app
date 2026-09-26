@@ -30,6 +30,13 @@ return [
     |
     */
 
+    /*
+    | A separate, empty database that scghf:restore-test loads the newest
+    | backup into and counts. Never the live one; the command refuses if
+    | the names match.
+    */
+    'restore_test_database' => env('RESTORE_TEST_DATABASE', ''),
+
     'connections' => [
 
         'sqlite' => [
@@ -58,9 +65,20 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            // Never "whatever the server defaults to". InMotion's MariaDB defaults
+            // to MyISAM, which has no transactions and no foreign keys — a
+            // payments ledger cannot live on it, and Laravel would create every
+            // table that way without a word. Found on the first staging deploy.
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                // MariaDB (and MySQL 5.7) default to the legacy TIMESTAMP rules:
+                // the first NOT NULL timestamp in a table silently gains
+                // DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP and the
+                // second gets a zero date that strict mode rejects. Our
+                // migrations were written for MySQL 8, where this is already on.
+                // Found on the first staging deploy (InMotion, MariaDB 10.6).
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_INIT_COMMAND : PDO::MYSQL_ATTR_INIT_COMMAND) => 'SET SESSION explicit_defaults_for_timestamp = 1',
             ]) : [],
         ],
 
@@ -78,9 +96,20 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            // Never "whatever the server defaults to". InMotion's MariaDB defaults
+            // to MyISAM, which has no transactions and no foreign keys — a
+            // payments ledger cannot live on it, and Laravel would create every
+            // table that way without a word. Found on the first staging deploy.
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                // MariaDB (and MySQL 5.7) default to the legacy TIMESTAMP rules:
+                // the first NOT NULL timestamp in a table silently gains
+                // DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP and the
+                // second gets a zero date that strict mode rejects. Our
+                // migrations were written for MySQL 8, where this is already on.
+                // Found on the first staging deploy (InMotion, MariaDB 10.6).
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_INIT_COMMAND : PDO::MYSQL_ATTR_INIT_COMMAND) => 'SET SESSION explicit_defaults_for_timestamp = 1',
             ]) : [],
         ],
 
