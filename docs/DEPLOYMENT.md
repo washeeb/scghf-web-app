@@ -53,6 +53,30 @@ What `activate.sh` does, in order, and why the order:
 | `queue:restart`, `scghf:cache-clear`, `scghf:opcache-reset`, `up` | the next cron worker picks up the new code; pages stored by the old release are gone; the web workers' OPcache is emptied through a one-time token (PHP-FPM keeps bytecode across deploys — without this the site can serve the previous release's code after the flip). If the workers still run a release without that route, a one-off file under `public/deploy/` does the reset instead. The release's `public/.user.ini` sets `opcache.revalidate_path=1`, so the docroot symlink is resolved per request and a new release is new files to OPcache — with the host's default (`0`) the workers kept the first resolution and never saw a flip at all |
 | prune to five releases | disk and inodes |
 
+**A release that adds a PAGE needs two seeders run by hand.** `activate.sh`
+deliberately does not run `PageSeeder` or `LaunchContentSeeder`: the second
+publishes any page that has sections and is not published, which would undo a
+page the trustees had deliberately taken down. So when a release introduces a
+new page — the four division pages did — the deploy leaves it absent, and a
+menu item or a button pointing at it is a 404 until somebody runs:
+
+```
+php artisan db:seed --class=PageSeeder --force
+php artisan db:seed --class=LaunchContentSeeder --force
+php artisan scghf:cache-clear
+```
+
+Both are idempotent and additive: they create what is missing and never
+overwrite words somebody has edited. If the release also carries a migration
+that depends on those pages existing (`add_division_pages_to_the_header_menu`
+does — it skips a page it cannot find), roll it back and forward once
+afterwards:
+
+```
+php artisan migrate:rollback --step=1 --force && php artisan migrate --force
+```
+
+
 ### 2a. Actions minutes
 
 A private repository on GitHub Free has 2,000 Actions minutes a month, and
