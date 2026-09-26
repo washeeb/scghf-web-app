@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Communications;
 
+use App\Chat\WhatsappInbox;
 use App\Models\EmailLog;
 use App\Models\InboundWebhookEvent;
 use App\Models\SmsLog;
@@ -231,6 +232,21 @@ class DeliveryEventProcessor
     private function applyToWhatsapp(InboundWebhookEvent $event): void
     {
         $parsed = json_decode((string) $event->raw_payload, true);
+
+        /*
+         * A message from somebody is a live chat, not a delivery report. It
+         * goes to WhatsappInbox, which is idempotent on Meta's message id by
+         * way of this table's own unique event id — a retried webhook must
+         * not become a second copy of the visitor's question.
+         */
+        if ($event->event_type === InboundWebhookEvent::TYPE_INBOUND) {
+            if (is_array($parsed)) {
+                app(WhatsappInbox::class)->receive($parsed);
+            }
+
+            return;
+        }
+
         $statuses = is_array($parsed) ? (array) data_get($parsed, 'entry.0.changes.0.value.statuses', []) : [];
 
         foreach ($statuses as $status) {
@@ -285,6 +301,12 @@ class DeliveryEventProcessor
     private function eventId(string $provider, array $parsed, string $rawBody): string
     {
         if ($provider === 'meta') {
+            $inbound = data_get($parsed, 'entry.0.changes.0.value.messages.0.id');
+
+            if (is_string($inbound) && $inbound !== '') {
+                return 'meta:in:'.$inbound;
+            }
+
             $status = data_get($parsed, 'entry.0.changes.0.value.statuses.0');
 
             if (is_array($status) && isset($status['id'])) {
@@ -316,10 +338,15 @@ class DeliveryEventProcessor
     private function normaliseType(string $provider, array $parsed): ?string
     {
         if ($provider === 'meta') {
+            // A message from somebody, rather than a report about one of ours.
+            if (data_get($parsed, 'entry.0.changes.0.value.messages.0') !== null) {
+                return InboundWebhookEvent::TYPE_INBOUND;
+            }
+
             return match (Str::lower((string) data_get($parsed, 'entry.0.changes.0.value.statuses.0.status', ''))) {
                 'delivered', 'read' => InboundWebhookEvent::TYPE_DELIVERED,
                 'failed' => InboundWebhookEvent::TYPE_FAILED,
-                default => null, // `sent`, or an inbound message: stored, not acted on
+                default => null, // `sent`: stored, not acted on
             };
         }
 

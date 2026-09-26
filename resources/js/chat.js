@@ -62,6 +62,10 @@ export function initChat() {
         status: root.querySelector('[data-chat-status]'),
         dot: root.querySelector('[data-chat-dot]'),
         unread: root.querySelector('[data-chat-unread]'),
+        agentBar: root.querySelector('[data-chat-agent-bar]'),
+        agentName: root.querySelector('[data-chat-agent-name]'),
+        human: root.querySelector('[data-chat-human]'),
+        typing: root.querySelector('[data-chat-typing]'),
     };
 
     let labels = {};
@@ -81,6 +85,7 @@ export function initChat() {
     let timer = null;
     let unread = 0;
     let closedState = false;
+    let agentActive = false;
 
     const headers = (withToken = true) => {
         const h = { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' };
@@ -112,6 +117,32 @@ export function initChat() {
         el.end.hidden = closedState;
         el.reply.hidden = closedState;
         el.closed.hidden = !closedState;
+        setAgent(agentActive);
+    }
+
+    /**
+     * Who the visitor is talking to.
+     *
+     * The bar with "talk to a person" is shown for exactly as long as the
+     * assistant is answering, and disappears the moment a person has it —
+     * at which point the button would be a lie.
+     */
+    function setAgent(active) {
+        agentActive = Boolean(active);
+
+        if (el.agentBar) {
+            el.agentBar.hidden = !agentActive || closedState;
+        }
+
+        if (el.agentName && labels.agentStatus) {
+            el.agentName.textContent = labels.agentStatus;
+        }
+    }
+
+    function setTyping(on) {
+        if (el.typing) {
+            el.typing.hidden = !on;
+        }
     }
 
     function append(message) {
@@ -124,17 +155,23 @@ export function initChat() {
         const li = document.createElement('li');
         const mine = message.sender === 'visitor';
         const system = message.sender === 'system';
+        const fromAgent = message.sender === 'agent';
 
+        // The assistant's bubble is deliberately not the same as a person's:
+        // a dashed edge and the assistant's name on every line, so nobody
+        // scrolling back has to work out which of them said what.
         li.className = system
-            ? 'self-center rounded-full bg-[var(--surface-sunken)] px-3 py-1 text-xs text-[var(--text-muted)]'
+            ? 'self-center rounded-full bg-[var(--surface-sunken)] px-3 py-1 text-center text-xs text-[var(--text-muted)]'
             : (mine
                 ? 'max-w-[85%] self-end rounded-[var(--radius-lg)] rounded-br-sm bg-[var(--brand-primary)] px-3 py-2 text-[var(--text-on-brand)]'
-                : 'max-w-[85%] self-start rounded-[var(--radius-lg)] rounded-bl-sm bg-[var(--surface-sunken)] px-3 py-2');
+                : (fromAgent
+                    ? 'max-w-[85%] self-start rounded-[var(--radius-lg)] rounded-bl-sm border border-dashed border-[var(--border-interactive)] bg-[var(--surface)] px-3 py-2'
+                    : 'max-w-[85%] self-start rounded-[var(--radius-lg)] rounded-bl-sm bg-[var(--surface-sunken)] px-3 py-2'));
 
         if (!system) {
             const who = document.createElement('span');
             who.className = 'block text-[0.7rem] font-semibold opacity-80';
-            who.textContent = mine ? labels.you : (message.name || labels.office);
+            who.textContent = mine ? labels.you : (message.name || (fromAgent ? labels.agent : labels.office));
             li.appendChild(who);
         }
 
@@ -174,6 +211,7 @@ export function initChat() {
 
             const data = await response.json();
             setOnline(Boolean(data.online));
+            setAgent(data.agent && data.agent.active);
             (data.messages || []).forEach(append);
 
             if (data.status === 'closed' && !closedState) {
@@ -263,6 +301,8 @@ export function initChat() {
             page: window.location.href,
         };
 
+        setTyping(true);
+
         try {
             const response = await fetch(startUrl, { method: 'POST', headers: headers(false), body: JSON.stringify(payload) });
             const data = await response.json().catch(() => ({}));
@@ -279,6 +319,7 @@ export function initChat() {
             closedState = false;
             el.messages.replaceChildren();
             lastId = 0;
+            setAgent(data.agent && data.agent.active);
             (data.messages || []).forEach(append);
             setOnline(Boolean(data.online));
             el.form.reset();
@@ -288,6 +329,8 @@ export function initChat() {
         } catch {
             el.error.textContent = labels.failed;
             el.error.hidden = false;
+        } finally {
+            setTyping(false);
         }
     });
 
@@ -301,6 +344,7 @@ export function initChat() {
         }
 
         textarea.disabled = true;
+        setTyping(agentActive);
 
         try {
             const response = await fetch(`${baseUrl}/${session.id}/messages`, { method: 'POST', headers: headers(), body: JSON.stringify({ body }) });
@@ -316,8 +360,15 @@ export function initChat() {
                 const data = await response.json();
                 append(data.message);
                 textarea.value = '';
+                setAgent(data.agent && data.agent.active);
+
+                // The assistant's answer was written while that request was in
+                // flight; fetch it now rather than leaving the visitor watching
+                // nothing for up to four seconds.
+                await poll();
             }
         } finally {
+            setTyping(false);
             textarea.disabled = false;
             textarea.focus();
         }
@@ -345,6 +396,28 @@ export function initChat() {
         closedState = true;
         showThread();
         poll();
+    });
+
+    el.human?.addEventListener('click', async () => {
+        if (!session) {
+            return;
+        }
+
+        el.human.disabled = true;
+
+        try {
+            const response = await fetch(`${baseUrl}/${session.id}/human`, { method: 'POST', headers: headers() });
+
+            if (response.ok) {
+                const data = await response.json();
+                setAgent(data.agent && data.agent.active);
+            }
+        } catch {
+            // The next poll will show the hand-over line if it went through.
+        } finally {
+            el.human.disabled = false;
+            await poll();
+        }
     });
 
     el.newChat.addEventListener('click', () => {

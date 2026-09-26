@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ChatConversations\Pages;
 
+use App\Chat\Agent\ChatAgent;
+use App\Chat\Agent\Escalation;
 use App\Chat\LiveChat;
 use App\Filament\Resources\ChatConversations\ChatConversationResource;
 use App\Models\ChatConversation;
@@ -76,7 +78,36 @@ class ViewChatConversation extends Page
     /** @return Collection<int, ChatMessage> */
     public function getMessagesProperty(): Collection
     {
-        return ChatMessage::query()->where('chat_conversation_id', $this->conversation()->getKey())->orderBy('id')->with('author')->get();
+        return ChatMessage::query()
+            ->where('chat_conversation_id', $this->conversation()->getKey())
+            ->orderBy('id')
+            ->with(['author', 'interaction'])
+            ->get();
+    }
+
+    /**
+     * Mark one of the assistant's answers as wrong.
+     *
+     * The only way an assistant answering for a charity gets better is if the
+     * person who spots a bad answer can say so where somebody will see it.
+     * This is that: one click in the thread, a note, and the answer appears
+     * in *Inbox → Assistant* under the ones to review.
+     */
+    public function flagAnswer(string $message, ?string $note = null): void
+    {
+        $line = ChatMessage::query()
+            ->where('chat_conversation_id', $this->conversation()->getKey())
+            ->whereKey($message)
+            ->with('interaction')
+            ->first();
+
+        if ($line?->interaction === null || ! (auth()->user()?->can('reply', $this->conversation()) ?? false)) {
+            return;
+        }
+
+        $line->interaction->flag(auth()->user(), $note);
+
+        Notification::make()->title(__('Marked for review.'))->success()->send();
     }
 
     public function send(): void
@@ -100,6 +131,26 @@ class ViewChatConversation extends Page
     protected function getHeaderActions(): array
     {
         return [
+            /*
+             * Taking a chat off the assistant, before typing anything.
+             *
+             * Sending a reply does this on its own — a person answering ends
+             * the assistant's involvement — but somebody who has read a
+             * thread and can see it going wrong should be able to stop it
+             * without having to think of the right thing to say first.
+             */
+            Action::make('takeOver')
+                ->label(__('Take over from the assistant'))
+                ->icon('heroicon-o-user')
+                ->color('warning')
+                ->visible(fn (): bool => $this->conversation()->isWithAgent() && (auth()->user()?->can('reply', $this->conversation()) ?? false))
+                ->action(function (): void {
+                    app(ChatAgent::class)->handOver($this->conversation(), new Escalation('staff_took_over', null, true));
+                    app(LiveChat::class)->assign($this->conversation(), auth()->user());
+                    $this->record = $this->getRecord()->refresh();
+                    Notification::make()->title(__('You have this chat. The visitor has been told.'))->success()->send();
+                }),
+
             Action::make('assign')
                 ->label(__('Take this chat'))
                 ->icon('heroicon-o-hand-raised')

@@ -201,6 +201,10 @@ final class PolicyMap
             Models\BackupLogEntry::class => BackupPolicy::class,
             Models\ErrorReport::class => ErrorReportPolicy::class,
             Models\VisitorStat::class => VisitorStatPolicy::class,
+            // The record of what the chat assistant did and cost. Read by
+            // whoever reads the chat inbox; marked wrong by whoever answers
+            // in it; never deleted by hand.
+            Models\AiInteraction::class => ChatPolicy::class,
 
             // Legal holds, the retention log and the GRA approval record.
             Models\LegalHold::class => CompliancePolicy::class,

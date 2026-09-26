@@ -17,6 +17,11 @@
     inbox open (LiveChat::staffOnline). Otherwise it says the office is away
     and shows the away message — the visitor can still write, and the office
     is emailed, but nobody is told a person is waiting when nobody is.
+
+    The same principle covers the assistant: when it is answering, the header
+    says so by name, the disclosure is the first line of the conversation, and
+    "talk to a person" is a button on screen for as long as it is there. A
+    visitor should never have to work out which they are talking to.
 --}}
 @php
     $chat = app(App\Chat\LiveChat::class);
@@ -44,6 +49,9 @@
             'closed' => setting('chat.closed_line', __('This chat has ended. Start a new one any time.')),
             'newChat' => setting('chat.new_chat_label', __('New chat')),
             'close' => __('Close'),
+            'agent' => setting('agent.name', __('Assistant')),
+            'human' => setting('agent.human_label', __('Talk to a person')),
+            'thinking' => setting('agent.thinking_label', __('Typing…')),
         ];
         // For chat.js: JSON in a non-executing script tag (no nonce needed).
         $labelsJson = json_encode([
@@ -52,6 +60,10 @@
             'you' => __('You'),
             'office' => setting('general.short_name', config('app.name')),
             'failed' => __('That did not send. Check your connection and try again.'),
+            'agent' => $labels['agent'],
+            // "Hope is answering — talk to a person"; the second half is the
+            // button beside it.
+            'agentStatus' => __(':name is answering', ['name' => $labels['agent']]),
         ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
     @endphp
 
@@ -124,6 +136,19 @@
             {{-- The conversation. --}}
             <div data-chat-thread hidden class="flex flex-1 flex-col overflow-hidden">
                 <ol data-chat-messages aria-live="polite" aria-relevant="additions" class="flex flex-1 flex-col gap-2 overflow-y-auto p-4 text-sm"></ol>
+                {{-- While the assistant is answering. Not a link in a menu and
+                     not a phrase the visitor has to guess: a button, in the
+                     conversation, the whole time. --}}
+                <div data-chat-agent-bar hidden class="flex items-center justify-between gap-2 border-t border-[var(--border)] bg-[var(--surface-sunken)] px-3 py-2">
+                    <span class="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                        <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2m0 14v2m9-9h-2M5 12H3m3.5-6.5 1.5 1.5m8 8 1.5 1.5m0-11-1.5 1.5m-8 8-1.5 1.5" /><circle cx="12" cy="12" r="3.5" /></svg>
+                        <span data-chat-agent-name>{{ __(':name is answering', ['name' => $labels['agent']]) }}</span>
+                    </span>
+                    <button type="button" data-chat-human class="shrink-0 rounded-full border border-[var(--border-interactive)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-primary)] hover:bg-[var(--surface)]">{{ $labels['human'] }}</button>
+                </div>
+
+                <p data-chat-typing hidden class="px-4 pb-2 text-xs text-[var(--text-muted)]">{{ $labels['thinking'] }}</p>
+
                 <p data-chat-closed hidden class="border-t border-[var(--border)] px-4 py-3 text-sm text-[var(--text-muted)]">
                     {{ $labels['closed'] }}
                     <button type="button" data-chat-new class="ml-1 font-semibold text-[var(--brand-primary)] hover:underline">{{ $labels['newChat'] }}</button>

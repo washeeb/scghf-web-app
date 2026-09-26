@@ -56,6 +56,15 @@ class InboundWebhookEvent extends Model
 
     public const TYPE_UNSUBSCRIBE = 'unsubscribe';
 
+    /**
+     * A message FROM somebody, not a report about one we sent.
+     *
+     * Meta delivers inbound WhatsApp messages to the same endpoint as the
+     * delivery statuses, so the difference is in the payload rather than the
+     * URL. These become live-chat conversations — see WhatsappInbox.
+     */
+    public const TYPE_INBOUND = 'inbound_message';
+
     protected $fillable = [
         'provider', 'channel', 'event_id', 'event_type', 'subject_address',
         'raw_payload', 'signature', 'signature_valid', 'source_ip', 'received_at',
@@ -121,6 +130,7 @@ class InboundWebhookEvent extends Model
         return $this->signature_valid && in_array($this->event_type, [
             self::TYPE_BOUNCE, self::TYPE_SOFT_BOUNCE, self::TYPE_COMPLAINT,
             self::TYPE_DELIVERED, self::TYPE_FAILED, self::TYPE_UNSUBSCRIBE,
+            self::TYPE_INBOUND,
         ], true);
     }
 

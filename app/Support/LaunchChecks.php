@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Ai\AiManager;
+use App\Chat\Agent\ChatAgent;
 use App\Enums\DonationStatus;
 use App\Enums\UserType;
 use App\Models\Cause;
@@ -95,6 +97,7 @@ final class LaunchChecks
             $this->wrap('timestamp_defaults', 'No silent ON UPDATE timestamps', fn () => $this->timestampDefaults()),
             $this->wrap('flags', 'Feature flags honest', fn () => $this->flags()),
             $this->wrap('whatsapp', 'WhatsApp ready if on', fn () => $this->whatsapp()),
+            $this->wrap('assistant', 'Chat assistant honest', fn () => $this->assistant()),
             $this->wrap('staff_2fa', 'Two-factor on every staff account', fn () => $this->staffTwoFactor()),
             $this->wrap('demo_accounts', 'No demo accounts', fn () => $this->demoAccounts()),
             $this->wrap('demo_data', 'No demo data', fn () => $this->demoData()),
@@ -370,6 +373,41 @@ final class LaunchChecks
      * `cloud`, and at least one template is approved. Otherwise the box on
      * the donate form promises a receipt that cannot be sent.
      */
+    /**
+     * The chat assistant promises nothing it cannot do.
+     *
+     * Three ways this goes wrong and nobody notices: the flag is on with no
+     * key, so visitors are told an assistant is answering and every chat
+     * silently goes to a person; the month's ceiling is spent, which has the
+     * same effect and nothing says so; or the disclosure line has been
+     * emptied, which is the one setting here that is not the foundation's to
+     * turn off — somebody asking a charity for help is entitled to know
+     * whether they are talking to one.
+     */
+    private function assistant(): HealthCheck
+    {
+        if (! app(ChatAgent::class)->enabled()) {
+            // Off is a fine state. It is on-and-hollow that this exists to catch.
+            if (app(Features::class)->enabled('chat_agent') && (bool) setting('agent.enabled', false)) {
+                $manager = app(AiManager::class);
+
+                return HealthCheck::critical('assistant', 'Chat assistant honest', 'On, not answering',
+                    $manager->overBudget()
+                        ? 'The assistant is switched on but this month\'s ceiling (AI_MONTHLY_BUDGET_MINOR) is spent, so every chat is going to a person. Raise it or switch the assistant off.'
+                        : 'The assistant is switched on but no model is configured (AI_DRIVER, ANTHROPIC_API_KEY), so every chat goes to a person. Set them, or switch it off under Settings → AI assistant.');
+            }
+
+            return HealthCheck::ok('assistant', 'Chat assistant honest', 'Off — nothing promised');
+        }
+
+        if (trim((string) setting('agent.disclosure_line', '')) === '') {
+            return HealthCheck::critical('assistant', 'Chat assistant honest', 'Answering without saying so',
+                'The assistant is answering visitors and the line that tells them it is automated is empty (Settings → AI assistant). Put it back.');
+        }
+
+        return HealthCheck::ok('assistant', 'Chat assistant honest', 'Answering, with the disclosure shown');
+    }
+
     private function whatsapp(): HealthCheck
     {
         if (! app(Features::class)->enabled('whatsapp')) {

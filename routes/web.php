@@ -432,16 +432,21 @@ Route::get('deliveries/{delivery}/proof', [CourierController::class, 'proof'])
 | Live chat — the visitor's end
 |--------------------------------------------------------------------------
 |
-| Four JSON endpoints behind the widget (resources/js/chat.js). Starting a
+| Five JSON endpoints behind the widget (resources/js/chat.js). Starting a
 | chat is limited per IP because each one emails the office; the rest are
 | limited to what a person typing can produce. The conversation's own token
 | (header X-Chat-Token) is the credential; a wrong one is a 404.
+|
+| `human` is how a visitor leaves the assistant and gets a person. It is
+| deliberately cheap to call and not rate-limited below what a frustrated
+| person might press: nobody should have to ask twice.
 */
 Route::prefix('chat')->name('chat.')->group(function (): void {
     Route::get('status', [ChatController::class, 'status'])->middleware('throttle:60,1')->name('status');
     Route::post('start', [ChatController::class, 'start'])->middleware('throttle:5,10')->name('start');
     Route::get('{conversation}/messages', [ChatController::class, 'messages'])->middleware('throttle:120,1')->name('messages');
     Route::post('{conversation}/messages', [ChatController::class, 'send'])->middleware('throttle:30,1')->name('send');
+    Route::post('{conversation}/human', [ChatController::class, 'human'])->middleware('throttle:20,1')->name('human');
     Route::post('{conversation}/close', [ChatController::class, 'close'])->middleware('throttle:10,1')->name('close');
 });
 

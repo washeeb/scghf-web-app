@@ -22,6 +22,10 @@ use Illuminate\Database\Eloquent\Builder;
  * for an answer at the top — the same rule as the contact inbox. The list
  * refreshes itself every ten seconds and, in doing so, keeps whoever has it
  * open marked as online to the widget.
+ *
+ * A chat the assistant is still handling sorts BELOW one waiting for a
+ * person, and says so. Nobody should have to open a conversation to find out
+ * whether anybody is expected to do anything about it.
  */
 class ChatConversationsTable
 {
@@ -34,23 +38,34 @@ class ChatConversationsTable
                     app(LiveChat::class)->touchPresence($user);
                 }
 
-                return $query->orderByRaw("CASE WHEN status = 'open' THEN 0 ELSE 1 END")->orderBy('last_visitor_message_at');
+                return $query
+                    ->with(['assignee', 'department'])
+                    ->orderByRaw("CASE WHEN status = 'open' THEN 0 ELSE 1 END")
+                    // Waiting on a person before being answered by a machine.
+                    ->orderByRaw("CASE WHEN handled_by = 'agent' THEN 1 ELSE 0 END")
+                    ->orderBy('last_visitor_message_at');
             })
             ->columns([
                 IconColumn::make('waiting')
                     ->label('')
-                    ->state(fn (ChatConversation $record): bool => $record->isOpen() && $record->hasUnreadForStaff())
+                    // Not a bell for a chat the assistant has: the bell means
+                    // "a person has not looked at this and should".
+                    ->state(fn (ChatConversation $record): bool => $record->isOpen() && ! $record->isWithAgent() && $record->hasUnreadForStaff())
                     ->boolean()
                     ->trueIcon('heroicon-s-bell-alert')
                     ->falseIcon('heroicon-o-minus')
                     ->trueColor('warning')
                     ->falseColor('gray')
-                    ->tooltip(fn (ChatConversation $record): ?string => $record->isOpen() && $record->hasUnreadForStaff() ? __('Waiting for an answer') : null),
+                    ->tooltip(fn (ChatConversation $record): ?string => $record->isOpen() && ! $record->isWithAgent() && $record->hasUnreadForStaff() ? __('Waiting for an answer') : null),
 
                 TextColumn::make('visitor_name')
                     ->label(__('Visitor'))
                     ->searchable()
-                    ->description(fn (ChatConversation $record): string => (string) ($record->visitor_email ?: __('no email'))),
+                    ->icon(fn (ChatConversation $record): ?string => $record->isOnWhatsapp() ? 'heroicon-o-device-phone-mobile' : null)
+                    ->tooltip(fn (ChatConversation $record): ?string => $record->isOnWhatsapp() ? __('On WhatsApp') : null)
+                    ->description(fn (ChatConversation $record): string => (string) ($record->isOnWhatsapp()
+                        ? ($record->whatsapp_wa_id ?: __('WhatsApp'))
+                        : ($record->visitor_email ?: __('no email')))),
 
                 TextColumn::make('lastLine')
                     ->label(__('Last message'))
@@ -62,9 +77,23 @@ class ChatConversationsTable
                     ->formatStateUsing(fn (string $state): string => ucfirst($state))
                     ->color(fn (string $state): string => $state === ChatConversation::STATUS_OPEN ? 'success' : 'gray'),
 
-                TextColumn::make('assignee.name')
+                TextColumn::make('handler')
                     ->label(__('With'))
-                    ->placeholder(__('Nobody yet')),
+                    ->state(fn (ChatConversation $record): string => match (true) {
+                        $record->isWithAgent() => (string) setting('agent.name', __('Assistant')),
+                        $record->assignee !== null => (string) $record->assignee->name,
+                        default => __('Nobody yet'),
+                    })
+                    ->badge()
+                    ->color(fn (ChatConversation $record): string => match (true) {
+                        $record->isWithAgent() => 'info',
+                        $record->assignee !== null => 'success',
+                        default => 'warning',
+                    })
+                    // Why a person was needed, for the person about to take it.
+                    ->description(fn (ChatConversation $record): ?string => $record->wasEscalated() && ! $record->isWithAgent()
+                        ? trim(($record->department?->name ? $record->department->name.' — ' : '').(string) $record->escalation_reason, ' —')
+                        : null),
 
                 TextColumn::make('last_message_at')
                     ->label(__('Active'))
@@ -76,6 +105,18 @@ class ChatConversationsTable
                     ChatConversation::STATUS_OPEN => __('Open'),
                     ChatConversation::STATUS_CLOSED => __('Closed'),
                 ])->default(ChatConversation::STATUS_OPEN),
+                SelectFilter::make('handled_by')
+                    ->label(__('Handled by'))
+                    ->options([
+                        ChatConversation::HANDLER_STAFF => __('A person'),
+                        ChatConversation::HANDLER_AGENT => __('The assistant'),
+                    ]),
+                SelectFilter::make('channel')
+                    ->label(__('Where from'))
+                    ->options([
+                        ChatConversation::CHANNEL_WEB => __('The website'),
+                        ChatConversation::CHANNEL_WHATSAPP => __('WhatsApp'),
+                    ]),
                 TernaryFilter::make('mine')
                     ->label(__('Mine'))
                     ->queries(

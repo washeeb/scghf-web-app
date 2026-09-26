@@ -6,6 +6,10 @@ screen; they see your reply on their page within a few seconds. Nothing
 goes through an outside chat company — the conversation is in the
 foundation's own database.
 
+An **automated assistant** can answer the first questions before a person
+does, and the foundation's **WhatsApp** number can arrive in this same
+inbox. Both are off unless somebody has switched them on — see chapter 14.
+
 ## Being "online"
 
 The chat button on the site says **We are online** only while somebody has

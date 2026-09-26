@@ -388,6 +388,43 @@ class SettingsSeeder extends Seeder
         ['chat', 'new_chat_label', 'New chat', SettingType::String, 'New-chat link', true],
         ['chat', 'closed_by_staff_line', 'This chat has been closed. Thank you for talking to us.', SettingType::String, 'Closing line — closed by the office', true],
         ['chat', 'closed_by_visitor_line', 'The visitor ended the chat.', SettingType::String, 'Closing line — closed by the visitor', true],
+        ['chat', 'whatsapp_enabled', '', SettingType::Boolean, 'Answer WhatsApp here too', false,
+            'Messages to the foundation\'s WhatsApp number become chats in this inbox, and a reply typed here goes back to WhatsApp. Needs FEATURE_WHATSAPP and Meta\'s approval — see the manual.'],
+
+        // ── The assistant ────────────────────────────────────────────────────
+        //
+        // Every word it says, the persona it says it in, and — the part that
+        // matters — the subjects it must never handle. The module is
+        // FEATURE_CHAT_AGENT plus an API key in .env; this is the editor's
+        // side, and it is off until somebody turns it on deliberately.
+        ['agent', 'enabled', '', SettingType::Boolean, 'Let the assistant answer first', false,
+            'An automated assistant answers the first questions and passes anything it should not handle to a person. Off means every chat goes straight to the office, as before.'],
+        ['agent', 'name', 'Hope', SettingType::String, 'What the assistant is called', true,
+            'Shown on every line it writes. Give it a name that cannot be mistaken for a member of staff.'],
+        ['agent', 'disclosure_line', 'You are chatting with an automated assistant. Ask for a person at any time and somebody from the team will take over.', SettingType::Text, 'The line that says it is a machine', true,
+            'Written into the conversation before the first answer. Required by decency and by the Data Protection Act: a visitor is entitled to know what they are talking to. Empty means no disclosure, which is not a setting the foundation should use.'],
+        ['agent', 'when_staff_online', '', SettingType::Boolean, 'Also answer while the office is open', false,
+            'Off (recommended) means the assistant only answers when nobody has the chat inbox open — a person while the office is open, an assistant at midnight.'],
+        ['agent', 'persona', 'You are warm, plain-spoken and brief. You are Ghanaian and you write the way a helpful person at the front desk in Kasoa speaks: courteous, direct, no corporate filler. You never oversell the foundation and never promise anything.', SettingType::Text, 'How it should sound', true,
+            'A few sentences of character. It cannot override the safety rules, which are in the code.'],
+        ['agent', 'extra_instructions', '', SettingType::Text, 'Anything else it should know', true,
+            'Facts that are not on a page yet: a campaign closing date, an office closed for a week. Keep it short — every word is sent with every question.'],
+        ['agent', 'max_replies', '8', SettingType::Integer, 'How many times it may answer in one chat', false,
+            'After this it hands over regardless. A visitor going round for a ninth time is not being helped.'],
+        ['agent', 'name_department', '1', SettingType::Boolean, 'Name the department when handing over', true],
+        ['agent', 'handover_online_line', 'Let me pass you to somebody on the team — one moment.', SettingType::Text, 'Hand-over line — somebody is at the desk', true],
+        ['agent', 'handover_offline_line', 'Nobody is at the desk right now, so I have passed this to the team. They will reply here, and by email if you left an address.', SettingType::Text, 'Hand-over line — out of hours', true],
+        ['agent', 'human_label', 'Talk to a person', SettingType::String, 'The button that asks for a person', true,
+            'On screen the whole time the assistant is answering. Nobody should have to word a request correctly to reach a human being.'],
+        ['agent', 'thinking_label', 'Typing…', SettingType::String, 'While it is composing', true],
+        ['agent', 'crisis_reply', 'If you or somebody else is in danger right now, please call 191 (Police) or 112 (Ambulance), or go to the nearest clinic. I am passing this to our team immediately.', SettingType::Text, 'Said first in an emergency', true,
+            'Shown before anything else when a crisis phrase is used, then the chat goes straight to a person. Check these numbers are the right ones.'],
+        ['agent', 'crisis_phrases', '["kill myself","killing myself","suicide","suicidal","end my life","take my life","hurt myself","harm myself","want to die","overdose","emergency","dying","bleeding","unconscious","collapsed"]', SettingType::Json, 'Emergency phrases', false,
+            'Any of these and the assistant stops, shows the line above and fetches a person. Word-for-word matching, so include the ways people actually type it.'],
+        ['agent', 'handover_phrases', '["speak to a person","talk to a person","speak to someone","talk to someone","speak to a human","talk to a human","real person","human being","human","customer service","call me","ring me","agent","representative","manager","not a bot","are you a bot","are you a robot","stop the bot"]', SettingType::Json, 'Ways of asking for a person', false,
+            'Any of these hands the chat over at once, with no argument.'],
+        ['agent', 'escalate_topics', '{"safeguarding":["child abuse","abuse","abused","abusing","neglect","neglected","molest","molested","beaten","beating her","beating him","rape","raped","defilement","trafficking","safeguarding","child is not safe","unsafe","at risk"],"donations":["refund","refunded","my donation","my gift","receipt","my receipt","tax","double charged","charged twice","deducted","debited","payment failed","did not go through","momo not working","momo failed","mobile money problem","standing order","cancel my monthly"],"shop":["my order","my parcel","my package","where is my","not delivered","wrong item","damaged","return it","tracking"],"general":["complaint","complain","lawyer","legal action","sue","court","police","journalist","press enquiry","interview","fraud","scam","corruption"]}', SettingType::Json, 'Subjects it must not handle', false,
+            'Grouped by the department each one goes to. The assistant never answers these, whatever it thinks it knows: it says a person is coming and the department is emailed. Add the words your visitors actually use.'],
 
         // ── The courier portal ───────────────────────────────────────────────
         // What a rider reads on their phone at /courier, and the two rules

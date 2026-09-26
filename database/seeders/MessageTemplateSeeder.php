@@ -98,6 +98,18 @@ class MessageTemplateSeeder extends Seeder
                     .'Reference {{reference}}; receipt {{receipt_number}}. Your receipt has also been emailed.',
             ],
             [
+                'key' => 'chat.reply',
+                'name' => 'Chat reply outside the 24-hour window (WhatsApp)',
+                'description' => 'Meta only allows a free-form reply within 24 hours of the visitor\'s last '
+                    .'message. Past that, a reply typed in the chat inbox goes out as this template instead, '
+                    .'with the whole reply as its one parameter — otherwise it simply would not arrive. '
+                    .'Submit to Meta as a SERVICE/UTILITY template with one body parameter.',
+                'category' => WhatsappTemplate::CATEGORY_TRANSACTIONAL,
+                'meta_name' => 'scghf_chat_reply',
+                'variables' => ['reply'],
+                'body' => 'Following up on your message to us: {{reply}}',
+            ],
+            [
                 'key' => 'cause.update',
                 'name' => 'Appeal update (WhatsApp)',
                 'description' => 'Sent to everybody who gave to an appeal and asked for WhatsApp, when an update is published. '
@@ -700,6 +712,32 @@ class MessageTemplateSeeder extends Seeder
                     {{message}}
 
                     Answer it here: {{admin_url}}
+                    TEXT,
+            ],
+            [
+                'key' => 'chat.handover',
+                'name' => 'Live chat needs a person — to the department',
+                'description' => 'Sent when the assistant hands a chat to a person, to the department it was '
+                    .'routed to (general enquiries if none). The reason is the rule that fired, not the '
+                    .'visitor\'s words — the transcript below it has those.',
+                'category' => EmailTemplate::CATEGORY_SYSTEM,
+                'variables' => ['name', 'email', 'reason', 'department', 'channel', 'transcript', 'admin_url'],
+                'required' => ['name', 'reason'],
+                'subject' => 'A chat needs a person — {{department}}',
+                'html' => <<<'HTML'
+                    <p><strong>{{name}}</strong> ({{email}}) is waiting on {{channel}}.</p>
+                    <p>Handed over because: <strong>{{reason}}</strong></p>
+                    <pre style="white-space:pre-wrap;font-family:inherit">{{transcript}}</pre>
+                    <p>Take it here: {{admin_url}}</p>
+                    HTML,
+                'text' => <<<'TEXT'
+                    {{name}} ({{email}}) is waiting on {{channel}}.
+
+                    Handed over because: {{reason}}
+
+                    {{transcript}}
+
+                    Take it here: {{admin_url}}
                     TEXT,
             ],
             [

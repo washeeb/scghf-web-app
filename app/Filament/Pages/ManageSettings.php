@@ -110,6 +110,7 @@ class ManageSettings extends Page
         'header' => 'Header',
         'site' => 'Site & footer',
         'chat' => 'Live chat',
+        'agent' => 'AI assistant',
         'courier' => 'Courier portal',
         'seo' => 'Search engines',
         'compliance' => 'Consent wording',

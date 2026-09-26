@@ -40,4 +40,14 @@ return [
     // Live chat with the office, held on this server and answered from the
     // admin inbox. Settings → Live chat has the daily switch and the words.
     'live_chat' => env('FEATURE_LIVE_CHAT', true),
+    /*
+     * The assistant that answers a live chat before a person does.
+     *
+     * Off, and a genuine deferral on a real dependency rather than an empty
+     * flag: it needs an ANTHROPIC_API_KEY, which costs money the foundation
+     * has to decide to spend. With the flag on and no key the chat behaves
+     * exactly as it does with the flag off — every question goes to a
+     * person — and the launch check says which piece is missing.
+     */
+    'chat_agent' => env('FEATURE_CHAT_AGENT', false),
 ];
